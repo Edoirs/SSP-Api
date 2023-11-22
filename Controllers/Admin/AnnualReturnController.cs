@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi.NewTables;
 using SelfPortalAPi.UnitOfWork;
@@ -11,9 +12,11 @@ namespace SelfPortalAPi.Controllers.Admin
     public class AnnualReturnController : ControllerBase
     {
         private readonly IRepository<AnnualReturn> _repo;
+        private readonly IMapper _mapper;
         private string errMsg = "Unable to process request, kindly try again";
-        public AnnualReturnController(IRepository<AnnualReturn> repo)
+        public AnnualReturnController(IMapper mapper, IRepository<AnnualReturn> repo)
         {
+            _mapper = mapper;
             _repo = repo;
         }
 
@@ -41,6 +44,60 @@ namespace SelfPortalAPi.Controllers.Admin
                     message = errMsg
                 }));
             }
+        }
+
+        [HttpPost]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("AddReturn")]
+        public Task<IActionResult> Add([FromBody] AnnualReturnFm obj)
+        {
+            var emp = _mapper.Map<AnnualReturn>(obj);
+            try
+            {
+                _repo.Insert(emp);
+
+                var r = new ReturnObject();
+                r.status = true;
+                r.data = null;
+                r.message = "Record saved Successfully";
+                return Task.FromResult<IActionResult>(Ok(r));
+            }
+            catch (System.Exception ex)
+            {
+                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = errMsg
+                }));
+            }
+        }
+
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type =typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("GetbyId/{id}")]
+
+        public Task<IActionResult> GetbyId([FromRoute]int id)
+        {
+            var r = new ReturnObject();
+            r.status = true;
+            r.message = "Record Fetched Successfully";
+            try
+            {
+      
+                r.data = _repo.Get(id);
+                return Task.FromResult<IActionResult>(Ok(r));
+
+            }catch (Exception ex)
+            {
+                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = errMsg
+                }));
+            }
+
         }
     }
 }
