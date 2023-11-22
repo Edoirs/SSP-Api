@@ -82,7 +82,7 @@ namespace SelfPortalAPi.Controllers.Admin
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("AddEmployee")]
-        public  Task<IActionResult> AddEmployee([FromBody] GetEmployee obj)
+        public  Task<IActionResult> AddEmployee([FromBody] AddEmployee obj)
         {
             var emp = _mapper.Map<employee>(obj);
             try
