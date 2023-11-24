@@ -11,6 +11,7 @@ namespace SelfPortalAPi.Mapper
             CreateMap<employee, AddEmployee>();
             CreateMap<employee, EmployeeVm>();
             CreateMap<Projection, ProjectionFm>();
+
         }
     }
 }
