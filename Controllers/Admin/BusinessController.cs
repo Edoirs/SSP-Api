@@ -84,15 +84,16 @@ namespace SelfPortalAPi.Controllers.Admin
         public Task<IActionResult> AddEmployee([FromBody] BusinessViewModel obj)
         {
             var emp = _mapper.Map<Business>(obj);
+            emp.UniqueId = Guid.NewGuid().ToString();
             try
             {
                 _repo.Insert(emp);
-                var empData = _mapper.Map<BusinessFormModel>(emp);
-                var com = _repo.Get(Convert.ToInt32(obj.BusinessOperationID));
-                empData.BusinessId = Convert.ToInt32(obj.BusinessOperationID);
+             //   var empData = _mapper.Map<BusinessFormModel>(emp);
+             //   var com = _repo.Get(Convert.ToInt32(obj.BusinessOperationID));
+                
                 var r = new ReturnObject();
                 r.status = true;
-                r.data = empData;
+                r.data = emp;
                 r.message = "Record saved Successfully";
                 return Task.FromResult<IActionResult>(Ok(r));
             }

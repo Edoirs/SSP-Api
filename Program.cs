@@ -20,6 +20,7 @@ builder.Services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IValidator<TokenRequest>, TokenRequestValidator>();
 builder.Services.AddScoped<IIndividualRepository, IndividualRepository>();
+builder.Services.AddScoped<IUtilityRepository, UtilityRepository>();
 builder.Services.AddCors();
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

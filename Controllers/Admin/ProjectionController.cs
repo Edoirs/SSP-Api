@@ -55,6 +55,7 @@ namespace SelfPortalAPi.Controllers.Admin
         public Task<IActionResult> Add([FromBody] ProjectionFm obj)
         {
             var emp = _mapper.Map<Projection>(obj);
+            emp.UniqueId = Guid.NewGuid().ToString();
             try
             {
                 _repo.Insert(emp);

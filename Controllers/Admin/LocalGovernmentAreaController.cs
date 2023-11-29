@@ -70,7 +70,6 @@ namespace SelfPortalAPi.Controllers.Admin
                     message = errMsg
                 }));
             }
-
         }
     }
 }

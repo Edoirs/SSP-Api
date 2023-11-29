@@ -3,7 +3,6 @@ namespace SelfPortalAPi.NewTables
 {
     public class AnnualReturn : BaseEntity
     {
-        public int id { get; set; }
         public string business_id { get; set; }
         public string business_name { get; set; }
         public string link_status { get; set; }

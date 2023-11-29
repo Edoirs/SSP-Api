@@ -8,9 +8,13 @@ namespace SelfPortalAPi.Mapper
     {
         public AutoMapper()
         {
-            CreateMap<employee, AddEmployee>();
-            CreateMap<employee, EmployeeVm>();
-            CreateMap<Projection, ProjectionFm>();
+            CreateMap<AddEmployee, employee>();
+            CreateMap<AnnualReturnFm, AnnualReturn>();
+            CreateMap<BusinessViewModel,Business >();
+            CreateMap<Business,BusinessFormModel>();
+           
+            CreateMap<EmployeeVm,employee>();
+            CreateMap<ProjectionFm,Projection>();
 
         }
     }

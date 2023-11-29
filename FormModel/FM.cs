@@ -32,7 +32,7 @@ namespace SelfPortalAPi
     }
     public class AnnualReturnFm
     {
-        public int id { get; set; }
+      //  public int id { get; set; }
         public string business_id { get; set; }
         public string business_name { get; set; }
         public string link_status { get; set; }
@@ -179,44 +179,41 @@ namespace SelfPortalAPi
 
     public class BusinessViewModel
     {
-        public string BusinessRIN { get; set; }
-        public int AssetTypeID { get; set; }
-        public int BusinessTypeID { get; set; }
-        public string BusinessName { get; set; }
-        public string ContactName { get; set; }
-        public int LGAID { get; set; }
-        public int ZoneId { get; set; }
-        public int TaxOfficeId { get; set; }
-        public int BusinessCategoryID { get; set; }
-        public int BusinessSectorID { get; set; }
-        public int BusinessSubSectorID { get; set; }
-        public int BusinessStructureID { get; set; }
-        public int BusinessOperationID { get; set; }
-        public int SizeID { get; set; }
-        public string BusinessNumber { get; set; }
-        public string BusinessAddress { get; set; }
+        public string business_id { get; set; }
+        public string business_name { get; set; }
+        public string link_status { get; set; }
+        public string industry_sector_name { get; set; }
+        public string industry_subsector_name { get; set; }
+        public string business_address { get; set; }
+        public string town_name { get; set; }
+        public string ward_name { get; set; }
+        public string lga_name { get; set; }
+        public string created_at { get; set; }
+        public string taxpayer_role { get; set; }
+        public int taxpayer_role_id { get; set; }
+        public int employees_count { get; set; }
     }
 
-    public class BusinessViewModelValidator : AbstractValidator<BusinessViewModel>
-    {
-        public BusinessViewModelValidator()
-        {
-            RuleFor(x => x.AssetTypeID).NotEmpty();
-            RuleFor(x => x.BusinessTypeID).NotEmpty();
-            RuleFor(x => x.LGAID).NotEmpty();
-            RuleFor(x => x.ZoneId).NotEmpty();
-            RuleFor(x => x.TaxOfficeId).NotEmpty();
-            RuleFor(x => x.BusinessCategoryID).NotEmpty();
-            RuleFor(x => x.BusinessSectorID).NotEmpty();
-            RuleFor(x => x.BusinessSubSectorID).NotEmpty();
-            RuleFor(x => x.BusinessStructureID).NotEmpty();
-            RuleFor(x => x.BusinessOperationID).NotEmpty();
-            RuleFor(x => x.BusinessNumber).NotEmpty();
-            RuleFor(x => x.BusinessAddress).NotEmpty();
-            RuleFor(x => x.BusinessName).NotEmpty();
-            RuleFor(x => x.BusinessRIN).NotEmpty();
-        }
-    }
+    //public class BusinessViewModelValidator : AbstractValidator<BusinessViewModel>
+    //{
+    //    public BusinessViewModelValidator()
+    //    {
+    //        RuleFor(x => x.AssetTypeID).NotEmpty();
+    //        RuleFor(x => x.BusinessTypeID).NotEmpty();
+    //        RuleFor(x => x.LGAID).NotEmpty();
+    //        RuleFor(x => x.ZoneId).NotEmpty();
+    //        RuleFor(x => x.TaxOfficeId).NotEmpty();
+    //        RuleFor(x => x.BusinessCategoryID).NotEmpty();
+    //        RuleFor(x => x.BusinessSectorID).NotEmpty();
+    //        RuleFor(x => x.BusinessSubSectorID).NotEmpty();
+    //        RuleFor(x => x.BusinessStructureID).NotEmpty();
+    //        RuleFor(x => x.BusinessOperationID).NotEmpty();
+    //        RuleFor(x => x.BusinessNumber).NotEmpty();
+    //        RuleFor(x => x.BusinessAddress).NotEmpty();
+    //        RuleFor(x => x.BusinessName).NotEmpty();
+    //        RuleFor(x => x.BusinessRIN).NotEmpty();
+    //    }
+    //}
     public class IndividualViewModel
     {
         //public int IndividualID { get; set; }

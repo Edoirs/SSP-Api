@@ -14,9 +14,11 @@ namespace SelfPortalAPi.NewTables
         {
     }
 
+        public virtual DbSet<AnnualReturn> AnnualReturns { get; set; }
         public virtual DbSet<employee> employees { get; set; }
         public virtual DbSet<Business> Businesses { get; set; }
         public virtual DbSet<LocalGovtPostalCodes> LocalGovtPostalCodees { get; set; }
+        public virtual DbSet<Projection> Projections { get; set; }
         public virtual DbSet<LocalGovernment> LocalGovernments { get; set; }
         public virtual DbSet<Cooperate> Cooperates { get; set; }
     }

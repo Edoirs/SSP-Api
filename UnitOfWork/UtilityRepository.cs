@@ -46,15 +46,15 @@ namespace SelfPortalAPi.UnitOfWork
             resp.status = true;
             resp.message = "record pulled successfully";
             resp.data = await (from b in _db.BusinessCategories
-                               join c in _db.BusinessTypes
-                               on b.BusinessTypeId equals c.BusinessTypeId
-                               select new
-                               {
-                                   b.BusinessTypeId,
-                                   c.BusinessTypeName,
-                                   b.BusinessCategoryId,
-                                   b.BusinessCategoryName
-                               }).ToListAsync();
+                           join c in _db.BusinessTypes
+                           on b.BusinessTypeId equals c.BusinessTypeId
+                           select new
+                           {
+                               b.BusinessTypeId,
+                               c.BusinessTypeName,
+                               b.BusinessCategoryId,
+                               b.BusinessCategoryName
+                           }).ToListAsync();
             return resp;
         }
 
@@ -171,12 +171,12 @@ namespace SelfPortalAPi.UnitOfWork
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-            resp.data = await(from b in _db.Genders
-                              select new
-                              {
-                                  b.GenderId,
-                                  b.GenderName
-                              }).ToListAsync();
+            resp.data = await (from b in _db.Genders
+                               select new
+                               {
+                                   b.GenderId,
+                                   b.GenderName
+                               }).ToListAsync();
             return resp;
         }
 
@@ -185,12 +185,12 @@ namespace SelfPortalAPi.UnitOfWork
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-            resp.data = await(from b in _db.Lgas
-                              select new
-                              {
-                                  b.Lgaid,
-                                  b.Lganame
-                              }).ToListAsync();
+            resp.data = await (from b in _db.Lgas
+                               select new
+                               {
+                                   b.Lgaid,
+                                   b.Lganame
+                               }).ToListAsync();
             return resp;
         }
 
@@ -199,12 +199,12 @@ namespace SelfPortalAPi.UnitOfWork
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-            resp.data = await(from b in _db.Nationalities
-                              select new
-                              {
-                                  b.NationalityId,
-                                  b.NationalityName
-                              }).ToListAsync();
+            resp.data = await (from b in _db.Nationalities
+                               select new
+                               {
+                                   b.NationalityId,
+                                   b.NationalityName
+                               }).ToListAsync();
             return resp;
         }
 
@@ -213,16 +213,16 @@ namespace SelfPortalAPi.UnitOfWork
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-            resp.data = await(from b in _db.TaxOffices
-                              join c in _db.Zones
-                              on b.ZoneId equals c.ZoneId
-                              select new
-                              {
-                                  b.TaxOfficeId,
-                                  b.TaxOfficeName,
-                                  c.ZoneId,
-                                  c.ZoneName
-                              }).ToListAsync();
+            resp.data = await (from b in _db.TaxOffices
+                               join c in _db.Zones
+                               on b.ZoneId equals c.ZoneId
+                               select new
+                               {
+                                   b.TaxOfficeId,
+                                   b.TaxOfficeName,
+                                   c.ZoneId,
+                                   c.ZoneName
+                               }).ToListAsync();
             return resp;
         }
 
@@ -231,12 +231,12 @@ namespace SelfPortalAPi.UnitOfWork
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-            resp.data = await(from b in _db.Titles
-                              select new
-                              {
-                                  b.TitleId,
-                                  b.TitleName
-                              }).ToListAsync();
+            resp.data = await (from b in _db.Titles
+                               select new
+                               {
+                                   b.TitleId,
+                                   b.TitleName
+                               }).ToListAsync();
             return resp;
         }
 
@@ -245,16 +245,16 @@ namespace SelfPortalAPi.UnitOfWork
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-            resp.data = await(from b in _db.Lgas
-                              join c in _db.Zones
-                              on b.Lgaid equals c.LgaId
-                              select new
-                              {
-                                  b.Lgaid,
-                                  b.Lganame,
-                                  c.ZoneId,
-                                  c.ZoneName
-                              }).ToListAsync();
+            resp.data = await (from b in _db.Lgas
+                               join c in _db.Zones
+                               on b.Lgaid equals c.LgaId
+                               select new
+                               {
+                                   b.Lgaid,
+                                   b.Lganame,
+                                   c.ZoneId,
+                                   c.ZoneName
+                               }).ToListAsync();
             return resp;
         }
     }

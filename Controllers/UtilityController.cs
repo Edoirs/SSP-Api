@@ -20,209 +20,180 @@ namespace SelfPortalAPi.Controllers
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-business-category")]
-        public Task<IActionResult> getbusinesscategory()
+        public async Task<IActionResult> getbusinesscategory()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetBusinessCategory();
-                return Task.FromResult<IActionResult>(Ok(r));
+                var r = await _repo.GetBusinessCategory();
+                return Ok(r);
             }
             catch (System.Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        }  
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-business-operation")]
-        public Task<IActionResult> getbusinessoperation()
+        public async Task<IActionResult> getbusinessoperation()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetBusinessOperation();
-                return Task.FromResult<IActionResult>(Ok(r));
+                var r = await _repo.GetBusinessOperation();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        } 
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-business-sector")]
-        public Task<IActionResult> getbusinesssector()
+        public async Task<IActionResult> getbusinesssector()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetBusinessSector();
-                return Task.FromResult<IActionResult>(Ok(r));
+                var r = _repo.GetBusinessSector();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        } 
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-business-structure")]
-        public Task<IActionResult> getbusinessstructure()
+        public async Task<IActionResult> getbusinessstructure()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetBusinessStructure();
-                return Task.FromResult<IActionResult>(Ok(r));
+                var r = _repo.GetBusinessStructure();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        }  
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-business-subsector")]
-        public Task<IActionResult> getbusinesssubsector()
+        public async Task<IActionResult> getbusinesssubsector()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetBusinessSubSector();
-                return Task.FromResult<IActionResult>(Ok(r));
+              var r = _repo.GetBusinessSubSector(); return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        } 
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-business-type")]
-        public Task<IActionResult> getbusinesstype()
+        public async Task<IActionResult> getbusinesstype()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetBusinessType();
-                return Task.FromResult<IActionResult>(Ok(r));
+                var r = _repo.GetBusinessType();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        } 
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-economic-activity")]
-        public Task<IActionResult> geteconomicactivity()
+        public async Task<IActionResult> geteconomicactivity()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetEconomicActivity();
-                return Task.FromResult<IActionResult>(Ok(r));
+               var r = _repo.GetEconomicActivity();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        }  
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-gender")]
-        public Task<IActionResult> getgender()
+        public async Task<IActionResult> getgender()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetGender();
-                return Task.FromResult<IActionResult>(Ok(r));
+              var r = _repo.GetGender();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        } 
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-lga")]
-        public Task<IActionResult> getlga()
+        public  async Task<IActionResult> getlga()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
-            {
-                r.data = _repo.GetLGA();
-                return Task.FromResult<IActionResult>(Ok(r));
+            {var r = _repo.GetLGA();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        }  
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -245,75 +216,65 @@ namespace SelfPortalAPi.Controllers
                     message = errMsg
                 }));
             }
-        }  
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-tax-office")]
-        public Task<IActionResult> gettaxoffice()
+        public async Task<IActionResult> gettaxoffice()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetTaxOffice();
-                return Task.FromResult<IActionResult>(Ok(r));
+               var r = _repo.GetTaxOffice(); return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        } 
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-title")]
-        public Task<IActionResult> gettitle()
+        public async Task<IActionResult> gettitle()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetTitle();
-                return Task.FromResult<IActionResult>(Ok(r));
+               var r = _repo.GetTitle();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        } 
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-zone")]
-        public Task<IActionResult> getzone()
+        public async Task<IActionResult> getzone()
         {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetZone();
-                return Task.FromResult<IActionResult>(Ok(r));
+                var r = _repo.GetZone();
+                return Ok(r);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
                 }));
             }
-        } 
+        }
     }
 }
