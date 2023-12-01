@@ -29,5 +29,5 @@ public partial class BusinessSector
 
     public virtual BusinessType? BusinessType { get; set; }
 
-    public virtual ICollection<Business> Businesses { get; set; } = new List<Business>();
+
 }

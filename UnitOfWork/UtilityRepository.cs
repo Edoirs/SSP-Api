@@ -37,10 +37,12 @@ namespace SelfPortalAPi.UnitOfWork
     public class UtilityRepository : IUtilityRepository
     {
         private readonly ApiDbContext _db;
+        private readonly EirsContext _context;
 
-        public UtilityRepository(ApiDbContext db)
+        public UtilityRepository(ApiDbContext db, EirsContext context)
         {
             _db = db;
+            _context = context;
         }
 
         public async Task<ReturnObject> GetBusinessCategory()
@@ -49,15 +51,15 @@ namespace SelfPortalAPi.UnitOfWork
             resp.status = true;
             resp.message = "record pulled successfully";
             resp.data = await (from b in _db.BusinessCategories
-                           join c in _db.BusinessTypes
-                           on b.BusinessTypeId equals c.BusinessTypeId
-                           select new
-                           {
-                               b.BusinessTypeId,
-                               c.BusinessTypeName,
-                               b.BusinessCategoryId,
-                               b.BusinessCategoryName
-                           }).ToListAsync();
+                               join c in _db.BusinessTypes
+                               on b.BusinessTypeId equals c.BusinessTypeId
+                               select new
+                               {
+                                   b.BusinessTypeId,
+                                   c.BusinessTypeName,
+                                   b.BusinessCategoryId,
+                                   b.BusinessCategoryName
+                               }).ToListAsync();
             return resp;
         }
 
@@ -98,10 +100,8 @@ namespace SelfPortalAPi.UnitOfWork
                                   BusinessCategoryName = d.BusinessCategoryName
                               }).ToListAsync();
 
-            //var jsonData = data.Select(JsonSerializer.Serialize).ToList();
-            var jsonData = data.Select(dto => JsonSerializer.Serialize(dto)).ToList();
-            resp.data = jsonData;
-            //resp.data = data;
+
+            resp.data = data;
             return resp;
         }
 
