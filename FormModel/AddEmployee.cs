@@ -28,7 +28,7 @@ namespace SelfPortalAPi.FormModel
         public string corporate_id { get; set; }
         public string home_address { get; set; }
         public int business_id { get; set; }
-        public string life_assurance { get; set; }
+        public int life_assurance { get; set; }
         public int total_income { get; set; }
         public string lga_code { get; set; }
         public string nin { get; set; }

@@ -1,4 +1,7 @@
 ﻿using Azure.Core;
+using SelfPortalAPi.Model;
+using System.Text.Json;
+using static SelfPortalAPi.Model.DTO;
 
 namespace SelfPortalAPi.UnitOfWork
 {
@@ -81,20 +84,24 @@ namespace SelfPortalAPi.UnitOfWork
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-            resp.data = await (from b in _db.BusinessSectors
-                               join c in _db.BusinessTypes
-                               on b.BusinessTypeId equals c.BusinessTypeId
-                               join d in _db.BusinessCategories
-                               on b.BusinessCategoryId equals d.BusinessCategoryId
-                               select new
-                               {
-                                   b.BusinessTypeId,
-                                   c.BusinessTypeName,
-                                   b.BusinessSectorId,
-                                   b.BusinessSectorName,
-                                   d.BusinessCategoryId,
-                                   d.BusinessCategoryName
-                               }).ToListAsync();
+
+            var data = await (from b in _db.BusinessSectors
+                              join c in _db.BusinessTypes on b.BusinessTypeId equals c.BusinessTypeId
+                              join d in _db.BusinessCategories on b.BusinessCategoryId equals d.BusinessCategoryId
+                              select new DTO.BusinessSectorDTO
+                              {
+                                  BusinessTypeId = (int)b.BusinessTypeId,
+                                  BusinessTypeName = c.BusinessTypeName,
+                                  BusinessSectorId = b.BusinessSectorId,
+                                  BusinessSectorName = b.BusinessSectorName,
+                                  BusinessCategoryId = d.BusinessCategoryId,
+                                  BusinessCategoryName = d.BusinessCategoryName
+                              }).ToListAsync();
+
+            //var jsonData = data.Select(JsonSerializer.Serialize).ToList();
+            var jsonData = data.Select(dto => JsonSerializer.Serialize(dto)).ToList();
+            resp.data = jsonData;
+            //resp.data = data;
             return resp;
         }
 

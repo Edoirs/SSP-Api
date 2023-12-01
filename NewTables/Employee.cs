@@ -38,12 +38,13 @@ namespace SelfPortalAPi.NewTables
         public string home_address { get; set; }
         public int total_income { get; set; }
         public int life_assurance { get; set; }
-        public string state_tin { get; set; }
-        public string normalized_state_tin { get; set; }
-        public string state_code { get; set; }
+        public string? state_tin { get; set; }
+        public string? normalized_state_tin { get; set; }
+        public string? state_code { get; set; }
         public string lga_code { get; set; }
         public string nin { get; set; }
-        public string asset_id { get; set; }
+        public string? asset_id { get; set; }
         public int business_id { get; set; }
+        public string UniqueId { get; set;}
     }
 }
