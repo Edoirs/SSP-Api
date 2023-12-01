@@ -87,19 +87,40 @@ namespace SelfPortalAPi.UnitOfWork
             resp.status = true;
             resp.message = "record pulled successfully";
 
-            var data = await (from b in _db.BusinessSectors
-                              join c in _db.BusinessTypes on b.BusinessTypeId equals c.BusinessTypeId
-                              join d in _db.BusinessCategories on b.BusinessCategoryId equals d.BusinessCategoryId
-                              select new DTO.BusinessSectorDTO
-                              {
-                                  BusinessTypeId = (int)b.BusinessTypeId,
-                                  BusinessTypeName = c.BusinessTypeName,
-                                  BusinessSectorId = b.BusinessSectorId,
-                                  BusinessSectorName = b.BusinessSectorName,
-                                  BusinessCategoryId = d.BusinessCategoryId,
-                                  BusinessCategoryName = d.BusinessCategoryName
-                              }).ToListAsync();
-
+            //var data = await (from b in _db.BusinessSectors
+            //                  join c in _db.BusinessTypes on b.BusinessTypeId equals c.BusinessTypeId
+            //                  join d in _db.BusinessCategories on b.BusinessCategoryId equals d.BusinessCategoryId
+            //                  select new DTO.BusinessSectorDTO
+            //                  {
+            //                      BusinessTypeId = (int)b.BusinessTypeId,
+            //                      BusinessTypeName = c.BusinessTypeName,
+            //                      BusinessSectorId = b.BusinessSectorId,
+            //                      BusinessSectorName = b.BusinessSectorName,
+            //                      BusinessCategoryId = d.BusinessCategoryId,
+            //                      BusinessCategoryName = d.BusinessCategoryName
+            //                  }).ToListAsync();
+            var sql = @"
+                      SELECT b.BusinessTypeId,
+                          c.BusinessTypeName,
+                          b.BusinessSectorId,
+                          b.BusinessSectorName,
+                          d.BusinessCategoryId,
+                          d.BusinessCategoryName
+                      FROM BusinessSectors b
+                      JOIN BusinessTypes c ON b.BusinessTypeId = c.BusinessTypeId
+                      JOIN BusinessCategories d ON b.BusinessCategoryId = d.BusinessCategoryId
+                  ";
+            var data = _context.BusinessSectors.FromSqlRaw(sql)
+            .Select(result => new DTO.BusinessSectorDTO
+            {
+                BusinessTypeId = result.BusinessSectorId,
+                //BusinessTypeName = result.BusinessTypee,
+                BusinessSectorId = result.BusinessSectorId,
+                BusinessSectorName = result.BusinessSectorName,
+                BusinessCategoryId = (int)result.BusinessCategoryId,
+                //BusinessCategoryName = result.BusinessCategoryName
+            })
+      .ToListAsync();
 
             resp.data = data;
             return resp;
