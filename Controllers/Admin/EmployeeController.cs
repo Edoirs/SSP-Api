@@ -106,10 +106,12 @@ namespace SelfPortalAPi.Controllers.Admin
             }
             catch (System.Exception ex)
             {
+                AllFunction.SendErrorToText(ex);
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
+
                 }));
             }
         }

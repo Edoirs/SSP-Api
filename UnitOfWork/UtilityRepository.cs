@@ -26,7 +26,7 @@ namespace SelfPortalAPi.UnitOfWork
         Task<ReturnObject> GetBusinessCategory();
 
         Task<ReturnObject> GetBusinessSector();
-
+  
         Task<ReturnObject> GetBusinessSubSector();
 
         Task<ReturnObject> GetBusinessStructure();
@@ -37,30 +37,30 @@ namespace SelfPortalAPi.UnitOfWork
     public class UtilityRepository : IUtilityRepository
     {
         private readonly ApiDbContext _db;
+        private readonly EirsContext _context;
 
-        public UtilityRepository(ApiDbContext db)
+        public UtilityRepository(ApiDbContext db, EirsContext context)
         {
             _db = db;
+            _context = context;
         }
-
         public async Task<ReturnObject> GetBusinessCategory()
         {
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
             resp.data = await (from b in _db.BusinessCategories
-                           join c in _db.BusinessTypes
-                           on b.BusinessTypeId equals c.BusinessTypeId
-                           select new
-                           {
-                               b.BusinessTypeId,
-                               c.BusinessTypeName,
-                               b.BusinessCategoryId,
-                               b.BusinessCategoryName
-                           }).ToListAsync();
+                               join c in _db.BusinessTypes
+                               on b.BusinessTypeId equals c.BusinessTypeId
+                               select new
+                               {
+                                   b.BusinessTypeId,
+                                   c.BusinessTypeName,
+                                   b.BusinessCategoryId,
+                                   b.BusinessCategoryName
+                               }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetBusinessOperation()
         {
             var resp = new ReturnObject();
@@ -78,33 +78,28 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetBusinessSector()
         {
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-
-            var data = await (from b in _db.BusinessSectors
-                              join c in _db.BusinessTypes on b.BusinessTypeId equals c.BusinessTypeId
-                              join d in _db.BusinessCategories on b.BusinessCategoryId equals d.BusinessCategoryId
-                              select new DTO.BusinessSectorDTO
-                              {
-                                  BusinessTypeId = (int)b.BusinessTypeId,
-                                  BusinessTypeName = c.BusinessTypeName,
-                                  BusinessSectorId = b.BusinessSectorId,
-                                  BusinessSectorName = b.BusinessSectorName,
-                                  BusinessCategoryId = d.BusinessCategoryId,
-                                  BusinessCategoryName = d.BusinessCategoryName
-                              }).ToListAsync();
-
-            //var jsonData = data.Select(JsonSerializer.Serialize).ToList();
-            var jsonData = data.Select(dto => JsonSerializer.Serialize(dto)).ToList();
-            resp.data = jsonData;
-            //resp.data = data;
+            resp.data = await (from b in _db.BusinessSectors
+                               join c in _db.BusinessTypes
+                               on b.BusinessTypeId equals c.BusinessTypeId
+                               join d in _db.BusinessCategories
+                               on b.BusinessCategoryId equals d.BusinessCategoryId
+                               select new
+                               {
+                                   b.BusinessTypeId,
+                                   c.BusinessTypeName,
+                                   b.BusinessSectorId,
+                                   b.BusinessSectorName,
+                                   d.BusinessCategoryId,
+                                   d.BusinessCategoryName
+                                  
+                               }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetBusinessStructure()
         {
             var resp = new ReturnObject();
@@ -118,11 +113,10 @@ namespace SelfPortalAPi.UnitOfWork
                                    b.BusinessTypeId,
                                    c.BusinessTypeName,
                                    b.BusinessStructureId,
-                                   b.BusinessStructureName
+                                   b.BusinessStructureName           
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetBusinessSubSector()
         {
             var resp = new ReturnObject();
@@ -140,7 +134,6 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetBusinessType()
         {
             var resp = new ReturnObject();
@@ -154,7 +147,6 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetEconomicActivity()
         {
             var resp = new ReturnObject();
@@ -172,7 +164,6 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetGender()
         {
             var resp = new ReturnObject();
@@ -186,7 +177,6 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetLGA()
         {
             var resp = new ReturnObject();
@@ -200,7 +190,6 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetNationality()
         {
             var resp = new ReturnObject();
@@ -214,7 +203,6 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetTaxOffice()
         {
             var resp = new ReturnObject();
@@ -232,7 +220,6 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetTitle()
         {
             var resp = new ReturnObject();
@@ -246,7 +233,6 @@ namespace SelfPortalAPi.UnitOfWork
                                }).ToListAsync();
             return resp;
         }
-
         public async Task<ReturnObject> GetZone()
         {
             var resp = new ReturnObject();

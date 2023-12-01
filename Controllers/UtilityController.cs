@@ -39,6 +39,27 @@ namespace SelfPortalAPi.Controllers
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("get-business-Sector")]
+        public async Task<IActionResult> GetBusinessSectorr()
+        {
+            try
+            {
+                var r = await _repo.GetBusinessSector();
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = errMsg
+                }));
+            }
+        }
+
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-business-operation")]
         public async Task<IActionResult> getbusinessoperation()
         {
@@ -56,38 +77,39 @@ namespace SelfPortalAPi.Controllers
                 }));
             }
         }
-        [HttpGet]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
-        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("get-business-sector")]
-        public async Task<IActionResult> getbusinesssector()
-        {
-            try
-            {
-                var r = _repo.GetBusinessSector();
-                return Ok(r);
-            }
-            catch (Exception ex)
-            {
-                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
-                {
-                    status = false,
-                    message = errMsg
-                }));
-            }
-        }
+        //[HttpGet]
+        //[SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        //[SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        //[Route("get-business-sector")]
+        //public async Task<IActionResult> getbusinesssector()
+        //{
+        //    try
+        //    {
+        //        var r = _repo.GetBusinessSector();
+        //        return Ok(r);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+        //        {
+        //            status = false,
+        //            message = errMsg
+        //        }));
+        //    }
+        //}
+
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-business-structure")]
-        public async Task<IActionResult> getbusinessstructure()
+        public async Task<IActionResult> getbusinessstructuree()
         {
             try
             {
-                var r = _repo.GetBusinessStructure();
+                var r = await _repo.GetBusinessStructure();
                 return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -96,6 +118,7 @@ namespace SelfPortalAPi.Controllers
                 }));
             }
         }
+
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -104,7 +127,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-              var r = _repo.GetBusinessSubSector(); return Ok(r);
+              var r =await _repo.GetBusinessSubSector(); return Ok(r);
             }
             catch (Exception ex)
             {
@@ -123,7 +146,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-                var r = _repo.GetBusinessType();
+                var r =await _repo.GetBusinessType();
                 return Ok(r);
             }
             catch (Exception ex)
@@ -143,7 +166,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-               var r = _repo.GetEconomicActivity();
+               var r =await _repo.GetEconomicActivity();
                 return Ok(r);
             }
             catch (Exception ex)
@@ -163,7 +186,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-              var r = _repo.GetGender();
+              var r =await _repo.GetGender();
                 return Ok(r);
             }
             catch (Exception ex)
@@ -182,7 +205,7 @@ namespace SelfPortalAPi.Controllers
         public  async Task<IActionResult> getlga()
         {
             try
-            {var r = _repo.GetLGA();
+            {var r =await _repo.GetLGA();
                 return Ok(r);
             }
             catch (Exception ex)
@@ -198,19 +221,19 @@ namespace SelfPortalAPi.Controllers
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("get-nationality")]
-        public Task<IActionResult> getnationality()
+        public async Task<IActionResult> getnationality()
         {
             var r = new ReturnObject();
             r.status = true;
             r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetNationality();
-                return Task.FromResult<IActionResult>(Ok(r));
+                r.data = await _repo.GetNationality();
+               return Ok(r);
             }
             catch (System.Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
                     message = errMsg
@@ -225,7 +248,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-               var r = _repo.GetTaxOffice(); return Ok(r);
+               var r =await _repo.GetTaxOffice(); return Ok(r);
             }
             catch (Exception ex)
             {
@@ -244,7 +267,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-               var r = _repo.GetTitle();
+               var r =await _repo.GetTitle();
                 return Ok(r);
             }
             catch (Exception ex)
@@ -264,7 +287,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-                var r = _repo.GetZone();
+                var r =await _repo.GetZone();
                 return Ok(r);
             }
             catch (Exception ex)
