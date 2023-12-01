@@ -20,11 +20,12 @@ namespace SelfPortalAPi.Controllers.Admin
         private readonly UnitOfWork.IRepository<employee> _repo;
         private readonly UnitOfWork.IRepository<Cooperate> _repoCop;
         private string errMsg = "Unable to process request, kindly try again";
-        public EmployeeController(UnitOfWork.IRepository<employee> repo, UnitOfWork.IRepository<Cooperate> repoCop,IMapper mapper)
+        public EmployeeController(UnitOfWork.IRepository<employee> repo, UnitOfWork.IRepository<Cooperate> repoCop,IMapper mapper, PayeeContext context)
         {
             _repo = repo;
             _repoCop = repoCop;
             _mapper = mapper;
+            _context = context;
         }
 
 
@@ -65,7 +66,7 @@ namespace SelfPortalAPi.Controllers.Admin
             r.message = "Record Fetched Successfully";
             try
             {
-                r.data =  _context.employees.FromSqlRaw($"select * from employee where corporate_id ={obj.corporate_id} and business_id ={obj.business_id}");
+                r.data =  _context.employees.FromSqlRaw($"select * from employees where corporate_id ={obj.corporate_id} and business_id ={obj.business_id}");
 
                 return Task.FromResult<IActionResult>(Ok(r));
             }
@@ -85,6 +86,12 @@ namespace SelfPortalAPi.Controllers.Admin
         public  Task<IActionResult> AddEmployee([FromBody] AddEmployee obj)
         {
             var emp = _mapper.Map<employee>(obj);
+            emp.UniqueId = Guid.NewGuid().ToString();
+            emp.asset_id = "default_value";
+            emp.deleted_at = "default_value";
+            emp.normalized_state_tin = "default_value";
+            emp.state_code = "default_value";
+            emp.state_tin = "default_value";
             try
             {
                 _repo.Insert(emp);

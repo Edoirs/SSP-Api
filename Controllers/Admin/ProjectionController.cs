@@ -54,8 +54,15 @@ namespace SelfPortalAPi.Controllers.Admin
         [Route("Add")]
         public Task<IActionResult> Add([FromBody] ProjectionFm obj)
         {
+            DateTime dateTime = DateTime.Now;
+            string forwardedDate = Convert.ToString(dateTime);
             var emp = _mapper.Map<Projection>(obj);
             emp.UniqueId = Guid.NewGuid().ToString();
+            emp.annual_projection_id = "0";
+            emp.date_forwarded = forwardedDate;
+            emp.created_at = forwardedDate;
+            emp.app_id = 0;
+            emp.file_projection_status = "Default_value";
             try
             {
                 _repo.Insert(emp);
