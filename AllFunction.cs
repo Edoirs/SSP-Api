@@ -14,6 +14,12 @@ namespace SelfPortalAPi
 {
     public  class AllFunction
     {
+        public enum ApprovalStatusEnum : int
+        {
+            Pending = 1,
+            Approved,
+            DisApproved
+        }
         public enum TaxPayerTypeEnum : byte
         {
             Individual = 1,

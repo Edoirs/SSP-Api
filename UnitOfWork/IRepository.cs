@@ -8,6 +8,7 @@ namespace SelfPortalAPi.UnitOfWork
         T Get(int id);
 
         void Insert(T entity);
+        void Insert(List<T> entity);
 
         void Update(T entity);
 

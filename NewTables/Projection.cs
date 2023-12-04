@@ -16,6 +16,7 @@
         public string business_id { get; set; }
         public string business_name { get; set; }
         public int business_primary_id { get; set; }
+        public int approval_status { get; set; }
         public bool status { get; set; } = false;
     }
 }

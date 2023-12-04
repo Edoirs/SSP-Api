@@ -58,6 +58,12 @@ namespace SelfPortalAPi.UnitOfWork
             _context.SaveChanges();
         }
 
+        public void Insert(List<T> entity)
+        { if (entity.Count <= 0)
+                throw new ArgumentNullException("entity");
 
+            entities.AddRange(entity);
+            _context.SaveChanges();
+        }
     }
 }

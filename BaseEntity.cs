@@ -12,6 +12,7 @@ namespace SelfPortalAPi
     {
         [Key]
         public int Id { get; set; }
-        public string UniqueId { get; set; } 
-    }  
+        public string UniqueId { get; set; }
+        public bool IsDeleted { get; set; } 
+    }
 }

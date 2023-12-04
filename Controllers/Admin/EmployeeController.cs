@@ -27,9 +27,6 @@ namespace SelfPortalAPi.Controllers.Admin
             _mapper = mapper;
             _context = context;
         }
-
-
-
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -41,7 +38,30 @@ namespace SelfPortalAPi.Controllers.Admin
             r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.GetAll();
+                r.data = _repo.GetAll().Where(o=>o.IsDeleted ==false);
+                return Task.FromResult<IActionResult>(Ok(r));
+            }
+            catch (System.Exception ex)
+            {
+                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = errMsg
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("getalldeleted")]
+        public Task<IActionResult> GetAllDeleted()
+        {
+            var r = new ReturnObject();
+            r.status = true;
+            r.message = "Record Fetched Successfully";
+            try
+            {
+                r.data = _repo.GetAll().Where(o=>o.IsDeleted ==true);
                 return Task.FromResult<IActionResult>(Ok(r));
             }
             catch (System.Exception ex)
@@ -87,11 +107,7 @@ namespace SelfPortalAPi.Controllers.Admin
         {
             var emp = _mapper.Map<employee>(obj);
             emp.UniqueId = Guid.NewGuid().ToString();
-            emp.asset_id = "default_value";
-            emp.deleted_at = "default_value";
-            emp.normalized_state_tin = "default_value";
-            emp.state_code = "default_value";
-            emp.state_tin = "default_value";
+            emp.IsDeleted = false;
             try
             {
                 _repo.Insert(emp);
@@ -121,7 +137,6 @@ namespace SelfPortalAPi.Controllers.Admin
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("GetbyId/{id}")]
-
         public Task<IActionResult> GetbyId([FromRoute] int id)
         {
             var r = new ReturnObject();

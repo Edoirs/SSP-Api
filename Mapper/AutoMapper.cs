@@ -13,9 +13,10 @@ namespace SelfPortalAPi.Mapper
             CreateMap<BusinessViewModel,Business >();
             CreateMap<Business,BusinessFormModel>();
            
-            CreateMap<EmployeeVm,employee>();
+            CreateMap<employee,EmployeeVm>();
             CreateMap<ProjectionFm,Projection>();
-
+            CreateMap<ScheduleFm,Schedule>();
+            CreateMap<Schedule_RecordFm,Schedule_Record>();
         }
     }
 }

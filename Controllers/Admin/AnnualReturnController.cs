@@ -48,6 +48,30 @@ namespace SelfPortalAPi.Controllers.Admin
             }
         }
 
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("getallbybusinessId/{busId}")]
+        public Task<IActionResult> getallbybusinessId([FromRoute] string busId)
+        {
+            var r = new ReturnObject();
+            r.status = true;
+            r.message = "Record Fetched Successfully";
+            try
+            {
+                r.data = _repo.GetAll().Where(o=>o.business_id==busId).ToList();
+                return Task.FromResult<IActionResult>(Ok(r));
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = errMsg
+                }));
+            }
+        }
+
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -80,7 +104,6 @@ namespace SelfPortalAPi.Controllers.Admin
         [SwaggerResponse(StatusCodes.Status200OK, Type =typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("GetbyId/{id}")]
-
         public Task<IActionResult> GetbyId([FromRoute]int id)
         {
             var r = new ReturnObject();
