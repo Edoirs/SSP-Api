@@ -6,11 +6,40 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SelfPortalAPi.Migrations
 {
     /// <inheritdoc />
-    public partial class newtablesdfgh : Migration
+    public partial class yourMigrationNamebankCode : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "AnnualReturns",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    business_id = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    business_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    link_status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    industry_sector_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    industry_subsector_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    business_address = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    lga_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    town_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ward_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    corporate_id = table.Column<int>(type: "int", nullable: false),
+                    taxpayer_id = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    company_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    employees_count = table.Column<int>(type: "int", nullable: false),
+                    taxpayer_role = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    created_at = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AnnualReturns", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Businesses",
                 columns: table => new
@@ -30,7 +59,8 @@ namespace SelfPortalAPi.Migrations
                     taxpayer_role = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     taxpayer_role_id = table.Column<int>(type: "int", nullable: false),
                     employees_count = table.Column<int>(type: "int", nullable: false),
-                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -71,7 +101,8 @@ namespace SelfPortalAPi.Migrations
                     state_code = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     lga_code = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     active_status = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -114,14 +145,15 @@ namespace SelfPortalAPi.Migrations
                     home_address = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     total_income = table.Column<int>(type: "int", nullable: false),
                     life_assurance = table.Column<int>(type: "int", nullable: false),
-                    state_tin = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    normalized_state_tin = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    state_code = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    state_tin = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    normalized_state_tin = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    state_code = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     lga_code = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     nin = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    asset_id = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    asset_id = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     business_id = table.Column<int>(type: "int", nullable: false),
-                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -139,7 +171,8 @@ namespace SelfPortalAPi.Migrations
                     created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
                     updated_at = table.Column<DateTime>(type: "datetime2", nullable: false),
                     lga_code = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -159,17 +192,101 @@ namespace SelfPortalAPi.Migrations
                     created_at = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     updated_at = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     state = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_LocalGovtPostalCodees", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Projections",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    annual_projection_id = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    corporate_id = table.Column<int>(type: "int", nullable: false),
+                    app_id = table.Column<int>(type: "int", nullable: false),
+                    company_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    taxpayer_id = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    projection_year = table.Column<int>(type: "int", nullable: false),
+                    file_projection_status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    forwarded_to = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    date_forwarded = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    created_at = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    employees_count = table.Column<int>(type: "int", nullable: false),
+                    business_id = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    business_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    business_primary_id = table.Column<int>(type: "int", nullable: false),
+                    approval_status = table.Column<int>(type: "int", nullable: false),
+                    status = table.Column<bool>(type: "bit", nullable: false),
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Projections", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Schedule_Records",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    gross_income = table.Column<int>(type: "int", nullable: false),
+                    nhis = table.Column<int>(type: "int", nullable: false),
+                    nhf = table.Column<int>(type: "int", nullable: false),
+                    pension = table.Column<int>(type: "int", nullable: false),
+                    cra = table.Column<float>(type: "real", nullable: false),
+                    employee_id = table.Column<int>(type: "int", nullable: false),
+                    schedule_id = table.Column<int>(type: "int", nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    total_income = table.Column<int>(type: "int", nullable: false),
+                    life_assurance = table.Column<int>(type: "int", nullable: false),
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Schedule_Records", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Schedules",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    forwarded_to = table.Column<int>(type: "int", nullable: false),
+                    assessment_status = table.Column<int>(type: "int", nullable: false),
+                    date_forwarded = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    status = table.Column<int>(type: "int", nullable: false),
+                    due_date = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    created_by_app_id = table.Column<int>(type: "int", nullable: false),
+                    user_id = table.Column<int>(type: "int", nullable: false),
+                    corporate_id = table.Column<int>(type: "int", nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    business_id = table.Column<int>(type: "int", nullable: false),
+                    UniqueId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Schedules", x => x.Id);
                 });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AnnualReturns");
+
             migrationBuilder.DropTable(
                 name: "Businesses");
 
@@ -184,6 +301,15 @@ namespace SelfPortalAPi.Migrations
 
             migrationBuilder.DropTable(
                 name: "LocalGovtPostalCodees");
+
+            migrationBuilder.DropTable(
+                name: "Projections");
+
+            migrationBuilder.DropTable(
+                name: "Schedule_Records");
+
+            migrationBuilder.DropTable(
+                name: "Schedules");
         }
     }
 }

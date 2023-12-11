@@ -32,7 +32,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -52,7 +52,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -73,7 +73,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -93,7 +93,7 @@ namespace SelfPortalAPi.Controllers
         //        return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
         //        {
         //            status = false,
-        //            message = errMsg
+        //            message = ex.Message
         //        }));
         //    }
         //}
@@ -114,7 +114,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -134,7 +134,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -154,7 +154,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -174,7 +174,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -194,7 +194,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -213,7 +213,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -236,7 +236,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -255,7 +255,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -275,7 +275,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -295,7 +295,7 @@ namespace SelfPortalAPi.Controllers
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }

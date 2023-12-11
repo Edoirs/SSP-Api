@@ -1,19 +1,51 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SelfPortalAPi
 {
-    public  class AllFunction
+    public class AllFunction
     {
+        // private readonly IConfiguration _conFig;
+        // public AllFunction(IConfiguration conFig)
+        // {
+        //     _conFig = conFig;
+        // }
+        // public AllFunction()
+        // {
+
+        // }
+        // public long GetUserId(string token)
+        // { 
+        //     var tokenHandler = new JwtSecurityTokenHandler();
+        //     var SecretKey = _conFig.GetSection("JWT:SecretKey").Value;
+        //     var key = Encoding.ASCII.GetBytes(SecretKey);
+        //     // var token = HttpContext.Request.Headers["Authorization"];
+
+        //     tokenHandler.ValidateToken(token, new TokenValidationParameters
+        //     {
+        //         ValidateIssuerSigningKey = true,
+        //         IssuerSigningKey = new SymmetricSecurityKey(key),
+        //         ValidateIssuer = false,
+        //         ValidateAudience = false,
+        //         ClockSkew = TimeSpan.Zero
+        //     }, out SecurityToken validatedToken);
+
+        //     var jwtToken = (JwtSecurityToken)validatedToken;
+        //     var userId = long.Parse(jwtToken.Claims.First(x => x.Type == "NameIdentifier").Value);
+        //     return userId;
+        // }
+
         public enum ApprovalStatusEnum : int
         {
             Pending = 1,
@@ -161,6 +193,6 @@ namespace SelfPortalAPi
                 e.ToString();
             }
         }
-       
+
     }
 }

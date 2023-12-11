@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+﻿using System.Security.Claims;
+using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,14 +13,17 @@ namespace SelfPortalAPi.Controllers.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AnnualReturnController : ControllerBase
     {
         private readonly IRepository<AnnualReturn> _repo;
+          private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMapper _mapper;
         private string errMsg = "Unable to process request, kindly try again";
-        public AnnualReturnController(IMapper mapper, IRepository<AnnualReturn> repo)
+        public AnnualReturnController(IMapper mapper,IHttpContextAccessor httpContextAccessor, IRepository<AnnualReturn> repo)
         {
             _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
             _repo = repo;
         }
 
@@ -43,7 +48,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -67,7 +72,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -78,7 +83,11 @@ namespace SelfPortalAPi.Controllers.Admin
         [Route("AddReturn")]
         public Task<IActionResult> Add([FromBody] AnnualReturnFm obj)
         {
+            AllFunction all =new AllFunction();
+           var ClientCode = _httpContextAccessor.HttpContext.User.Claims.First(i => i.Type == ClaimTypes.NameIdentifier).Value;
+
             var emp = _mapper.Map<AnnualReturn>(obj);
+          //  emp.CreatedBy =ClientCode; 
             emp.UniqueId = Guid.NewGuid().ToString();
             try
             {
@@ -95,7 +104,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -120,7 +129,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
 

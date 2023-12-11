@@ -16,9 +16,6 @@ namespace SelfPortalAPi.Controllers.Admin
         {
             _repo = repo;
         }
-
-
-
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -38,7 +35,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -66,7 +63,8 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    
+                    message = ex.Message
                 }));
             }
 

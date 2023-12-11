@@ -45,7 +45,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -68,7 +68,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -92,7 +92,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -116,7 +116,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -152,7 +152,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
         }
@@ -178,7 +178,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
                     status = false,
-                    message = errMsg
+                    message = ex.Message
                 }));
             }
 

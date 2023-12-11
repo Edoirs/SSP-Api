@@ -1,9 +1,17 @@
 ﻿
 
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
+using SelfPortalAPi.NewTables;
 using static SelfPortalAPi.AllFunction;
 
 namespace SelfPortalAPi.UnitOfWork
@@ -16,12 +24,15 @@ namespace SelfPortalAPi.UnitOfWork
     public class IndividualRepository : IIndividualRepository
     {
         private readonly ApiDbContext _db;
+        private readonly PayeeContext _con;
         private readonly ErasContext _context;
-
-        public IndividualRepository(ApiDbContext db, ErasContext context)
+        private readonly IConfiguration _conFig;
+        public IndividualRepository(ApiDbContext db, PayeeContext con, ErasContext context, IConfiguration conFig)
         {
             _db = db;
+            _con = con;
             _context = context;
+            _conFig = conFig;
         }
 
         public ReturnObject AddAsycn(IndividualViewModel pObjIndividualModel, int userId)
@@ -88,8 +99,7 @@ namespace SelfPortalAPi.UnitOfWork
             mObjFuncResponse.message = "Login Successfully";
             try
             {
-                var ret = _db.Companies.FirstOrDefault(o => (o.CompanyRin == pObjUser.PhoneNumber_RIN.ToString().Trim()) || (o.MobileNumber1 == pObjUser.PhoneNumber_RIN.ToString().Trim()) || (o.MobileNumber2 == pObjUser.PhoneNumber_RIN.ToString().Trim()));
-
+                var ret = _con.UserManagements.FirstOrDefault(o => (o.CompanyRin == pObjUser.PhoneNumber_RIN.ToString().Trim()) || (o.PhoneNumber == pObjUser.PhoneNumber_RIN.ToString().Trim()));
                 if (ret == null)
                 {
                     mObjFuncResponse.status = false;
@@ -97,6 +107,7 @@ namespace SelfPortalAPi.UnitOfWork
                 }
                 else
                 {
+                    var str = JsonConvert.SerializeObject(ret);
                     switch (det)
                     {
                         case 1:
@@ -108,18 +119,28 @@ namespace SelfPortalAPi.UnitOfWork
                         case 2:
                             if (BCrypt.Net.BCrypt.Verify(pObjUser.Password, ret.Password))
                             {
-                                var token = AllFunction.GetAccessToken(pObjUser.PhoneNumber_RIN, ret.Password);
+                                var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                                    _conFig.GetSection("JWT:Secret").Value));
+                                var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+                                var tokeOptions = new JwtSecurityToken(issuer: str,
+                                audience: ret.Id.ToString(),
+
+                                 claims: new List<Claim>(),
+
+                                  expires: DateTime.Now.AddDays(2),
+                                  signingCredentials: signinCredentials);
+                                var token = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
                                 if (!string.IsNullOrEmpty(token))
                                 {
                                     // var user = vFind.FirstOrDefault();
-                                    var requestObj1 = new MstUserToken() { CreatedBy = ret.CompanyId, CreatedDate = DateTime.Now, UserId = ret.CompanyId, Token = token, TokenExpiresDate = DateTime.Now.AddDays(1), TokenIssuedDate = DateTime.Now };
-                                    _context.MstUserTokens.Add(requestObj1);
-                                    _context.SaveChanges();
-                                    mObjFuncResponse.data = new { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.CompanyId, name = ret.CompanyName, email = ret.EmailAddress1 };
+                                    // var requestObj1 = new MstUserToken() { CreatedBy = ret.Id, CreatedDate = DateTime.Now, UserId = ret.Id, Token = token, TokenExpiresDate = DateTime.Now.AddDays(1), TokenIssuedDate = DateTime.Now };
+                                    //  _context.MstUserTokens.Add(requestObj1);
+                                    //   _context.SaveChanges();
+                                    mObjFuncResponse.data = new { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.Id, name = ret.CompanyName, email = ret.Email };
                                 }
                                 else
                                 {
-                                    var response = new ReturnObject { status = false, message ="AnError Occured Generating Token" };
+                                    var response = new ReturnObject { status = false, message = "AnError Occured Generating Token" };
                                     return response;
                                 }
                             }
