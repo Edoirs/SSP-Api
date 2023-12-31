@@ -1,54 +1,102 @@
 ﻿
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
+using Microsoft.OpenApi.Models;
+using OfficeOpenXml;
 using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
-using System;
-using System.Collections.Generic;
+using SelfPortalAPi.NewTables;
+using SelfPortalAPi.UnitOfWork;
+using System.Data;
 using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
+using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SelfPortalAPi
 {
     public class AllFunction
     {
-        // private readonly IConfiguration _conFig;
-        // public AllFunction(IConfiguration conFig)
-        // {
-        //     _conFig = conFig;
-        // }
-        // public AllFunction()
-        // {
+        public void ConfigureServices(WebApplicationBuilder builder)
+        {
+            var services = builder.Services;
+            string? conn = builder.Configuration.GetConnectionString("DefaultConnection");
+            string? connII = builder.Configuration.GetConnectionString("EirsContext");
+            string? connIII = builder.Configuration.GetConnectionString("ERASContext");
+            services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
 
-        // }
-        // public long GetUserId(string token)
-        // { 
-        //     var tokenHandler = new JwtSecurityTokenHandler();
-        //     var SecretKey = _conFig.GetSection("JWT:SecretKey").Value;
-        //     var key = Encoding.ASCII.GetBytes(SecretKey);
-        //     // var token = HttpContext.Request.Headers["Authorization"];
+            services.AddAutoMapper(typeof(Program));
+            services.AddEndpointsApiExplorer();
+            services.AddAuthentication(opt =>
+            {
+                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = builder.Configuration.GetSection("JWT:ValidIssuer").Value,
+                    ValidAudience = builder.Configuration.GetSection("JWT:ValidAudience").Value,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("JWT:Secret").Value))
+                };
+            });
+            services.AddDbContext<ErasContext>(opt => opt.UseSqlServer(connIII));
+            services.AddDbContext<ApiDbContext>(opt => opt.UseSqlServer(connII));
+            services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
+            services.AddDbContext<EirsContext>(opt => opt.UseSqlServer(connIII));
+            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            services.AddScoped<IValidator<TokenRequest>, TokenRequestValidator>();
+            services.AddScoped<IIndividualRepository, IndividualRepository>();
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddScoped<IUtilityRepository, UtilityRepository>();
 
-        //     tokenHandler.ValidateToken(token, new TokenValidationParameters
-        //     {
-        //         ValidateIssuerSigningKey = true,
-        //         IssuerSigningKey = new SymmetricSecurityKey(key),
-        //         ValidateIssuer = false,
-        //         ValidateAudience = false,
-        //         ClockSkew = TimeSpan.Zero
-        //     }, out SecurityToken validatedToken);
-
-        //     var jwtToken = (JwtSecurityToken)validatedToken;
-        //     var userId = long.Parse(jwtToken.Claims.First(x => x.Type == "NameIdentifier").Value);
-        //     return userId;
-        // }
-
+            services.AddCors();
+            services.AddControllers();
+            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("V1", new OpenApiInfo
+                {
+                    Version = "V1",
+                    Title = "Self Service API",
+                    Description = "WebAPI"
+                });
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Name = "Authorization",
+                    Description = "Bearer Authentication with JWT Token",
+                    Type = SecuritySchemeType.Http
+                });
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement {
+        {
+            new OpenApiSecurityScheme {
+                Reference = new OpenApiReference {
+                    Id = "Bearer",
+                        Type = ReferenceType.SecurityScheme
+                }
+            },
+            new List < string > ()
+        }
+    });
+            });
+        }
         public enum ApprovalStatusEnum : int
         {
             Pending = 1,
+            Approved,
+            DisApproved
+        } 
+        public enum FillingStatusEnum : int
+        {
+            Filled = 1,
             Approved,
             DisApproved
         }
@@ -74,6 +122,10 @@ namespace SelfPortalAPi
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             return System.Convert.ToBase64String(plainTextBytes);
         }
+        public class Token
+        {
+            public string access_token { get; set; }
+        }
         public async Task<int> ValidateToken(string token)
         {
             if (token != null)
@@ -90,18 +142,6 @@ namespace SelfPortalAPi
                 using var _context = new ErasContext();
                 var user = await _context.MstUserTokens.FromSqlRaw($"SELECT top(1) * FROM [MST_UserToken] WHERE token = '{token}'").FirstOrDefaultAsync();
 
-                //public static int GetUserId(string token)
-                //{
-                //string query = $"Select UserID from MST_UserToken where Token ='{token}'";
-                //SqlConnection sqlConnection = new SqlConnection(conString);
-                //SqlCommand cmd = new SqlCommand(query, sqlConnection);
-                //sqlConnection.Open();
-                //var result = cmd.ExecuteScalar();
-                //sqlConnection.Close();
-                //int userId = Convert.ToInt32(result);
-
-                //return userId;
-                // }
                 if (user != null)
                 {
                     return user.UserId.Value;
@@ -161,7 +201,136 @@ namespace SelfPortalAPi
                 e.ToString();
             }
         }
+        public static List<T> ConvertDataTable<T>(DataTable dt)
+        {
+            List<T> data = new List<T>();
+            foreach (DataRow row in dt.Rows)
+            {
+                T item = GetItem<T>(row);
+                data.Add(item);
+            }
+            return data;
+        }
+        public static T GetItem<T>(DataRow dr)
+        {
+            Type temp = typeof(T);
+            T obj = Activator.CreateInstance<T>();
 
+            foreach (DataColumn column in dr.Table.Columns)
+            {
+                foreach (PropertyInfo pro in temp.GetProperties())
+                {
+                    if (string.IsNullOrEmpty(dr[column.ColumnName].ToString()))
+                    {
+                        dr[column.ColumnName] = "NULL";
+                    }
+                    var uh = column.ColumnName;
+                    if (uh.Contains("/"))
+                        uh = uh.Replace("/", "");
+                    else if (uh.Contains("-"))
+                        uh = uh.Replace("-", "");
+                    else if (uh.Contains(" "))
+                        uh = uh.Replace(" ", "");   
+                    else if (string.IsNullOrEmpty(uh))
+                        uh = uh.TrimEnd().TrimStart().Trim();
+                    if (pro.Name == uh)
+                        pro.SetValue(obj, dr[column.ColumnName], null);
+                    else
+                        continue;
+                }
+            }
+            return obj;
+        }
+        public static DataTable ConvertExcelToDatatable(IFormFile file)
+        {
+            DataTable table = new DataTable();
+            using (var stream = file.OpenReadStream())
+            {
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+                ExcelPackage package = new ExcelPackage();
+                package.Load(stream);
+                if (package.Workbook.Worksheets.Count > 0)
+                {
+                    using (ExcelWorksheet workSheet = package.Workbook.Worksheets.First())
+                    {
+                        int noOfCol = workSheet.Dimension.End.Column;
+                        int noOfRow = workSheet.Dimension.End.Row;
+                        int rowIndex = 1;
+
+                        for (int c = 1; c <= noOfCol; c++)
+                        {
+                            table.Columns.Add(workSheet.Cells[rowIndex, c].Text);
+                        }
+                        rowIndex = 2;
+                        for (int r = rowIndex; r <= noOfRow; r++)
+                        {
+                            DataRow dr = table.NewRow();
+                            for (int c = 1; c <= noOfCol; c++)
+                            {
+                                dr[c - 1] = workSheet.Cells[r, c].Value;
+                            }
+                            table.Rows.Add(dr);
+                        }
+
+                        return table;
+                    }
+                }
+                else
+                    return table;
+
+            }
+        }
+        public static List<Dictionary<string, object>> GenerateListFromExcel(IFormFile file, string sheetName)
+        {
+            List<Dictionary<string, object>> resultList = new List<Dictionary<string, object>>();
+
+            using (var stream = file.OpenReadStream())
+            {
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                using (var package = new ExcelPackage(stream))
+                {
+                    var worksheet = package.Workbook.Worksheets[sheetName];
+                    var startRow = worksheet.Dimension.Start.Row;
+                    var endRow = worksheet.Dimension.End.Row;
+                    var startCol = worksheet.Dimension.Start.Column;
+                    var endCol = worksheet.Dimension.End.Column;
+
+                    // Read header row
+                    var headers = new List<string>();
+                    for (int col = startCol; col <= endCol; col++)
+                    {
+                        var head = worksheet.Cells[startRow, col].Text.Trim();
+                        if (!string.IsNullOrEmpty(head))
+                            headers.Add(head);
+                    }
+
+                    // Read data rows
+                    for (int row = startRow + 1; row <= endRow; row++)
+                    {
+                        var rowData = new Dictionary<string, object>();
+
+                        for (int col = startCol; col <= headers.Count; col++)
+                        {
+                            var header = headers[col - 1];
+                            var cellValue = worksheet.Cells[row, col].Value;
+
+                            rowData.Add(header, cellValue);
+                            if (col == headers.Count)
+                            {
+                                resultList.Add(rowData);
+                                rowData.Clear();
+                            }
+
+                        }
+
+
+                    }
+                }
+            }
+
+            return resultList;
+        }
         public static void WriteFormModel(string payload, string location)
         {
             var line = Environment.NewLine + Environment.NewLine;

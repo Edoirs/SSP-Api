@@ -15,6 +15,8 @@ namespace SelfPortalAPi.NewTables
     }
 
         public virtual DbSet<AnnualReturn> AnnualReturns { get; set; }
+        public virtual DbSet<FormH1> FormH1s { get; set; }
+        public virtual DbSet<FiledFormH1> FiledFormH1s { get; set; }
         public virtual DbSet<employee> employees { get; set; }
         public virtual DbSet<Schedule> Schedules { get; set; }
         public virtual DbSet<Schedule_Record> Schedule_Records { get; set; }

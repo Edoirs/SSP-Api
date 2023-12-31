@@ -119,6 +119,7 @@ namespace SelfPortalAPi.UnitOfWork
                         case 2:
                             if (BCrypt.Net.BCrypt.Verify(pObjUser.Password, ret.Password))
                             {
+                                
                                 var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                                     _conFig.GetSection("JWT:Secret").Value));
                                 var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
@@ -126,9 +127,9 @@ namespace SelfPortalAPi.UnitOfWork
                                 audience: ret.Id.ToString(),
 
                                  claims: new List<Claim>(),
-
+                                // Claim()
                                   expires: DateTime.Now.AddDays(2),
-                                  signingCredentials: signinCredentials);
+                                  signingCredentials: signinCredentials); ;
                                 var token = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
                                 if (!string.IsNullOrEmpty(token))
                                 {
