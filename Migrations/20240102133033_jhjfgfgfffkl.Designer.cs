@@ -12,8 +12,8 @@ using SelfPortalAPi.NewTables;
 namespace SelfPortalAPi.Migrations
 {
     [DbContext(typeof(PayeeContext))]
-    [Migration("20231211173236_yourMigranNam")]
-    partial class yourMigranNam
+    [Migration("20240102133033_jhjfgfgfffkl")]
+    partial class jhjfgfgfffkl
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -323,6 +323,232 @@ namespace SelfPortalAPi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Cooperates");
+                });
+
+            modelBuilder.Entity("SelfPortalAPi.NewTables.FiledFormH", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BusinessId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FiledStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("ModifiedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TaxPayerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaxYear")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UniqueId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FiledFormH1s");
+                });
+
+            modelBuilder.Entity("SelfPortalAPi.NewTables.FormH1", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ANNUALTAXPAID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Basic")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BusinessId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CONSOLIDATEDRELIEFALLOWANCECRA")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Designation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FIRSTNAME")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("FiledStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HOMEADDRESS")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("JTBTIN")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LIFEASSURANCE")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NATIONALITY")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NHF")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NHIS")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NIN")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OTHERNAME")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OtherIncome")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PENSION")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PHONENUMBER")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RIN")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Rent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SURNAME")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TOTALMONTHSPAID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaxPayerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Transport")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FormH1s");
+                });
+
+            modelBuilder.Entity("SelfPortalAPi.NewTables.FormH3", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Basic")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BusinessId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Designation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FIRSTNAME")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HOMEADDRESS")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("JTBTIN")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LIFEASSURANCE")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NATIONALITY")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NHF")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NHIS")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NIN")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OTHERNAME")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OtherIncome")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PENSION")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PHONENUMBER")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RIN")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Rent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("STARTMONTH")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SURNAME")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaxPayerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Transport")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FormH3s");
                 });
 
             modelBuilder.Entity("SelfPortalAPi.NewTables.LocalGovernment", b =>
@@ -646,12 +872,17 @@ namespace SelfPortalAPi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CompanyName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("CompanyRin")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("CreatedBy")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -663,11 +894,9 @@ namespace SelfPortalAPi.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("Password")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhoneNumber")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UniqueId")

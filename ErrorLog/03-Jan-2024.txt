@@ -1,0 +1,40 @@
+--------------------------------*Start @ 03/01/2024 19:00:19*------------------------------------------
+-----------Exception Details on  01/03/2024 19:00:19-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 01/03/2024 19:00:19
+
+Error Line No :    at Z.EntityFramework.Extensions.PropertyZInfo..ctor(IProperty property)
+   at PublicExtensions..(IProperty )
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at PublicExtensions.ToZInfo(IProperty property)
+   at Z.EntityFramework.Extensions.EntityTypeZInfo.<>c.(IProperty )
+   at System.Linq.Enumerable.SelectEnumerableIterator`2.MoveNext()
+   at System.Collections.Generic.HashSet`1.UnionWith(IEnumerable`1 other)
+   at System.Collections.Generic.HashSet`1..ctor(IEnumerable`1 collection, IEqualityComparer`1 comparer)
+   at Z.EntityFramework.Extensions.EntityTypeZInfo..ctor(IEntityType entityType)
+   at PublicExtensions..(IEntityType )
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at PublicExtensions.ToZInfo(IEntityType entityType)
+   at .BulkMerge[T](DbContext this, IEnumerable`1 entities, Action`1 options, Boolean isBulkSaveChanges)
+   at DbContextExtensions.BulkMerge[T](DbContext this, IEnumerable`1 entities, Action`1 options)
+   at DbContextExtensions.BulkMerge[T](DbContext this, IEnumerable`1 entities)
+   at SelfPortalAPi.Controllers.Admin.FormHController.H1WithoutUpload(AddFormHWith obj) in C:\Users\Temitayo Oyetunji\Desktop\FromXLaptop\NowNow\NowNow\SelfPortalAPi\Controllers\Admin\FormHController.cs:line 525
+
+Error Message: MissingMethodException
+
+Exception Type: System.MissingMethodException
+
+Error Location : Method not found: 'System.Func`3<Microsoft.EntityFrameworkCore.Metadata.IProperty,Microsoft.EntityFrameworkCore.Metadata.IEntityType,Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator> Microsoft.EntityFrameworkCore.Metadata.IReadOnlyProperty.GetValueGeneratorFactory()'.
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+

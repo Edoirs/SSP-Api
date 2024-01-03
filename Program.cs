@@ -11,7 +11,6 @@ using System.Text;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-
 // Add services to the container.
 //string? conn = builder.Configuration.GetConnectionString("DefaultConnection");
 //string? connII = builder.Configuration.GetConnectionString("EirsContext");
@@ -23,13 +22,13 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/V1/swagger.json", "Product WebAPI");
+    options.SwaggerEndpoint("/swagger/V1/swagger.json", "Self Service Portal WebAPI");
 });
 
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors(options =>
-options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().SetIsOriginAllowedToAllowWildcardSubdomains());
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

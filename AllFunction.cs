@@ -12,6 +12,7 @@ using System.Data;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 namespace SelfPortalAPi
 {
@@ -53,7 +54,7 @@ namespace SelfPortalAPi
             services.AddScoped<IIndividualRepository, IndividualRepository>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<IUtilityRepository, UtilityRepository>();
-
+            
             services.AddCors();
             services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -87,6 +88,50 @@ namespace SelfPortalAPi
         }
     });
             });
+        }
+
+        public class Base64FormFile : IFormFile
+        {
+            private readonly byte[] _fileContent;
+            private readonly string _fileName;
+
+            public Base64FormFile(string base64String, string fileName)
+            {
+                _fileContent = Convert.FromBase64String(base64String);
+                _fileName = fileName;
+            }
+
+            public string ContentDisposition => $"form-data; name={Name}; filename={FileName}";
+
+            public string ContentType => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; // Adjust according to your Excel file type.
+
+            public IHeaderDictionary Headers => new HeaderDictionary();
+
+            public long Length => _fileContent.Length;
+
+            public string Name => "file";
+
+            public string FileName => _fileName;
+
+            public Stream OpenReadStream()
+            {
+                return new MemoryStream(_fileContent);
+            }
+
+            public async Task CopyToAsync(Stream target, System.Threading.CancellationToken cancellationToken = default)
+            {
+                await target.WriteAsync(_fileContent, 0, _fileContent.Length, cancellationToken);
+            }
+
+            //public void CopyTo(Stream target)
+            //{
+            //    throw new NotImplementedException();
+            //}
+
+            public void CopyTo(Stream target)
+            {
+                target.Write(_fileContent, 0, _fileContent.Length);
+            }
         }
         public enum ApprovalStatusEnum : int
         {
