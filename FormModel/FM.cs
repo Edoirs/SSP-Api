@@ -20,7 +20,8 @@ namespace SelfPortalAPi
     public class AddFormH : FormH1FormModel
     {
         public IFormFile File { get; set; }
-    } public class AddFormHWith : FormH1FormModel
+    }
+    public class AddFormHWith : FormH1FormModel
     {
         public string File { get; set; }
     }
@@ -29,11 +30,39 @@ namespace SelfPortalAPi
         public string BusinessId { get; set; }
         public string CompanyId { get; set; }
         public int TaxYear { get; set; }
-        public List<TaxPayers> TaxPayerIds { get; set; }
     }
-    public class TaxPayers
+    public class TaxPayers: FormH1FM
     {
+        public string BusinessId { get; set; }
+        public string CompanyId { get; set; }
         public string TaxPayerId { get; set; }
+    }
+
+    public class TaxPayersH3
+    {
+        public string BusinessId { get; set; }
+        public string CompanyId { get; set; }
+        public string TaxPayerId { get; set; }
+        public string FIRSTNAME { get; set; }
+        public string SURNAME { get; set; }
+        public string OTHERNAME { get; set; }
+        public string PHONENUMBER { get; set; }
+        public string JTBTIN { get; set; }
+        public string NIN { get; set; }
+        public string RIN { get; set; }
+        public string NATIONALITY { get; set; }
+        public string HOMEADDRESS { get; set; }
+        public string Designation { get; set; }
+        public string STARTMONTH { get; set; }
+        public string Rent { get; set; }
+        public string Transport { get; set; }
+        public string Basic { get; set; }
+        public string OtherIncome { get; set; }
+        public string PENSION { get; set; }
+        public string NHF { get; set; }
+        public string NHIS { get; set; }
+        public string LIFEASSURANCE { get; set; }
+
     }
     public class FormH1FM
     {
@@ -245,6 +274,7 @@ namespace SelfPortalAPi
     public class BusinessViewModel
     {
         public string business_id { get; set; }
+        public string company_id { get; set; }
         public string business_name { get; set; }
         public string link_status { get; set; }
         public string industry_sector_name { get; set; }

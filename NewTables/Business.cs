@@ -10,6 +10,7 @@ namespace SelfPortalAPi.NewTables
     public class Business: BaseEntity
     {
         public string business_id { get; set; }
+        public string company_id { get; set; }
         public string business_name { get; set; }
         public string link_status { get; set; }
         public string industry_sector_name { get; set; }

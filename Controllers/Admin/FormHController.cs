@@ -770,7 +770,7 @@ namespace SelfPortalAPi.Controllers.Admin
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("get-uploadedH3bybusinessId{businessId}/bycompanyId{companyId}")]
+        [Route("get-uploadedH3bybusinessId/{businessId}/bycompanyId/{companyId}")]
         public async Task<IActionResult> getuploadedH3([FromRoute] string businessId, [FromRoute] string companyId)
         {
             try
@@ -787,10 +787,176 @@ namespace SelfPortalAPi.Controllers.Admin
                 }));
             }
         }
+        [HttpDelete]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("delete-TaxpayerH3bybusinessId/{businessId}/bycompanyId/{companyId}/bytaxpayerId/{taxpayerId}")]
+        public async Task<IActionResult> deletetaxpayerH3([FromRoute] string businessId, [FromRoute] string companyId, [FromRoute] string taxpayerId)
+        {
+            try
+            {
+                var r = _con.FormH3s.Where(o => o.TaxPayerId == taxpayerId && o.BusinessId == businessId && o.CompanyId == companyId).ExecuteDelete();
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("get-uploadedH1bybusinessId{businessId}/bycompanyId{companyId}")]
+        [Route("get-TaxpayerH3bybusinessId/{businessId}/bycompanyId/{companyId}/bytaxpayerId/{taxpayerId}")]
+        public async Task<IActionResult> gettaxpayerH3([FromRoute] string businessId, [FromRoute] string companyId, [FromRoute] string taxpayerId)
+        {
+            try
+            {
+                var r = _con.FormH3s.FirstOrDefault(o => o.TaxPayerId == taxpayerId && o.BusinessId == businessId && o.CompanyId == companyId);
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpDelete]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("delete-TaxpayerH1bybusinessId/{businessId}/bycompanyId/{companyId}/bytaxpayerId/{taxpayerId}")]
+        public async Task<IActionResult> deletetaxpayerH1([FromRoute] string businessId, [FromRoute] string companyId, [FromRoute] string taxpayerId)
+        {
+            try
+            {
+                var r = _con.FormH1s.Where(o => o.TaxPayerId == taxpayerId && o.BusinessId == businessId && o.CompanyId == companyId).ExecuteDelete();
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpPut]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("update-TaxpayerH1")]
+        public async Task<IActionResult> updatetaxpayerH1([FromBody] TaxPayers obj)
+        {
+            try
+            {
+                var r = new ReturnObject { message = "Record Updated Successfully", status = true };
+                _ = _con.FormH1s.Where(o => o.TaxPayerId == obj.TaxPayerId && o.BusinessId == obj.BusinessId && o.CompanyId == obj.CompanyId)
+                                    .ExecuteUpdate(setters => setters
+                                    .SetProperty(b => b.FIRSTNAME, obj.FIRSTNAME)
+                                    .SetProperty(b => b.OtherIncome, obj.OtherIncome)
+                                    .SetProperty(b => b.OTHERNAME, obj.OTHERNAME)
+                                    .SetProperty(b => b.SURNAME, obj.SURNAME)
+                                    .SetProperty(b => b.PHONENUMBER, obj.PHONENUMBER)
+                                    .SetProperty(b => b.RIN, obj.RIN)
+                                    .SetProperty(b => b.JTBTIN, obj.JTBTIN)
+                                    .SetProperty(b => b.NIN, obj.NIN)
+                                    .SetProperty(b => b.NATIONALITY, obj.NATIONALITY)
+                                    .SetProperty(b => b.HOMEADDRESS, obj.HOMEADDRESS)
+                                    .SetProperty(b => b.Designation, obj.Designation)
+                                    .SetProperty(b => b.PENSION, obj.PENSION)
+                                    .SetProperty(b => b.NHF, obj.NHF)
+                                    .SetProperty(b => b.NHIS, obj.NHIS)
+                                    .SetProperty(b => b.LIFEASSURANCE, obj.LIFEASSURANCE)
+                                    .SetProperty(b => b.CONSOLIDATEDRELIEFALLOWANCECRA, obj.CONSOLIDATEDRELIEFALLOWANCECRA)
+                                    .SetProperty(b => b.ANNUALTAXPAID, obj.ANNUALTAXPAID)
+                                    .SetProperty(b => b.TOTALMONTHSPAID, obj.TOTALMONTHSPAID)
+                                    .SetProperty(b => b.Rent, obj.Rent)
+                                    .SetProperty(b => b.Transport, obj.Transport)
+                                    .SetProperty(b => b.Basic, obj.Basic)
+                                    );
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpPut]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("update-TaxpayerH3")]
+        public async Task<IActionResult> updatetaxpayerH3([FromBody] TaxPayersH3 obj)
+        {
+            try
+            {
+                var r = new ReturnObject { message = "Record Updated Successfully", status = true };
+                _ = _con.FormH3s.Where(o => o.TaxPayerId == obj.TaxPayerId && o.BusinessId == obj.BusinessId && o.CompanyId == obj.CompanyId)
+                                     .ExecuteUpdate(setters => setters
+                                     .SetProperty(b => b.FIRSTNAME, obj.FIRSTNAME)
+                                     .SetProperty(b => b.OtherIncome, obj.OtherIncome)
+                                     .SetProperty(b => b.OTHERNAME, obj.OTHERNAME)
+                                     .SetProperty(b => b.STARTMONTH, obj.STARTMONTH)
+                                     .SetProperty(b => b.SURNAME, obj.SURNAME)
+                                     .SetProperty(b => b.PHONENUMBER, obj.PHONENUMBER)
+                                     .SetProperty(b => b.RIN, obj.RIN)
+                                     .SetProperty(b => b.JTBTIN, obj.JTBTIN)
+                                     .SetProperty(b => b.NIN, obj.NIN)
+                                     .SetProperty(b => b.NATIONALITY, obj.NATIONALITY)
+                                     .SetProperty(b => b.HOMEADDRESS, obj.HOMEADDRESS)
+                                     .SetProperty(b => b.Designation, obj.Designation)
+                                     .SetProperty(b => b.PENSION, obj.PENSION)
+                                     .SetProperty(b => b.NHF, obj.NHF)
+                                     .SetProperty(b => b.NHIS, obj.NHIS)
+                                     .SetProperty(b => b.LIFEASSURANCE, obj.LIFEASSURANCE)
+                                     .SetProperty(b => b.Rent, obj.Rent)
+                                     .SetProperty(b => b.Transport, obj.Transport)
+                                     .SetProperty(b => b.Basic, obj.Basic)
+                                     );
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("get-TaxpayerH1bybusinessId/{businessId}/bycompanyId/{companyId}/bytaxpayerId/{taxpayerId}")]
+        public async Task<IActionResult> gettaxpayerH1([FromRoute] string businessId, [FromRoute] string companyId, [FromRoute] string taxpayerId)
+        {
+            try
+            {
+                var r = _con.FormH1s.Where(o => o.TaxPayerId == taxpayerId && o.BusinessId == businessId && o.CompanyId == companyId).ToList();
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("get-uploadedH1bybusinessId/{businessId}/bycompanyId/{companyId}")]
         public async Task<IActionResult> getuploadedH1([FromRoute] string businessId, [FromRoute] string companyId)
         {
             try
@@ -811,7 +977,7 @@ namespace SelfPortalAPi.Controllers.Admin
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("get-FiledH1bybusinessId{businessId}/bycompanyId{companyId}/bytaxYear{taxyear}")]
+        [Route("get-FiledH1bybusinessId/{businessId}/bycompanyId/{companyId}/bytaxYear/{taxyear}")]
         public async Task<IActionResult> getFiledH1([FromRoute] string businessId, [FromRoute] string companyId, [FromRoute] string taxyear)
         {
             try
@@ -831,7 +997,7 @@ namespace SelfPortalAPi.Controllers.Admin
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("get-FiledH3bybusinessId{businessId}/bycompanyId{companyId}/bytaxYear{taxyear}")]
+        [Route("get-FiledH3bybusinessId/{businessId}/bycompanyId/{companyId}/bytaxYear/{taxyear}")]
         public async Task<IActionResult> getFiledH3([FromRoute] string businessId, [FromRoute] string companyId, [FromRoute] string taxyear)
         {
             try
@@ -848,6 +1014,9 @@ namespace SelfPortalAPi.Controllers.Admin
                 }));
             }
         }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         [NonAction]
         public string GetToken()
         {
@@ -873,8 +1042,9 @@ namespace SelfPortalAPi.Controllers.Admin
         [NonAction]
         public List<FiledFormH> GetListFiledFormH(FileFormH1 obj, int source)
         {
+            var presList = _con.FormH1s.Where(o => o.BusinessId == obj.BusinessId && o.CompanyId == obj.CompanyId).ToList();
             List<FiledFormH> lstFormH1 = new();
-            foreach (var fm in obj.TaxPayerIds)
+            foreach (var fm in presList)
             {
                 FiledFormH mod = new FiledFormH
                 {
