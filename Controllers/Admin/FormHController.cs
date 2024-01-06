@@ -1,11 +1,14 @@
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Net;
 using System.Runtime.Intrinsics.Arm;
 using System.Security.Claims;
 using AutoMapper;
+using Azure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -156,11 +159,11 @@ namespace SelfPortalAPi.Controllers.Admin
                                         NATIONALITY = fm.NATIONALITY,
                                         HOMEADDRESS = fm.HOMEADDRESS,
                                         Designation = fm.Designation,
-                                        PENSION = fm.PENSION,
-                                        NHF = fm.NHF,
-                                        NHIS = fm.NHIS,
-                                        LIFEASSURANCE = fm.LIFEASSURANCE,
-                                        CONSOLIDATEDRELIEFALLOWANCECRA = fm.CONSOLIDATEDRELIEFALLOWANCECRA,
+                                        PENSION = fm.PENSION != "NULL" ? fm.PENSION : "0",
+                                        NHF = fm.NHF != "NULL" ? fm.NHF : "0",
+                                        NHIS = fm.NHIS != "NULL" ? fm.NHIS : "0",
+                                        LIFEASSURANCE = fm.LIFEASSURANCE != "NULL" ? fm.LIFEASSURANCE : "0",
+                                        CONSOLIDATEDRELIEFALLOWANCECRA = fm.CONSOLIDATEDRELIEFALLOWANCECRA != "NULL" ? fm.CONSOLIDATEDRELIEFALLOWANCECRA : "0",
                                         ANNUALTAXPAID = fm.ANNUALTAXPAID,
                                         TOTALMONTHSPAID = fm.TOTALMONTHSPAID,
                                         Rent = fm.Rent,
@@ -795,7 +798,10 @@ namespace SelfPortalAPi.Controllers.Admin
         {
             try
             {
-                var r = _con.FormH3s.Where(o => o.TaxPayerId == taxpayerId && o.BusinessId == businessId && o.CompanyId == companyId).ExecuteDelete();
+                var r = new ReturnObject();
+                r.status = true;
+                r.message = "Record Deleted Successfully";
+                r.data = _con.FormH3s.Where(o => o.TaxPayerId == taxpayerId && o.BusinessId == businessId && o.CompanyId == companyId).ExecuteDelete();
                 return Ok(r);
             }
             catch (System.Exception ex)
@@ -835,7 +841,10 @@ namespace SelfPortalAPi.Controllers.Admin
         {
             try
             {
-                var r = _con.FormH1s.Where(o => o.TaxPayerId == taxpayerId && o.BusinessId == businessId && o.CompanyId == companyId).ExecuteDelete();
+                var r = new ReturnObject();
+                r.status = true;
+                r.message = "Record Deleted Successfully";
+                r.data = _con.FormH1s.Where(o => o.TaxPayerId == taxpayerId && o.BusinessId == businessId && o.CompanyId == companyId).ExecuteDelete();
                 return Ok(r);
             }
             catch (System.Exception ex)
@@ -1014,6 +1023,98 @@ namespace SelfPortalAPi.Controllers.Admin
                 }));
             }
         }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("get-FiledH1bybusinessId/{businessId}/bycompanyId/{companyId}")]
+        public async Task<IActionResult> getAllFiledH1([FromRoute] string businessId, [FromRoute] string companyId)
+        {
+            try
+            {
+                var r = GetFiledRecords(businessId, companyId, "0", 1).ToList();
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("get-FiledH3bybusinessId/{businessId}/bycompanyId/{companyId}")]
+        public async Task<IActionResult> getAllFiledH3([FromRoute] string businessId, [FromRoute] string companyId)
+        {
+            try
+            {
+                var r = GetFiledRecords(businessId, companyId, "0", 3).ToList();
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("get-FiledH1byId/{Id}")]
+        public async Task<IActionResult> getFiledH1ById([FromRoute] string Id)
+        {
+            try
+            {
+                var ret = new ReturnObject();
+                ret.status = true;
+                var r = GetFiledRecords(Id, "0", "0", 1).ToList();
+                var res = r.FirstOrDefault();
+                var r1 = _con.FormH1s.Where(o => o.BusinessId == res.BusinessId && o.CompanyId ==res.CompanyId).ToList();
+
+                ret.data = new { filed = res, filedTaxpayers = r1 };
+                return Ok(ret);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("get-FiledH3byId/{Id}")]
+        public async Task<IActionResult> getFiledH3ById([FromRoute] string Id)
+        {
+            try
+            {
+                var ret = new ReturnObject();
+                ret.status = true;
+                var r = GetFiledRecords(Id, "0", "0", 3).ToList();
+                var res = r.FirstOrDefault();
+                var r1 = _con.FormH3s.Where(o => o.BusinessId == res.BusinessId && o.CompanyId == res.CompanyId).ToList();
+
+                ret.data = new { filed = res, filedTaxpayers = r1 };
+                return Ok(ret);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1037,27 +1138,33 @@ namespace SelfPortalAPi.Controllers.Admin
         [NonAction]
         public IEnumerable<FiledFormH> GetFiledRecords(string businessId, string companyId, string taxyear, int source)
         {
-            return _repof.GetAll().Where(o => o.Source == source && o.BusinessId == businessId && o.CompanyId == companyId && o.TaxYear == taxyear);
+            IEnumerable<FiledFormH> ret = new List<FiledFormH>();
+            if (taxyear == "0" && companyId != "0")
+                ret = _repof.GetAll().Where(o => o.Source == source && o.BusinessId == businessId && o.CompanyId == companyId);
+            else if (taxyear == "0" && companyId == "0")
+                ret = _repof.GetAll().Where(o => o.Source == source && o.Id == Convert.ToInt32(businessId));
+            else
+                ret = _repof.GetAll().Where(o => o.Source == source && o.TaxYear == taxyear && o.BusinessId == businessId && o.CompanyId == companyId);
+            return ret;
         }
         [NonAction]
         public List<FiledFormH> GetListFiledFormH(FileFormH1 obj, int source)
         {
             var presList = _con.FormH1s.Where(o => o.BusinessId == obj.BusinessId && o.CompanyId == obj.CompanyId).ToList();
             List<FiledFormH> lstFormH1 = new();
-            foreach (var fm in presList)
+
+            FiledFormH mod = new FiledFormH
             {
-                FiledFormH mod = new FiledFormH
-                {
-                    BusinessId = obj.BusinessId,
-                    CompanyId = obj.CompanyId,
-                    TaxYear = obj.TaxYear.ToString(),
-                    FiledStatus = "1",
-                    Source = source,
-                    UniqueId = Guid.NewGuid().ToString(),
-                    TaxPayerId = fm.TaxPayerId
-                };
-                lstFormH1.Add(mod);
-            }
+                BusinessId = obj.BusinessId,
+                CompanyId = obj.CompanyId,
+                TaxYear = obj.TaxYear.ToString(),
+                FiledStatus = "1",
+                Source = source,
+                CreatedAt = DateTime.Now,
+                AnnualTaxPaid = presList.Sum(o => Convert.ToDecimal(o.ANNUALTAXPAID)),
+                UniqueId = Guid.NewGuid().ToString()
+            };
+            lstFormH1.Add(mod);
             return lstFormH1;
         }
         [NonAction]
