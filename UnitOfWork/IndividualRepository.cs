@@ -119,7 +119,8 @@ namespace SelfPortalAPi.UnitOfWork
                         case 2:
                             if (BCrypt.Net.BCrypt.Verify(pObjUser.Password, ret.Password))
                             {
-                                
+                                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
                                 var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                                     _conFig.GetSection("JWT:Secret").Value));
                                 var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);

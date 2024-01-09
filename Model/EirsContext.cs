@@ -17,6 +17,7 @@ public partial class EirsContext : DbContext
     public virtual DbSet<Agency> Agencies { get; set; }
 
     public virtual DbSet<AgencyType> AgencyTypes { get; set; }
+    public virtual DbSet<NatureOfBusiness> NatureOfBusiness { get; set; }
 
     public virtual DbSet<AlScreen> AlScreens { get; set; }
 

@@ -260,6 +260,12 @@ namespace SelfPortalAPi
         public string PhoneNumber_RIN { get; set; }
         public string Password { get; set; }
         public string UserType { get; set; }
+    }  
+    public class UpdateUser
+    {
+        public string PhoneNumber_RIN { get; set; }
+        public string NewPassword { get; set; }
+        public string UserType { get; set; }
     }
     public class TokenRequestValidator : AbstractValidator<TokenRequest>
     {

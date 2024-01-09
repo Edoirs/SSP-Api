@@ -7,12 +7,14 @@ using OfficeOpenXml;
 using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
 using SelfPortalAPi.NewTables;
+using SelfPortalAPi.PayeModel;
 using SelfPortalAPi.UnitOfWork;
 using System.Data;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using Exception = System.Exception;
 
 namespace SelfPortalAPi
 {
@@ -24,6 +26,7 @@ namespace SelfPortalAPi
             string? conn = builder.Configuration.GetConnectionString("DefaultConnection");
             string? connII = builder.Configuration.GetConnectionString("EirsContext");
             string? connIII = builder.Configuration.GetConnectionString("ERASContext");
+            string? connIV = builder.Configuration.GetConnectionString("PayeConnection");
             services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
 
             services.AddAutoMapper(typeof(Program));
@@ -49,6 +52,7 @@ namespace SelfPortalAPi
             services.AddDbContext<ApiDbContext>(opt => opt.UseSqlServer(connII));
             services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
             services.AddDbContext<EirsContext>(opt => opt.UseSqlServer(connIII));
+            services.AddDbContext<PinscherSpikeContext>(opt => opt.UseSqlServer(connIII));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IValidator<TokenRequest>, TokenRequestValidator>();
             services.AddScoped<IIndividualRepository, IndividualRepository>();
@@ -278,7 +282,7 @@ namespace SelfPortalAPi
                         uh = uh.Replace(" ", "");   
                     else if (string.IsNullOrEmpty(uh))
                         uh = uh.TrimEnd().TrimStart().Trim();
-                    if (pro.Name == uh)
+                    if (pro.Name.ToLower() == uh.ToLower())
                         pro.SetValue(obj, dr[column.ColumnName], null);
                     else
                         continue;
