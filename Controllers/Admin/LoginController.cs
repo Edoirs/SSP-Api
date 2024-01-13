@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi.FormModel;
 using SelfPortalAPi.Model;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi.UnitOfWork;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -13,11 +13,11 @@ namespace SelfPortalAPi.Controllers.Admin
     public class LoginController : ControllerBase
     {
         private readonly EirsContext _context;
-        private readonly PayeeContext _con;
+        private readonly PinscherSpikeContext _con;
         private readonly IIndividualRepository _repo;
         private readonly IValidator<TokenRequest> _validator;
         private string errMsg = "Unable to process request, kindly try again";
-        public LoginController(IIndividualRepository repo, PayeeContext con, EirsContext context, IValidator<TokenRequest> validator)
+        public LoginController(IIndividualRepository repo, PinscherSpikeContext con, EirsContext context, IValidator<TokenRequest> validator)
         {
             _repo = repo;
             _con = con;

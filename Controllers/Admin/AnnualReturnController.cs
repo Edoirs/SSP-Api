@@ -5,9 +5,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SelfPortalAPi.FormModel;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi.UnitOfWork;
 using Swashbuckle.AspNetCore.Annotations;
+using Exception = System.Exception;
 
 namespace SelfPortalAPi.Controllers.Admin
 {
@@ -43,7 +44,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = _repo.GetAll();
                 return Task.FromResult<IActionResult>(Ok(r));
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -67,7 +68,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = _repo.GetAll().Where(o=>o.business_id==busId).ToList();
                 return Task.FromResult<IActionResult>(Ok(r));
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -124,7 +125,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = _repo.Get(id);
                 return Task.FromResult<IActionResult>(Ok(r));
 
-            }catch (Exception ex)
+            }catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {

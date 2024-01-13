@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using SelfPortalAPi.FormModel;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
+using Profile = AutoMapper.Profile;
 
 namespace SelfPortalAPi.Mapper
 {

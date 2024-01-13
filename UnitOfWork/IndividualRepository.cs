@@ -11,8 +11,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using static SelfPortalAPi.AllFunction;
+using Exception = System.Exception;
+using Individual = SelfPortalAPi.Model.Individual;
 
 namespace SelfPortalAPi.UnitOfWork
 {
@@ -24,10 +26,10 @@ namespace SelfPortalAPi.UnitOfWork
     public class IndividualRepository : IIndividualRepository
     {
         private readonly ApiDbContext _db;
-        private readonly PayeeContext _con;
+        private readonly PinscherSpikeContext _con;
         private readonly ErasContext _context;
         private readonly IConfiguration _conFig;
-        public IndividualRepository(ApiDbContext db, PayeeContext con, ErasContext context, IConfiguration conFig)
+        public IndividualRepository(ApiDbContext db, PinscherSpikeContext con, ErasContext context, IConfiguration conFig)
         {
             _db = db;
             _con = con;
@@ -79,7 +81,7 @@ namespace SelfPortalAPi.UnitOfWork
                 }
                 return new ReturnObject { status = true, message = "individual added successfully" };
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 AllFunction.SendErrorToText(ex);
                 ret.status = false;
@@ -138,7 +140,7 @@ namespace SelfPortalAPi.UnitOfWork
                                     // var requestObj1 = new MstUserToken() { CreatedBy = ret.Id, CreatedDate = DateTime.Now, UserId = ret.Id, Token = token, TokenExpiresDate = DateTime.Now.AddDays(1), TokenIssuedDate = DateTime.Now };
                                     //  _context.MstUserTokens.Add(requestObj1);
                                     //   _context.SaveChanges();
-                                    mObjFuncResponse.data = new { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.Id, name = ret.CompanyName, email = ret.Email };
+                                    mObjFuncResponse.data = new { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.Id,comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email };
                                 }
                                 else
                                 {
@@ -158,7 +160,7 @@ namespace SelfPortalAPi.UnitOfWork
                 }
                 return mObjFuncResponse;
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 mObjFuncResponse.message = ex.Message;
                 mObjFuncResponse.status = false;

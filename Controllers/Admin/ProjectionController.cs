@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi.FormModel;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi.UnitOfWork;
 using Swashbuckle.AspNetCore.Annotations;
 using static SelfPortalAPi.AllFunction;
@@ -40,7 +40,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = res.ToList();
                 return Task.FromResult<IActionResult>(Ok(r));
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -63,7 +63,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = _repo.GetAll();
                 return Task.FromResult<IActionResult>(Ok(r));
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -87,7 +87,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = _repo.GetAll().Where(o => o.approval_status == (int)ApprovalStatusEnum.Pending);
                 return Task.FromResult<IActionResult>(Ok(r));
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -111,7 +111,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = _repo.GetAll().Where(o => o.approval_status == (int)ApprovalStatusEnum.Approved);
                 return Task.FromResult<IActionResult>(Ok(r));
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -173,7 +173,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(Ok(r));
 
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {

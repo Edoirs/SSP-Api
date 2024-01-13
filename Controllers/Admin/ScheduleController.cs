@@ -2,7 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi.FormModel;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi.UnitOfWork;
 using Swashbuckle.AspNetCore.Annotations;
 using static SelfPortalAPi.AllFunction;
@@ -75,7 +75,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = _repo.GetAll();
                 return Task.FromResult<IActionResult>(Ok(r));
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -108,7 +108,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.data = res;
                 return Task.FromResult<IActionResult>(Ok(r));
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {

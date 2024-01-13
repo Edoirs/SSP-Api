@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi;
 using Swashbuckle.AspNetCore.Annotations;
 using SelfPortalAPi.UnitOfWork;
@@ -15,12 +15,12 @@ namespace SelfPortalAPi.Controllers.Admin
     [ApiController]
     public class EmployeeController : ControllerBase
     {
-        private readonly PayeeContext _context; 
+        private readonly PinscherSpikeContext _context; 
         private readonly IMapper _mapper;
         private readonly UnitOfWork.IRepository<employee> _repo;
         private readonly UnitOfWork.IRepository<Cooperate> _repoCop;
         private string errMsg = "Unable to process request, kindly try again";
-        public EmployeeController(UnitOfWork.IRepository<employee> repo, UnitOfWork.IRepository<Cooperate> repoCop,IMapper mapper, PayeeContext context)
+        public EmployeeController(UnitOfWork.IRepository<employee> repo, UnitOfWork.IRepository<Cooperate> repoCop,IMapper mapper, PinscherSpikeContext context)
         {
             _repo = repo;
             _repoCop = repoCop;
@@ -86,7 +86,7 @@ namespace SelfPortalAPi.Controllers.Admin
             r.message = "Record Fetched Successfully";
             try
             {
-                r.data =  _context.employees.FromSqlRaw($"select * from employees where corporate_id ={obj.corporate_id} and business_id ={obj.business_id}");
+                r.data =  _context.Employees.FromSqlRaw($"select * from employees where corporate_id ={obj.corporate_id} and business_id ={obj.business_id}");
 
                 return Task.FromResult<IActionResult>(Ok(r));
             }
@@ -149,7 +149,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 return Task.FromResult<IActionResult>(Ok(r));
 
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {

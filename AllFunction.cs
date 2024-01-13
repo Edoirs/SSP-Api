@@ -6,8 +6,7 @@ using Microsoft.OpenApi.Models;
 using OfficeOpenXml;
 using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
-using SelfPortalAPi.NewTables;
-using SelfPortalAPi.PayeModel;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi.UnitOfWork;
 using System.Data;
 using System.Globalization;
@@ -50,9 +49,9 @@ namespace SelfPortalAPi
             });
             services.AddDbContext<ErasContext>(opt => opt.UseSqlServer(connIII));
             services.AddDbContext<ApiDbContext>(opt => opt.UseSqlServer(connII));
-            services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
+           // services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
             services.AddDbContext<EirsContext>(opt => opt.UseSqlServer(connIII));
-            services.AddDbContext<PinscherSpikeContext>(opt => opt.UseSqlServer(connIII));
+            services.AddDbContext<PinscherSpikeContext>(opt => opt.UseSqlServer(connIV));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IValidator<TokenRequest>, TokenRequestValidator>();
             services.AddScoped<IIndividualRepository, IndividualRepository>();
@@ -206,7 +205,7 @@ namespace SelfPortalAPi
 
         private static String ErrorlineNo, Errormsg, extype, exurl, hostIp, ErrorLocation, HostAdd;
 
-        public static void SendErrorToText(Exception ex)
+        public static void SendErrorToText(System.Exception ex)
         {
             var line = Environment.NewLine + Environment.NewLine;
 

@@ -1,4 +1,4 @@
-﻿using SelfPortalAPi.NewTables;
+﻿using SelfPortalAPi.testingModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;

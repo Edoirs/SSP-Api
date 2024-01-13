@@ -68,7 +68,7 @@ namespace SelfPortalAPi.Controllers
                 var r = await _repo.GetBusinessOperation();
                 return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -88,7 +88,7 @@ namespace SelfPortalAPi.Controllers
         //        var r = _repo.GetBusinessSector();
         //        return Ok(r);
         //    }
-        //    catch (Exception ex)
+        //    catch (System.Exception ex)
         //    {
         //        return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
         //        {
@@ -129,7 +129,7 @@ namespace SelfPortalAPi.Controllers
             {
               var r =await _repo.GetBusinessSubSector(); return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -149,7 +149,7 @@ namespace SelfPortalAPi.Controllers
                 var r =await _repo.GetBusinessType();
                 return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -169,7 +169,7 @@ namespace SelfPortalAPi.Controllers
                var r =await _repo.GetEconomicActivity();
                 return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -189,7 +189,7 @@ namespace SelfPortalAPi.Controllers
               var r =await _repo.GetGender();
                 return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -208,7 +208,7 @@ namespace SelfPortalAPi.Controllers
             {var r =await _repo.GetLGA();
                 return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -250,7 +250,7 @@ namespace SelfPortalAPi.Controllers
             {
                var r =await _repo.GetTaxOffice(); return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -270,7 +270,7 @@ namespace SelfPortalAPi.Controllers
                var r =await _repo.GetTitle();
                 return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {
@@ -290,7 +290,7 @@ namespace SelfPortalAPi.Controllers
                 var r =await _repo.GetZone();
                 return Ok(r);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
                 {

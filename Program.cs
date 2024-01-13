@@ -1,7 +1,7 @@
 
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi;
 using SelfPortalAPi.UnitOfWork;
 using SelfPortalAPi.ErasModel;

@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 using Nancy.Json;
 using SelfPortalAPi.FormModel;
 using SelfPortalAPi.Model;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi.UnitOfWork;
 using Swashbuckle.AspNetCore.Annotations;
 using static SelfPortalAPi.AllFunction;
@@ -31,9 +31,9 @@ namespace SelfPortalAPi.Controllers.Admin
         //  private readonly IRepository<FormH1> _repo;
         private readonly IRepository<FiledFormH> _repof;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
-        private readonly PayeeContext _con;
+        private readonly PinscherSpikeContext _con;
 
-        public FormHController(IOptions<ConnectionStrings> serviceSettings, IRepository<FiledFormH> repof, PayeeContext con)
+        public FormHController(IOptions<ConnectionStrings> serviceSettings, IRepository<FiledFormH> repof, PinscherSpikeContext con)
         {
             _serviceSettings = serviceSettings;
             _repof = repof;
@@ -731,7 +731,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.status = true;
                 r.message = "Record saved Successfully";
                 var lstFormH1 = GetListFiledFormH(obj, 1);
-                _con.FiledFormH.AddRange(lstFormH1);
+                _con.FiledFormHs.AddRange(lstFormH1);
                 await _con.SaveChangesAsync();
                 return await Task.FromResult<IActionResult>(Ok(r));
             }
@@ -756,7 +756,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 r.status = true;
                 r.message = "Record saved Successfully";
                 var lstFormH1 = GetListFiledFormH(obj, 3);
-                _con.FiledFormH.AddRange(lstFormH1);
+                _con.FiledFormHs.AddRange(lstFormH1);
                 await _con.SaveChangesAsync();
                 return await Task.FromResult<IActionResult>(Ok(r));
             }

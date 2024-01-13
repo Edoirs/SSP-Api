@@ -1,5 +1,5 @@
 ﻿
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,10 +10,10 @@ namespace SelfPortalAPi.UnitOfWork
 {
     public class Repository<T> : IRepository<T> where T : BaseEntity
     {
-        private readonly PayeeContext _context;
+        private readonly PinscherSpikeContext _context;
         private readonly DbSet<T> entities;
         private string errorMessage = string.Empty;
-        public Repository(PayeeContext dbContext)
+        public Repository(PinscherSpikeContext dbContext)
         {
             _context = dbContext;
             entities = _context.Set<T>();

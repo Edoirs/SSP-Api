@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SelfPortalAPi.NewTables;
+using SelfPortalAPi.testingModel;
 using SelfPortalAPi;
 using Swashbuckle.AspNetCore.Annotations;
 using SelfPortalAPi.UnitOfWork;
 using SelfPortalAPi.FormModel;
 using AutoMapper;
-using SelfPortalAPi.PayeModel;
+using SelfPortalAPi.testingModel;
+using SelfPortalAPi.Model;
 
 namespace SelfPortalAPi.Controllers.Admin
 {
@@ -29,14 +30,15 @@ namespace SelfPortalAPi.Controllers.Admin
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("getallbybusinessId/{businessId}/bycompanyId/{companyId}")]
-        public Task<IActionResult> GetAllByBusinessIdByCompanyId([FromRoute]string businessId, [FromRoute] string companyId)
+        public Task<IActionResult> GetAllByBusinessIdByCompanyId([FromRoute] string businessId, [FromRoute] string companyId)
         {
             var r = new ReturnObject();
             r.status = true;
             r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.AssetTaxPayerDetailsApis.Where(o=>o.AssetId ==Convert.ToInt32(businessId) && o.TaxPayerId == Convert.ToInt32(companyId));
+                var ret = _repo.AssetTaxPayerDetailsApis.Where(o => o.AssetId == Convert.ToInt32(businessId) && o.TaxPayerId == Convert.ToInt32(companyId)).ToList();
+                r.data = GetList(ret);
                 return Task.FromResult<IActionResult>(Ok(r));
             }
             catch (System.Exception ex)
@@ -47,19 +49,45 @@ namespace SelfPortalAPi.Controllers.Admin
                     message = ex.Message
                 }));
             }
-        } 
+        }
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("getall")]
-        public Task<IActionResult> GetAll()
+        [Route("getallBussinessbycompanyId/{companyId}")]
+        public Task<IActionResult> GetAllBussiness([FromRoute] string companyId)
         {
             var r = new ReturnObject();
             r.status = true;
             r.message = "Record Fetched Successfully";
             try
             {
-                r.data = _repo.AssetTaxPayerDetailsApis.ToList();
+                var getRin = _repo.UserManagements.FirstOrDefault(o=>o.Id == Convert.ToInt32(companyId));
+                var ret = _repo.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerRinnumber == getRin.CompanyRin).ToList();
+                r.data = GetList(ret);
+                return Task.FromResult<IActionResult>(Ok(r));
+            }
+            catch (System.Exception ex)
+            {
+                return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("getallBussinessbycompanyRin/{companyRin}")]
+        public Task<IActionResult> GetAllBussinessByRin([FromRoute] string companyRin)
+        {
+            var r = new ReturnObject();
+            r.status = true;
+            r.message = "Record Fetched Successfully";
+            try
+            {
+                var ret = _repo.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerRinnumber == companyRin).ToList();
+                r.data = GetList(ret);
                 return Task.FromResult<IActionResult>(Ok(r));
             }
             catch (System.Exception ex)
@@ -72,6 +100,21 @@ namespace SelfPortalAPi.Controllers.Admin
             }
         }
 
+
+        private IList<BusinessVm> GetList(List<AssetTaxPayerDetailsApi> det)
+        {
+            var list = new List<BusinessVm>();
+            for (int i = 0; i < det.Count(); i++)
+            {
+                list.Add(new BusinessVm
+                {
+                    business_id = det[i].AssetId.ToString(),
+                    business_name = det[i].AssetName,
+                    lga_name = det[i].AssetLga
+                });
+            }
+            return list;
+        }
 
         //[HttpGet]
         //[SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
@@ -90,7 +133,7 @@ namespace SelfPortalAPi.Controllers.Admin
         //        return Task.FromResult<IActionResult>(Ok(r));
 
         //    }
-        //    catch (Exception ex)
+        //    catch (System.Exception ex)
         //    {
         //        return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
         //        {
@@ -114,7 +157,7 @@ namespace SelfPortalAPi.Controllers.Admin
         //        _repo.Insert(emp);
         //     //   var empData = _mapper.Map<BusinessFormModel>(emp);
         //     //   var com = _repo.Get(Convert.ToInt32(obj.BusinessOperationID));
-                
+
         //        var r = new ReturnObject();
         //        r.status = true;
         //        r.data = emp;
