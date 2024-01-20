@@ -6,7 +6,7 @@ using Microsoft.OpenApi.Models;
 using OfficeOpenXml;
 using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
-using SelfPortalAPi.testingModel;
+using SelfPortalAPi.NewModel;
 using SelfPortalAPi.UnitOfWork;
 using System.Data;
 using System.Globalization;
@@ -52,7 +52,9 @@ namespace SelfPortalAPi
            // services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
             services.AddDbContext<EirsContext>(opt => opt.UseSqlServer(connIII));
             services.AddDbContext<PinscherSpikeContext>(opt => opt.UseSqlServer(connIV));
+            services.AddDbContext<SelfPortalAPi.NewModel.PinscherSpikeContext>(opt => opt.UseSqlServer(connIV));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            services.AddScoped(typeof(INewRepository<>), typeof(NewRepository<>));
             services.AddScoped<IValidator<TokenRequest>, TokenRequestValidator>();
             services.AddScoped<IIndividualRepository, IndividualRepository>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();

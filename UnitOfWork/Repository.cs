@@ -1,5 +1,5 @@
 ﻿
-using SelfPortalAPi.testingModel;
+using SelfPortalAPi.NewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;

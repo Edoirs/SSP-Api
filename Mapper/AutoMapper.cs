@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using SelfPortalAPi.FormModel;
-using SelfPortalAPi.testingModel;
+using SelfPortalAPi.NewModel;
 using Profile = AutoMapper.Profile;
 
 namespace SelfPortalAPi.Mapper
@@ -15,9 +15,11 @@ namespace SelfPortalAPi.Mapper
             CreateMap<Business,BusinessFormModel>();
            
             CreateMap<employee,EmployeeVm>();
+            CreateMap<SspfiledFormH1, SspformH1>();
+            CreateMap<SspformH1, SspfiledFormH1>();
             CreateMap<ProjectionFm,Projection>();
-            CreateMap<ScheduleFm,Schedule>();
-            CreateMap<Schedule_RecordFm,Schedule_Record>();
+            //CreateMap<ScheduleFm,Schedule>();
+            //CreateMap<Schedule_RecordFm,Schedule_Record>();
         }
     }
 }

@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
-using SelfPortalAPi.testingModel;
+using SelfPortalAPi.NewModel;
 using static SelfPortalAPi.AllFunction;
 using Exception = System.Exception;
 using Individual = SelfPortalAPi.Model.Individual;

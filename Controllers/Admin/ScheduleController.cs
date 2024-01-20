@@ -2,7 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi.FormModel;
-using SelfPortalAPi.testingModel;
+using SelfPortalAPi.NewModel;
 using SelfPortalAPi.UnitOfWork;
 using Swashbuckle.AspNetCore.Annotations;
 using static SelfPortalAPi.AllFunction;

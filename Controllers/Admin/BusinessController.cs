@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SelfPortalAPi.testingModel;
+using SelfPortalAPi.NewModel;
 using SelfPortalAPi;
 using Swashbuckle.AspNetCore.Annotations;
 using SelfPortalAPi.UnitOfWork;
 using SelfPortalAPi.FormModel;
 using AutoMapper;
-using SelfPortalAPi.testingModel;
+using SelfPortalAPi.NewModel;
 using SelfPortalAPi.Model;
 
 namespace SelfPortalAPi.Controllers.Admin
@@ -37,6 +37,7 @@ namespace SelfPortalAPi.Controllers.Admin
             r.message = "Record Fetched Successfully";
             try
             {
+                var retVal = _repo.AssetTaxPayerDetailsApis.ToList();
                 var ret = _repo.AssetTaxPayerDetailsApis.Where(o => o.AssetId == Convert.ToInt32(businessId) && o.TaxPayerId == Convert.ToInt32(companyId)).ToList();
                 r.data = GetList(ret);
                 return Task.FromResult<IActionResult>(Ok(r));

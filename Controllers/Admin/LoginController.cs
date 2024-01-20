@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi.FormModel;
 using SelfPortalAPi.Model;
-using SelfPortalAPi.testingModel;
+using SelfPortalAPi.NewModel;
 using SelfPortalAPi.UnitOfWork;
 using Swashbuckle.AspNetCore.Annotations;
 

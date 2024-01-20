@@ -8,6 +8,15 @@ using System.Threading.Tasks;
 
 namespace SelfPortalAPi
 {
+    public class NewBaseEntity
+    {
+        [Key]
+        public int Id { get; set; }
+        [NotMapped]
+        public string BusinessName { get; set; }
+        [NotMapped]
+        public string CompanyName { get; set; }
+    }
     public class BaseEntity
     {
         [Key]
