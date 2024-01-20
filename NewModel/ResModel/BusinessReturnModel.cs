@@ -6,6 +6,7 @@ namespace SelfPortalAPi.NewModel.ResModel
     {
         public string BusinessID { get; set; }
         public string BusinessName { get; set; }
+        public string BusinessRIN { get; set; }
         public string BusinessAddress { get; set; }
         public string NoOfEmployees { get; set; }
 

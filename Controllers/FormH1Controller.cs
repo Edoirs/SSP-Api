@@ -48,6 +48,7 @@ namespace SelfPortalAPi.Controllers
                 {
                     var empCountDet = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
                     BusinessReturnModel m = new();
+                    m.BusinessRIN = r.AssetRin;
                     m.BusinessAddress = r.AssetAddress;
                     m.BusinessName = r.AssetName;
                     m.BusinessID = r.AssetId.ToString();
@@ -79,6 +80,7 @@ namespace SelfPortalAPi.Controllers
                 {
                     var empCountDet = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
                     BusinessReturnModel m = new();
+                    m.BusinessRIN = r.AssetRin;
                     m.BusinessAddress = r.AssetAddress;
                     m.BusinessName = r.AssetName;
                     m.BusinessID = r.AssetId.ToString();
@@ -326,7 +328,8 @@ namespace SelfPortalAPi.Controllers
                                             };
                                             lstIndividual.Add(sp);
                                         }
-                                        var resForm = _con.SspformH1s.FirstOrDefault(o => o.IndividalId == rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString() && o.Rin == rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString());
+                                        var resForm = _con.SspformH1s.FirstOrDefault(o => o.IndividalId == rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString() 
+                                        && o.Rin == rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString() && o.BusinessId==obj.BusinessId && o.CompanyId==obj.CompanyId);
                                         if (resForm != null)
                                         {
                                             _con.SspformH1s.Where(o => o.IndividalId == rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString() && o.Rin == rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString())
@@ -417,7 +420,7 @@ namespace SelfPortalAPi.Controllers
                     return Ok(r);
                 }
                 var presDate = DateTime.Now.Date;
-                var lastDueDate = new DateTime(DateTime.Now.Year, 1, 1);
+                var lastDueDate = new DateTime(DateTime.Now.Year, 1, 31);
                 using var _context = new PinscherSpikeContext();
                 string query = $"SELECT s.Id, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
                 var user = _context.SspformH1s.FromSqlRaw(query).ToList();
