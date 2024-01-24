@@ -221,8 +221,10 @@ public partial class PinscherSpikeContext : DbContext
     public virtual DbSet<SspfiledFormH3> SspfiledFormH3s { get; set; }
 
     public virtual DbSet<SspformH1> SspformH1s { get; set; }
+    public virtual DbSet<ReturnSspformH1> ReturnSspformH1 { get; set; }
 
     public virtual DbSet<SspformH3> SspformH3s { get; set; }
+    public virtual DbSet<ReturnSspformH3> ReturnSspformH3 { get; set; }
 
     public virtual DbSet<Sspindividual> Sspindividual { get; set; }
 
