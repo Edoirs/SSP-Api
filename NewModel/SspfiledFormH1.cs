@@ -113,5 +113,6 @@ public partial class SspfiledFormH1ForSP : NewBaseEntity
 
 public partial class SspfiledFormH1ListOfYears
 {
+    [Key]
     public int? TaxYear { get; set; }
 }
