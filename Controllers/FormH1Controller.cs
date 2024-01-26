@@ -123,6 +123,104 @@ namespace SelfPortalAPi.Controllers
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("getallfiledformh1bycompanyId/{companyId}")]
+        public async Task<IActionResult> getallfiledformh1bycompanyId([FromRoute] string companyId)
+        {
+            var r = new ReturnObject();
+            try
+            {
+                using var _context = new PinscherSpikeContext();
+                var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
+                var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
+                r.data = user;
+                r.status = true;
+                r.message = "Record Fetched Successfully";
+
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("getallfiledformh1bycompanyIdfornewscreen/{companyId}")]
+        public async Task<IActionResult> getallfiledformh1bycompanyIdfornewscreen([FromRoute] string companyId)
+        {
+            //try
+            //{
+            //    var finalBusinessReturnModel = new List<BusinessReturnModel>();
+            //    var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId));
+            //    foreach (var r in res)
+            //    {
+            //        var empCountDet = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
+            //        BusinessReturnModel m = new();
+            //        m.BusinessRIN = r.AssetRin;
+            //        m.BusinessAddress = r.AssetAddress;
+            //        m.BusinessName = r.AssetName;
+            //        m.BusinessID = r.AssetId.ToString();
+            //        m.NoOfEmployees = empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
+            //        finalBusinessReturnModel.Add(m);
+            //    }
+            //    return Ok(finalBusinessReturnModel);
+            //}
+            //catch (System.Exception ex)
+            //{
+            //    return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+            //    {
+            //        status = false,
+            //        message = ex.Message
+            //    }));
+            //}
+            var r = new ReturnObject();
+            try
+            {
+
+                var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId));
+                var kkkk = new List<SspfiledFormH1ForSP>();
+                using var _context = new PinscherSpikeContext();
+                var query1 = $"SELECT top(1) S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
+                var user1 = _context.SspfiledFormH1ForSPs.FromSqlRaw(query1).ToList();
+                var query = $"select distinct (TaxYear)FROM [SSPFiledFormH1s] where CompanyId='{companyId}'";
+                var user = _context.SspfiledFormH1ListOfYears.FromSqlRaw(query).ToList();
+                foreach (var it in user)
+                {
+                    var empCountDet = _con.SspformH1s.Where(o => o.CompanyId == companyId);
+
+                    SspfiledFormH1ForSP sp = new SspfiledFormH1ForSP();
+                    sp.AssetName = user1.FirstOrDefault().AssetName;
+                    sp.BusinessName = user1.FirstOrDefault().BusinessName;
+                    sp.CompanyId = companyId;
+                    sp.TaxYear = it.TaxYear;
+                    sp.TaxPayerId = user1.FirstOrDefault().TaxPayerId;
+
+                }
+                r.data = user;
+                r.status = true;
+                r.message = "Record Fetched Successfully";
+
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("getallfiledformh1bycompanyId/{companyId}/bybusinessId/{businessId}/byyear/{year}")]
         public async Task<IActionResult> getallfiledformh1bybusinessIdbyyear([FromRoute] string companyId, [FromRoute] string businessId, [FromRoute] string year)
         {
@@ -328,8 +426,8 @@ namespace SelfPortalAPi.Controllers
                                             };
                                             lstIndividual.Add(sp);
                                         }
-                                        var resForm = _con.SspformH1s.FirstOrDefault(o => o.IndividalId == rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString() 
-                                        && o.Rin == rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString() && o.BusinessId==obj.BusinessId && o.CompanyId==obj.CompanyId);
+                                        var resForm = _con.SspformH1s.FirstOrDefault(o => o.IndividalId == rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString()
+                                        && o.Rin == rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString() && o.BusinessId == obj.BusinessId && o.CompanyId == obj.CompanyId);
                                         if (resForm != null)
                                         {
                                             _con.SspformH1s.Where(o => o.IndividalId == rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString() && o.Rin == rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString())

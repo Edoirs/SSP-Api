@@ -217,6 +217,7 @@ public partial class PinscherSpikeContext : DbContext
 
     public virtual DbSet<SspfiledFormH1> SspfiledFormH1s { get; set; }
     public virtual DbSet<SspfiledFormH1ForSP> SspfiledFormH1ForSPs { get; set; }
+    public virtual DbSet<SspfiledFormH1ListOfYears> SspfiledFormH1ListOfYears { get; set; }
 
     public virtual DbSet<SspfiledFormH3> SspfiledFormH3s { get; set; }
 

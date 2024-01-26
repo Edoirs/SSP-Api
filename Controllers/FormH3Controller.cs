@@ -139,6 +139,33 @@ namespace SelfPortalAPi.Controllers
                 }));
             }
         }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("getallfiledformh3bycompanyId/{companyId}")]
+        public async Task<IActionResult> getallfiledformh3bycompanyId([FromRoute] string companyId)
+        {
+            var r = new ReturnObject();
+            try
+            {
+                using var _context = new PinscherSpikeContext();
+                var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
+                var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
+                r.data = user;
+                r.status = true;
+                r.message = "Record Fetched Successfully";
+
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
 
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]

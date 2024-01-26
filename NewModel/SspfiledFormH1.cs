@@ -110,3 +110,8 @@ public partial class SspfiledFormH1ForSP : NewBaseEntity
 
     public string? Modifiedby { get; set; }
 }
+
+public partial class SspfiledFormH1ListOfYears
+{
+    public int? TaxYear { get; set; }
+}

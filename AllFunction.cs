@@ -49,7 +49,7 @@ namespace SelfPortalAPi
             });
             services.AddDbContext<ErasContext>(opt => opt.UseSqlServer(connIII));
             services.AddDbContext<ApiDbContext>(opt => opt.UseSqlServer(connII));
-           // services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
+            // services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
             services.AddDbContext<EirsContext>(opt => opt.UseSqlServer(connIII));
             services.AddDbContext<PinscherSpikeContext>(opt => opt.UseSqlServer(connIV));
             services.AddDbContext<SelfPortalAPi.NewModel.PinscherSpikeContext>(opt => opt.UseSqlServer(connIV));
@@ -59,7 +59,7 @@ namespace SelfPortalAPi
             services.AddScoped<IIndividualRepository, IndividualRepository>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<IUtilityRepository, UtilityRepository>();
-            
+
             services.AddCors();
             services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -143,7 +143,7 @@ namespace SelfPortalAPi
             Pending = 1,
             Approved,
             DisApproved
-        } 
+        }
         public enum FillingStatusEnum : int
         {
             Filled = 1,
@@ -280,7 +280,7 @@ namespace SelfPortalAPi
                     else if (uh.Contains("-"))
                         uh = uh.Replace("-", "");
                     else if (uh.Contains(" "))
-                        uh = uh.Replace(" ", "");   
+                        uh = uh.Replace(" ", "");
                     else if (string.IsNullOrEmpty(uh))
                         uh = uh.TrimEnd().TrimStart().Trim();
                     if (pro.Name.ToLower() == uh.ToLower())
