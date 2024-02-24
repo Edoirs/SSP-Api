@@ -13,7 +13,7 @@ public partial class SspfiledFormH3
 
     public string? TaxPayerId { get; set; }
 
-    public string IndividalId { get; set; } = null!;
+    public string IndividalId { get; set; } 
 
     public string? Rin { get; set; }
 

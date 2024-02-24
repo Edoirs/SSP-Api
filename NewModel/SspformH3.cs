@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SelfPortalAPi.NewModel;
 
@@ -44,7 +45,8 @@ public partial class SspformH3 : NewBaseEntity
 }
 public partial class ReturnSspformH3 : NewBaseEntity
 {
-
+    [NotMapped]
+    public int? NumberOfMonths { get; set; }
     public string? BusinessId { get; set; }
 
     public string? CompanyId { get; set; }
@@ -60,7 +62,6 @@ public partial class ReturnSspformH3 : NewBaseEntity
     public decimal? Rent { get; set; }
     public string? FIRSTNAME { get; set; }
     public string? SURNAME { get; set; }
-    public string? Designation { get; set; }
     public string? NATIONALITY { get; set; }
     public decimal? Total { get; set; }
 

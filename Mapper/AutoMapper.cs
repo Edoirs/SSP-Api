@@ -16,6 +16,8 @@ namespace SelfPortalAPi.Mapper
            
             CreateMap<employee,EmployeeVm>();
             CreateMap<SspfiledFormH1, SspformH1>();
+            CreateMap<SspformH3, SspfiledFormH3>();
+            CreateMap<SspfiledFormH3, SspformH3>();
             CreateMap<SspformH1, SspfiledFormH1>();
             CreateMap<ProjectionFm,Projection>();
             //CreateMap<ScheduleFm,Schedule>();

@@ -69,6 +69,83 @@ namespace SelfPortalAPi.Controllers
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("getallformh3WithcompanyId/{companyId}")]
+        public async Task<IActionResult> getformh1([FromRoute] string companyId)
+        {
+            try
+            {
+                var finalBusinessReturnModel = new List<BusinessReturnModel>();
+                var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId));
+                foreach (var r in res)
+                {
+                    var empCountDet = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
+                    BusinessReturnModel m = new();
+                    m.BusinessRIN = r.AssetRin;
+                    m.BusinessAddress = r.AssetAddress;
+                    m.BusinessName = r.AssetName;
+                    m.BusinessID = r.AssetId.ToString();
+                    m.NoOfEmployees = empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
+                    finalBusinessReturnModel.Add(m);
+                }
+                return Ok(finalBusinessReturnModel);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+
+        [HttpPut]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("update-TaxpayerH1")]
+        public async Task<IActionResult> updatetaxpayerH1([FromBody] TaxPayers obj)
+        {
+            try
+            {
+                var r = new ReturnObject { message = "Record Updated Successfully", status = true };
+                _ = _con.FormH1s.Where(o => o.TaxPayerId == obj.TaxPayerId && o.BusinessId == obj.BusinessId && o.CompanyId == obj.CompanyId)
+                                    .ExecuteUpdate(setters => setters
+                                    .SetProperty(b => b.FIRSTNAME, obj.FIRSTNAME)
+                                    .SetProperty(b => b.OtherIncome, obj.OtherIncome)
+                                    .SetProperty(b => b.OTHERNAME, obj.OTHERNAME)
+                                    .SetProperty(b => b.SURNAME, obj.SURNAME)
+                                    .SetProperty(b => b.PHONENUMBER, obj.PHONENUMBER)
+                                    .SetProperty(b => b.RIN, obj.RIN)
+                                    .SetProperty(b => b.JTBTIN, obj.JTBTIN)
+                                    .SetProperty(b => b.NIN, obj.NIN)
+                                    .SetProperty(b => b.NATIONALITY, obj.NATIONALITY)
+                                    .SetProperty(b => b.HOMEADDRESS, obj.HOMEADDRESS)
+                                    .SetProperty(b => b.Designation, obj.Designation)
+                                    .SetProperty(b => b.PENSION, obj.PENSION)
+                                    .SetProperty(b => b.NHF, obj.NHF)
+                                    .SetProperty(b => b.NHIS, obj.NHIS)
+                                    .SetProperty(b => b.LIFEASSURANCE, obj.LIFEASSURANCE)
+                                    .SetProperty(b => b.CONSOLIDATEDRELIEFALLOWANCECRA, obj.CONSOLIDATEDRELIEFALLOWANCECRA)
+                                    .SetProperty(b => b.ANNUALTAXPAID, obj.ANNUALTAXPAID)
+                                    .SetProperty(b => b.TOTALMONTHSPAID, obj.TOTALMONTHSPAID)
+                                    .SetProperty(b => b.Rent, obj.Rent)
+                                    .SetProperty(b => b.Transport, obj.Transport)
+                                    .SetProperty(b => b.Basic, obj.Basic)
+                                    );
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("getallformh1bycompanyId/{companyId}/bybusinessId/{businessId}")]
         public async Task<IActionResult> getallformh1bybusinessId([FromRoute] string companyId, [FromRoute] string businessId)
         {
@@ -107,7 +184,7 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 using var _context = new PinscherSpikeContext();
-                string query = $"SELECT s.[Id],s.[BusinessId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[CompanyId],(s.[PENSION] + s.[NHF]) as Total,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where s.CompanyId = '{companyId}' and s.BusinessId = '{businessId}'";
+                string query = $"SELECT s.[Id],s.[BusinessId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[CompanyId],(s.[Rent] + s.[Basic] +s.[OTHERINCOME]+s.[TRANSPORT]) as Total,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName FROM [SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where s.CompanyId = '{companyId}' and s.BusinessId = '{businessId}'";
                 var user = _context.ReturnSspformH1.FromSqlRaw(query).ToList();
                 return Ok(user);
             }
@@ -252,6 +329,8 @@ namespace SelfPortalAPi.Controllers
         [Route("UploadFormH1")]
         public async Task<IActionResult> UploadFormH1([FromForm] AddFormH obj)
         {
+            var lstErrorRes = new List<string>();
+            string errorNote = "There Is An Error On Row";
             var r = new ReturnObject();
             var baseUrl = _serviceSettings.Value.ErasBaseUrl;
             string mainBaseurl = "";
@@ -274,113 +353,117 @@ namespace SelfPortalAPi.Controllers
                         var token = GetToken();
                         if (token != null)
                         {
-                            foreach (var fm in la)
+                            for (int i = 0; i < la.Count(); i++)
+                            // foreach (var fm in la)
                             {
+                                var fm = la[i];
                                 if (fm.PHONENUMBER != "NULL")
                                 {
                                     mainBaseurl = baseUrl + "TaxPayer/SearchTaxPayerByMobileNumber?MobileNumber=" + fm.PHONENUMBER;
+                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else if (fm.RIN != "NULL")
                                 {
                                     mainBaseurl = baseUrl + "TaxPayer/SearchTaxPayerByRIN?TaxPayerRIN=" + fm.RIN;
+                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else if (fm.JTBTIN != "NULL")
                                 {
                                     mainBaseurl = baseUrl + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN=" + fm.JTBTIN;
+                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else
                                 {
-                                    r.status = false;
-                                    r.message = "Error Occured Processing Record To ERAS";
-                                    return Ok(r);
+                                    lstErrorRes.Add($"{errorNote} in row {i + 1} as PHONENUMBER,RIN and TIN is missing.");
                                 }
-                                resp = await CallAPi(mainBaseurl, token, "get", "");
-                                rootobjectVm = js.Deserialize<Receiver>(resp);
+
                                 if (rootobjectVm.Result.Count <= 0)
                                 {
-                                    mainBaseurl = _serviceSettings.Value.ErasBaseUrl + "TaxPayer/Individual/Insert";
-                                    AddTaxPayer ad = new();
-                                    ad.TaxPayerTypeId = 1;
-                                    ad.GenderID = 1;
-                                    ad.TitleID = 2;
-                                    ad.FirstName = fm.FIRSTNAME;
-                                    ad.LastName = fm.SURNAME;
-                                    ad.MiddleName = fm.OTHERNAME;
-                                    ad.DOB = "01/01/2004";
-                                    ad.TIN = fm.JTBTIN;
-                                    ad.MobileNumber1 = fm.PHONENUMBER;
-                                    ad.EmailAddress1 = "abc@gmail.com";
-                                    ad.BiometricDetails = "";
-                                    ad.TaxOfficeID = 34;
-                                    ad.MaritalStatusID = 3;
-                                    ad.NationalityID = 1;
-                                    ad.EconomicActivitiesID = 1;
-                                    ad.NotificationMethodID = 1;
-                                    ad.ContactAddress = fm.HOMEADDRESS;
-                                    string jsonData = js.Serialize(ad);
-                                    resp = await CallAPi(mainBaseurl, token, "post", jsonData);
-                                    rootobjectVm = js.Deserialize<Receiver>(resp);
-                                    if (rootobjectVm.Success == true)
+                                    if (fm.RIN != "NULL" && fm.JTBTIN != "NULL" && fm.PHONENUMBER != "NULL")
                                     {
-                                        if (fm.PHONENUMBER != "NULL")
-                                        {
-                                            baseUrl = baseUrl + "TaxPayer/SearchTaxPayerByMobileNumber?MobileNumber=" + fm.PHONENUMBER;
-                                        }
-                                        else if (fm.RIN != "NULL")
-                                        {
-                                            baseUrl = baseUrl + "TaxPayer/SearchTaxPayerByRIN?TaxPayerRIN=" + fm.RIN;
-                                        }
-                                        else if (fm.JTBTIN != "NULL")
-                                        {
-                                            baseUrl = baseUrl + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN=" + fm.JTBTIN;
-                                        }
-                                        else
-                                        {
-                                            r.status = false;
-                                            r.message = "Error Occured Processing Record To ERAS";
-                                            return Ok(r);
-                                        }
-
-                                        resp = await CallAPi(baseUrl, token, "get", "");
+                                        mainBaseurl = _serviceSettings.Value.ErasBaseUrl + "TaxPayer/Individual/PayeInsert";
+                                        AddTaxPayer ad = new();
+                                        ad.TaxPayerTypeId = 1;
+                                        ad.GenderID = 1;
+                                        ad.TitleID = 2;
+                                        ad.FirstName = fm.FIRSTNAME;
+                                        ad.LastName = fm.SURNAME;
+                                        ad.MiddleName = fm.OTHERNAME;
+                                        ad.DOB = "01/01/2004";
+                                        ad.TIN = fm.JTBTIN;
+                                        ad.MobileNumber1 = fm.PHONENUMBER;
+                                        ad.EmailAddress1 = "abc@gmail.com";
+                                        ad.BiometricDetails = "";
+                                        ad.TaxOfficeID = 34;
+                                        ad.MaritalStatusID = 3;
+                                        ad.NationalityID = 1;
+                                        ad.EconomicActivitiesID = 1;
+                                        ad.NotificationMethodID = 1;
+                                        ad.ContactAddress = fm.HOMEADDRESS;
+                                        string jsonData = js.Serialize(ad);
+                                        resp = await CallAPi(mainBaseurl, token, "post", jsonData);
                                         rootobjectVm = js.Deserialize<Receiver>(resp);
                                         if (rootobjectVm.Success == true)
                                         {
-                                            var sp = new Sspindividual
+                                            if (fm.PHONENUMBER != "NULL")
                                             {
-                                                IndividalId = rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString(),
-                                                Firstname = fm.FIRSTNAME,
-                                                Surname = fm.SURNAME,
-                                                Othername = fm.OTHERNAME,
-                                                Phonenumber = rootobjectVm.Result.FirstOrDefault().TaxPayerMobileNumber.ToString(),
-                                                Rin = rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString(),
-                                                Jtbtin = fm.JTBTIN,
-                                                Nin = fm.NIN,
-                                                Nationality = fm.NATIONALITY,
-                                                Homeaddress = fm.HOMEADDRESS,
-                                                Designation = fm.Designation,
-                                                Datetcreated = DateTime.Now,
-                                                Datemodified = DateTime.Now,
-                                            };
-                                            lstIndividual.Add(sp);
-                                            lstFormH1.Add(new SspformH1
+                                                baseUrl = baseUrl + "TaxPayer/SearchTaxPayerByMobileNumber?MobileNumber=" + fm.PHONENUMBER;
+                                            }
+                                            else if (fm.RIN != "NULL")
                                             {
-                                                BusinessId = obj.BusinessId,
-                                                CompanyId = obj.CompanyId,
-                                                TaxPayerId = rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString(),
-                                                IndividalId = rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString(),
-                                                Rin = rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString(),
-                                                Pension = fm.PENSION != "NULL" ? Convert.ToDecimal(fm.PENSION) : 0,
-                                                Nhf = fm.NHF != "NULL" ? Convert.ToDecimal(fm.NHF) : 0,
-                                                Nhis = fm.NHIS != "NULL" ? Convert.ToDecimal(fm.NHIS) : 0,
-                                                Lifeassurance = fm.LIFEASSURANCE != "NULL" ? Convert.ToDecimal(fm.LIFEASSURANCE) : 0,
-                                                Consolidatedreliefallowancecra = fm.CONSOLIDATEDRELIEFALLOWANCECRA != "NULL" ? Convert.ToDecimal(fm.CONSOLIDATEDRELIEFALLOWANCECRA) : 0,
-                                                Annualtaxpaid = fm.ANNUALTAXPAID != "NULL" ? Convert.ToDecimal(fm.ANNUALTAXPAID) : 0,
-                                                Totalmonthspaid = fm.TOTALMONTHSPAID != "NULL" ? Convert.ToDecimal(fm.TOTALMONTHSPAID) : 0,
-                                                Rent = fm.Rent != "NULL" ? Convert.ToDecimal(fm.Rent) : 0,
-                                                Transport = fm.Transport != "NULL" ? Convert.ToDecimal(fm.Transport) : 0,
-                                                Basic = fm.Basic != "NULL" ? Convert.ToDecimal(fm.Basic) : 0,
-                                                OtherIncome = fm.OtherIncome != "NULL" ? Convert.ToDecimal(fm.OtherIncome) : 0
-                                            });
+                                                baseUrl = baseUrl + "TaxPayer/SearchTaxPayerByRIN?TaxPayerRIN=" + fm.RIN;
+                                            }
+                                            else if (fm.JTBTIN != "NULL")
+                                            {
+                                                baseUrl = baseUrl + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN=" + fm.JTBTIN;
+                                            }
+                                            resp = await CallAPi(baseUrl, token, "get", "");
+                                            rootobjectVm = js.Deserialize<Receiver>(resp);
+                                            if (rootobjectVm.Success == true)
+                                            {
+                                                if (rootobjectVm.Result.Count > 0)
+                                                {
+                                                    var sp = new Sspindividual
+                                                    {
+                                                        IndividalId = rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString(),
+                                                        Firstname = fm.FIRSTNAME,
+                                                        Surname = fm.SURNAME,
+                                                        Othername = fm.OTHERNAME,
+                                                        Phonenumber = rootobjectVm.Result.FirstOrDefault().TaxPayerMobileNumber.ToString(),
+                                                        Rin = rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString(),
+                                                        Jtbtin = fm.JTBTIN,
+                                                        Nin = fm.NIN,
+                                                        Nationality = fm.NATIONALITY,
+                                                        Homeaddress = fm.HOMEADDRESS,
+                                                        Designation = fm.Designation,
+                                                        Datetcreated = DateTime.Now,
+                                                        Datemodified = DateTime.Now,
+                                                    };
+                                                    lstIndividual.Add(sp);
+                                                    lstFormH1.Add(new SspformH1
+                                                    {
+                                                        BusinessId = obj.BusinessId,
+                                                        CompanyId = obj.CompanyId,
+                                                        TaxPayerId = rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString(),
+                                                        IndividalId = rootobjectVm.Result.FirstOrDefault().TaxPayerID.ToString(),
+                                                        Rin = rootobjectVm.Result.FirstOrDefault().TaxPayerRIN.ToString(),
+                                                        Pension = fm.PENSION != "NULL" ? Convert.ToDecimal(fm.PENSION) : 0,
+                                                        Nhf = fm.NHF != "NULL" ? Convert.ToDecimal(fm.NHF) : 0,
+                                                        Nhis = fm.NHIS != "NULL" ? Convert.ToDecimal(fm.NHIS) : 0,
+                                                        Lifeassurance = fm.LIFEASSURANCE != "NULL" ? Convert.ToDecimal(fm.LIFEASSURANCE) : 0,
+                                                        Consolidatedreliefallowancecra = fm.CONSOLIDATEDRELIEFALLOWANCECRA != "NULL" ? Convert.ToDecimal(fm.CONSOLIDATEDRELIEFALLOWANCECRA) : 0,
+                                                        Annualtaxpaid = fm.ANNUALTAXPAID != "NULL" ? Convert.ToDecimal(fm.ANNUALTAXPAID) : 0,
+                                                        Totalmonthspaid = fm.TOTALMONTHSPAID != "NULL" ? Convert.ToDecimal(fm.TOTALMONTHSPAID) : 0,
+                                                        Rent = fm.Rent != "NULL" ? Convert.ToDecimal(fm.Rent) : 0,
+                                                        Transport = fm.Transport != "NULL" ? Convert.ToDecimal(fm.Transport) : 0,
+                                                        Basic = fm.Basic != "NULL" ? Convert.ToDecimal(fm.Basic) : 0,
+                                                        OtherIncome = fm.OtherIncome != "NULL" ? Convert.ToDecimal(fm.OtherIncome) : 0
+                                                    });
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -478,6 +561,10 @@ namespace SelfPortalAPi.Controllers
                             _con.SspformH1s.AddRange(lstFormH1);
                             _con.SaveChanges();
                         }
+                    }
+                    if (lstErrorRes.Count > 0)
+                    {
+                        r.data = lstErrorRes;
                     }
                     return await Task.FromResult<IActionResult>(Ok(r));
                 }

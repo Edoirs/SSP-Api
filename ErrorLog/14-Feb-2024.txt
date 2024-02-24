@@ -1,0 +1,78 @@
+--------------------------------*Start @ 14/02/2024 12:12:48*------------------------------------------
+-----------Exception Details on  02/14/2024 12:12:48-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 02/14/2024 12:12:48
+
+Error Line No :    at System.Collections.Generic.List`1.get_Item(Int32 index)
+   at SelfPortalAPi.Controllers.FormH1Controller.UploadFormH1(AddFormH obj) in C:\Users\Temitayo Oyetunji\Desktop\FromXLaptop\NowNow\NowNow\SelfPortalAPi\Controllers\FormH1Controller.cs:line 359
+
+Error Message: ArgumentOutOfRangeException
+
+Exception Type: System.ArgumentOutOfRangeException
+
+Error Location : Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+
+--------------------------------*Start @ 14/02/2024 12:16:10*------------------------------------------
+-----------Exception Details on  02/14/2024 12:16:10-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 02/14/2024 12:16:10
+
+Error Line No :    at System.Collections.Generic.List`1.get_Item(Int32 index)
+   at SelfPortalAPi.Controllers.FormH1Controller.UploadFormH1(AddFormH obj) in C:\Users\Temitayo Oyetunji\Desktop\FromXLaptop\NowNow\NowNow\SelfPortalAPi\Controllers\FormH1Controller.cs:line 359
+
+Error Message: ArgumentOutOfRangeException
+
+Exception Type: System.ArgumentOutOfRangeException
+
+Error Location : Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+
+--------------------------------*Start @ 14/02/2024 12:17:58*------------------------------------------
+-----------Exception Details on  02/14/2024 12:17:58-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 02/14/2024 12:17:58
+
+Error Line No :    at System.Collections.Generic.List`1.get_Item(Int32 index)
+   at SelfPortalAPi.Controllers.FormH1Controller.UploadFormH1(AddFormH obj) in C:\Users\Temitayo Oyetunji\Desktop\FromXLaptop\NowNow\NowNow\SelfPortalAPi\Controllers\FormH1Controller.cs:line 359
+
+Error Message: ArgumentOutOfRangeException
+
+Exception Type: System.ArgumentOutOfRangeException
+
+Error Location : Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+

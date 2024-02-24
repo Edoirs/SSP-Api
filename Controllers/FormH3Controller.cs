@@ -8,6 +8,7 @@ using SelfPortalAPi.NewModel;
 using static SelfPortalAPi.AllFunction;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Net;
+using System.Globalization;
 
 namespace SelfPortalAPi.Controllers
 {
@@ -38,12 +39,48 @@ namespace SelfPortalAPi.Controllers
                 var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId));
                 foreach (var r in res)
                 {
-                    var empCountDet = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
+                    var empCountDet = _con.SspformH3s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
                     BusinessReturnModel m = new();
                     m.BusinessRIN = r.AssetRin;
                     m.BusinessAddress = r.AssetAddress;
                     m.BusinessName = r.AssetName;
                     m.BusinessID = r.AssetId.ToString();
+                    m.NoOfEmployees = empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
+                    finalBusinessReturnModel.Add(m);
+                }
+                return Ok(finalBusinessReturnModel);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("getallformh3WithcompanyId/{companyId}")]
+        public async Task<IActionResult> getform3([FromRoute] string companyId)
+        {
+            try
+            {
+                var finalBusinessReturnModel = new List<BusinessReturnModel>();
+                var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId));
+                foreach (var r in res)
+                {
+                    var empCountDet = _con.SspformH3s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
+                    var empCount = _con.SspfiledFormH3s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
+                    BusinessReturnModel m = new();
+                    m.BusinessRIN = r.AssetRin;
+                    m.BusinessAddress = r.AssetAddress;
+                    m.BusinessName = r.AssetName;
+                    m.TaxPayerName = r.TaxPayerName;
+                    m.BusinessID = r.AssetId.ToString();
+                    m.ProjectionYear = empCount.Count() > 0 ? empCount.FirstOrDefault().TaxYear.ToString() : "";
+                    m.DateForwarded = empCount.Count() > 0 ? empCount.FirstOrDefault().Datetcreated.Value.ToString("dd-MM-yyyy") : "";
                     m.NoOfEmployees = empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
                 }
@@ -70,7 +107,7 @@ namespace SelfPortalAPi.Controllers
                 var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId) && o.AssetId == Convert.ToInt32(businessId));
                 foreach (var r in res)
                 {
-                    var empCountDet = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
+                    var empCountDet = _con.SspformH3s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
                     BusinessReturnModel m = new();
                     m.BusinessRIN = r.AssetRin;
                     m.BusinessAddress = r.AssetAddress;
@@ -90,6 +127,29 @@ namespace SelfPortalAPi.Controllers
                 }));
             }
         }
+        //[HttpGet]
+        //[SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        //[SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        //[Route("getalluplaodedformh3bycompanyId/{companyId}/bybusinessId/{businessId}")]
+        //public async Task<IActionResult> getalluplaodedformh3bybusinessId([FromRoute] string companyId, [FromRoute] string businessId)
+        //{
+        //    try
+        //    {
+        //        using var _context = new PinscherSpikeContext();
+        //        string query = $"SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where CompanyId = '{companyId}' and BusinessId = '{businessId}'";
+        //        var user = _context.ReturnSspformH3.FromSqlRaw(query).ToList();
+        //        return Ok(user);
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+        //        {
+        //            status = false,
+        //            message = ex.Message
+        //        }));
+        //    }
+        //}
+
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -99,8 +159,21 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 using var _context = new PinscherSpikeContext();
-                string query = $"SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where CompanyId = '{companyId}' and BusinessId = '{businessId}'";
+                //string query = $"SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where CompanyId = '{companyId}' and BusinessId = '{businessId}'";
+                string query = @"
+             SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,
+		s.[TaxPayerId] as TaxPayerID,s.IndividualId,s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],
+		s.[Rent],s.[Transport],s.[Basic],s.[StartMonth],s.[OtherIncome],s.[datetcreated],s.[createdby],
+(s.[Rent] + s.[Basic] +s.[OTHERINCOME]+s.[TRANSPORT]) as Total,
+		s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName 
+               from SSPFormH3s s
+               left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID 
+               left join SSPIndividual I on s.IndividualId = I.IndividalId 
+		 where CompanyId = '" + companyId + @"' and BusinessId = '" + businessId + @"'";
+
                 var user = _context.ReturnSspformH3.FromSqlRaw(query).ToList();
+                foreach (var u in user)
+                    u.NumberOfMonths = CalculateMonthsLeft(u.Startmonth);
                 return Ok(user);
             }
             catch (System.Exception ex)
@@ -122,12 +195,54 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 using var _context = new PinscherSpikeContext();
-                var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
-                var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
+                var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
+                var user = _context.SspfiledFormH3ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
                 r.status = true;
                 r.message = "Record Fetched Successfully";
 
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+        [HttpPut]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("update-TaxpayerH3")]
+        public async Task<IActionResult> updatetaxpayerH3([FromBody] TaxPayersH3 obj)
+        {
+            try
+            {
+                var r = new ReturnObject { message = "Record Updated Successfully", status = true };
+                _ = _con.FormH3s.Where(o => o.TaxPayerId == obj.TaxPayerId && o.BusinessId == obj.BusinessId && o.CompanyId == obj.CompanyId)
+                                     .ExecuteUpdate(setters => setters
+                                     .SetProperty(b => b.FIRSTNAME, obj.FIRSTNAME)
+                                     .SetProperty(b => b.OtherIncome, obj.OtherIncome)
+                                     .SetProperty(b => b.OTHERNAME, obj.OTHERNAME)
+                                     .SetProperty(b => b.STARTMONTH, obj.STARTMONTH)
+                                     .SetProperty(b => b.SURNAME, obj.SURNAME)
+                                     .SetProperty(b => b.PHONENUMBER, obj.PHONENUMBER)
+                                     .SetProperty(b => b.RIN, obj.RIN)
+                                     .SetProperty(b => b.JTBTIN, obj.JTBTIN)
+                                     .SetProperty(b => b.NIN, obj.NIN)
+                                     .SetProperty(b => b.NATIONALITY, obj.NATIONALITY)
+                                     .SetProperty(b => b.HOMEADDRESS, obj.HOMEADDRESS)
+                                     .SetProperty(b => b.Designation, obj.Designation)
+                                     .SetProperty(b => b.PENSION, obj.PENSION)
+                                     .SetProperty(b => b.NHF, obj.NHF)
+                                     .SetProperty(b => b.NHIS, obj.NHIS)
+                                     .SetProperty(b => b.LIFEASSURANCE, obj.LIFEASSURANCE)
+                                     .SetProperty(b => b.Rent, obj.Rent)
+                                     .SetProperty(b => b.Transport, obj.Transport)
+                                     .SetProperty(b => b.Basic, obj.Basic)
+                                     );
                 return Ok(r);
             }
             catch (System.Exception ex)
@@ -149,8 +264,8 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 using var _context = new PinscherSpikeContext();
-                var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
-                var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
+                var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
+                var user = _context.SspfiledFormH3ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
                 r.status = true;
                 r.message = "Record Fetched Successfully";
@@ -435,20 +550,22 @@ namespace SelfPortalAPi.Controllers
                 var presDate = DateTime.Now.Date;
                 var lastDueDate = new DateTime(DateTime.Now.Year, 1, 31);
                 using var _context = new PinscherSpikeContext();
-                string query = $"SELECT s.Id, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
+                string query = $"SELECT s.Id,s.IndividualId,s.Startmonth, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM [pinscher_spike].[dbo].[SSPFormH3s] s   left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
                 var user = _context.SspformH3s.FromSqlRaw(query).ToList();
                 foreach (var sr in user)
                 {
                     var empSr = _mapper.Map<SspfiledFormH3>(sr);
                     empSr.Id = 0;
+                    empSr.IndividalId = sr.IndividualId;
                     empSr.DueDate = $"01-January-{DateTime.Now.Year + 1}";
                     empSr.ComplianceStatus = presDate > lastDueDate ? "Defaulted" : "Complied";
                     empSr.FiledStatus = ((int)ApprovalStatusEnum.Pending).ToString();
                     empSr.TaxYear = obj.TaxYear;
                     empSr.Datetcreated = DateTime.Now;
                     lst.Add(empSr);
+
+                    _con.SspfiledFormH3s.Add(empSr);
                 }
-                _con.SspfiledFormH3s.AddRange(lst);
                 _con.SaveChanges();
                 r.status = true;
                 r.message = "Record saved Successfully";
@@ -479,7 +596,10 @@ namespace SelfPortalAPi.Controllers
                 var r = new ReturnObject();
                 r.status = true;
                 r.message = "Record Deleted Successfully";
-                r.data = _con.SspformH3s.Where(o => o.IndividualId == individualId && o.BusinessId == businessId && o.CompanyId == companyId).ExecuteDelete();
+                _ = _con.SspformH3s.Where(o => o.Id == Convert.ToInt64(individualId)
+                && o.BusinessId == businessId
+                && o.CompanyId == companyId).ExecuteDelete();
+                // _ = res
                 return Ok(r);
             }
             catch (System.Exception ex)
@@ -534,6 +654,28 @@ namespace SelfPortalAPi.Controllers
 
             Token TokenObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Token>(BearerToken);
             return TokenObj.access_token;
+        }
+        [NonAction]
+        static int CalculateMonthsLeft(string monthName)
+        {
+            string[] allMonths = new string[]
+            {
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+            };
+
+            // Convert the month name to title case for case-insensitive comparison
+            string inputMonth = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(monthName.ToLower());
+
+            int currentMonthIndex = Array.IndexOf(allMonths, inputMonth);
+
+            if (currentMonthIndex == -1)
+            {
+                return -1;
+            }
+
+            int monthsLeft = 12 - currentMonthIndex - 1; // Subtract 1 to exclude the current month
+            return monthsLeft;
         }
 
         [NonAction]

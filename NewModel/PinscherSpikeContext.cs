@@ -217,6 +217,7 @@ public partial class PinscherSpikeContext : DbContext
 
     public virtual DbSet<SspfiledFormH1> SspfiledFormH1s { get; set; }
     public virtual DbSet<SspfiledFormH1ForSP> SspfiledFormH1ForSPs { get; set; }
+    public virtual DbSet<SspfiledFormH3ForSP> SspfiledFormH3ForSPs { get; set; }
     public virtual DbSet<SspfiledFormH1ListOfYears> SspfiledFormH1ListOfYears { get; set; }
 
     public virtual DbSet<SspfiledFormH3> SspfiledFormH3s { get; set; }
@@ -287,6 +288,12 @@ public partial class PinscherSpikeContext : DbContext
         => optionsBuilder.UseSqlServer("Data Source=92.205.57.77;Initial Catalog=pinscher_spike;user id=Admin;password=K5?wh7l4##;MultipleActiveResultSets=True;TrustServerCertificate=True");
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<SspfiledFormH3>(entity =>
+        {
+            entity.Property(e => e.Id)
+             .ValueGeneratedOnAdd();
+        });
+
         modelBuilder.Entity<AddPayeInputFile>(entity =>
         {
             entity.HasKey(e => new { e.CompanyRin, e.BusinessRin, e.TaxYear }).HasName("Input_pk");
