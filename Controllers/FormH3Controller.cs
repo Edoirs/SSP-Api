@@ -288,6 +288,8 @@ namespace SelfPortalAPi.Controllers
         [Route("UploadFormH3")]
         public async Task<IActionResult> UploadFormH3([FromForm] AddFormH obj)
         {
+            var lstErrorRes = new List<string>();
+            string errorNote = "There Is An Error On Row";
             var r = new ReturnObject();
             var baseUrl = _serviceSettings.Value.ErasBaseUrl;
             string mainBaseurl = "";
@@ -307,6 +309,26 @@ namespace SelfPortalAPi.Controllers
                     la = AllFunction.ConvertDataTable<FormH3FM>(table);
                     if (la.Count > 0)
                     {
+                        for (int i = 0; i < la.Count(); i++)
+                        {
+                            if (
+                                la[i].PHONENUMBER == "NULL"
+                                && la[i].RIN == "NULL"
+                                && la[i].JTBTIN == "NULL"
+                            )
+                            {
+                                lstErrorRes.Add(
+                                    $"{errorNote} in row {i + 1} as PHONENUMBER,RIN and TIN is missing."
+                                );
+                            }
+                        }
+                        if (lstErrorRes.Any())
+                        {
+                            var res = string.Join("....", lstErrorRes);
+                            r.status = false;
+                            r.message = $"{res}";
+                            await Task.FromResult<IActionResult>(Ok(r));
+                        }
                         var token = GetToken();
                         if (token != null)
                         {
