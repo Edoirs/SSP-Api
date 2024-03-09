@@ -45,7 +45,6 @@ namespace SelfPortalAPi.Controllers.Admin
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("GetbyId/{id}")]
-
         public Task<IActionResult> GetbyId([FromRoute] int id)
         {
             var r = new ReturnObject();

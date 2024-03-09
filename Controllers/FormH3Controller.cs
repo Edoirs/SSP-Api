@@ -312,9 +312,9 @@ namespace SelfPortalAPi.Controllers
                         for (int i = 0; i < la.Count(); i++)
                         {
                             if (
-                                la[i].PHONENUMBER == "NULL"
-                                && la[i].RIN == "NULL"
-                                && la[i].JTBTIN == "NULL"
+                                (string.IsNullOrEmpty(la[i].PHONENUMBER) || la[i].PHONENUMBER == "NULL")
+                                && (string.IsNullOrEmpty(la[i].RIN) || la[i].RIN == "NULL")
+                                && (string.IsNullOrEmpty(la[i].JTBTIN) || la[i].JTBTIN == "NULL")
                             )
                             {
                                 lstErrorRes.Add(
@@ -324,7 +324,7 @@ namespace SelfPortalAPi.Controllers
                         }
                         if (lstErrorRes.Any())
                         {
-                            var res = string.Join("....", lstErrorRes);
+                            var res = string.Join("", lstErrorRes);
                             r.status = false;
                             r.message = $"{res}";
                             await Task.FromResult<IActionResult>(Ok(r));
