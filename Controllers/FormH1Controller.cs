@@ -432,7 +432,7 @@ namespace SelfPortalAPi.Controllers
                             var res = string.Join(";", lstErrorRes);
                             r.status = false;
                             r.message = $"{res}";
-                            await Task.FromResult<IActionResult>(Ok(r));
+                           return await Task.FromResult<IActionResult>(Ok(r));
                         }
                         var token = GetToken();
                         if (token != null)

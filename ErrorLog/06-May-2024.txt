@@ -1,0 +1,75 @@
+--------------------------------*Start @ 06/05/2024 17:39:45*------------------------------------------
+-----------Exception Details on  05/06/2024 17:39:45-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 05/06/2024 17:39:45
+
+Error Line No :    at SelfPortalAPi.Controllers.FormH1Controller.UploadFormH1(AddFormH obj) in C:\Users\Temitayo Oyetunji\Desktop\FromXLaptop\NowNow\NowNow\SelfPortalAPi\Controllers\FormH1Controller.cs:line 477
+
+Error Message: NullReferenceException
+
+Exception Type: System.NullReferenceException
+
+Error Location : Object reference not set to an instance of an object.
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+
+--------------------------------*Start @ 06/05/2024 17:40:20*------------------------------------------
+-----------Exception Details on  05/06/2024 17:40:20-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 05/06/2024 17:40:20
+
+Error Line No :    at SelfPortalAPi.Controllers.FormH1Controller.UploadFormH1(AddFormH obj) in C:\Users\Temitayo Oyetunji\Desktop\FromXLaptop\NowNow\NowNow\SelfPortalAPi\Controllers\FormH1Controller.cs:line 477
+
+Error Message: NullReferenceException
+
+Exception Type: System.NullReferenceException
+
+Error Location : Object reference not set to an instance of an object.
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+
+--------------------------------*Start @ 06/05/2024 17:41:34*------------------------------------------
+-----------Exception Details on  05/06/2024 17:41:34-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 05/06/2024 17:41:34
+
+Error Line No :    at SelfPortalAPi.Controllers.FormH1Controller.UploadFormH1(AddFormH obj) in C:\Users\Temitayo Oyetunji\Desktop\FromXLaptop\NowNow\NowNow\SelfPortalAPi\Controllers\FormH1Controller.cs:line 477
+
+Error Message: NullReferenceException
+
+Exception Type: System.NullReferenceException
+
+Error Location : Object reference not set to an instance of an object.
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+
