@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi.NewModel;
 using SelfPortalAPi.UnitOfWork;
@@ -8,6 +9,7 @@ namespace SelfPortalAPi.Controllers.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CoorporateController : ControllerBase
     {
         private readonly IRepository<Cooperate> _repo;

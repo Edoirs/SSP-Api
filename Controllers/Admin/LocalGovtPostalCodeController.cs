@@ -4,11 +4,13 @@ using SelfPortalAPi.NewModel;
 using SelfPortalAPi;
 using Swashbuckle.AspNetCore.Annotations;
 using SelfPortalAPi.UnitOfWork;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SelfPortalAPi.Controllers.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class LocalGovtPostalCodeController : ControllerBase
     {
         // private readonly PayeeContext _context;

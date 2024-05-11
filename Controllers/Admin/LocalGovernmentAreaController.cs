@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi;
 using SelfPortalAPi.NewModel;
@@ -9,6 +10,7 @@ namespace SelfPortalAPi.Controllers.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class LocalGovernmentAreaController : ControllerBase
     {
         // private readonly PayeeContext _context;

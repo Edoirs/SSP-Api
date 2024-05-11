@@ -121,26 +121,26 @@ namespace SelfPortalAPi.UnitOfWork
                         case 2:
                             if (BCrypt.Net.BCrypt.Verify(pObjUser.Password, ret.Password))
                             {
+                                var newclaims = new[]
+        {
+            new Claim("TaxpayerTypeId", $"{ret.TaxpayerTypeId}")
+        }; var aud = "https://your-service.com/api";
                                 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
 
                                 var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                                     _conFig.GetSection("JWT:Secret").Value));
                                 var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
                                 var tokeOptions = new JwtSecurityToken(issuer: str,
-                                audience: ret.Id.ToString(),
-
-                                 claims: new List<Claim>(),
-                                // Claim()
+                               audience: aud,
+                                 claims: newclaims,
                                   expires: DateTime.Now.AddDays(2),
-                                  signingCredentials: signinCredentials); ;
+                                  signingCredentials: signinCredentials);
                                 var token = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
+
                                 if (!string.IsNullOrEmpty(token))
                                 {
-                                    // var user = vFind.FirstOrDefault();
-                                    // var requestObj1 = new MstUserToken() { CreatedBy = ret.Id, CreatedDate = DateTime.Now, UserId = ret.Id, Token = token, TokenExpiresDate = DateTime.Now.AddDays(1), TokenIssuedDate = DateTime.Now };
-                                    //  _context.MstUserTokens.Add(requestObj1);
-                                    //   _context.SaveChanges();
-                                    mObjFuncResponse.data = new { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.Id,comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email };
+                                    mObjFuncResponse.data = new { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.Id, comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email, TaxpayerTypeId = ret.TaxpayerTypeId };
                                 }
                                 else
                                 {

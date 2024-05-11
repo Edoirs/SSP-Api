@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SelfPortalAPi.FormModel;
@@ -11,6 +12,7 @@ namespace SelfPortalAPi.Controllers.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProjectionController : ControllerBase
     {
         private readonly IMapper _mapper;

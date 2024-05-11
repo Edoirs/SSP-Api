@@ -1,7 +1,10 @@
 ﻿using System.Drawing;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Security.Claims;
 using AutoMapper;
 using Humanizer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +12,7 @@ using Microsoft.Extensions.Options;
 using Nancy.Json;
 using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
 using SelfPortalAPi.ErasModel;
+using SelfPortalAPi.Migrations;
 using SelfPortalAPi.Model;
 using SelfPortalAPi.NewModel;
 using SelfPortalAPi.NewModel.ResModel;
@@ -21,21 +25,25 @@ namespace SelfPortalAPi.Controllers
 {
     [Route("api/SSP/[controller]")]
     [ApiController]
+    [Authorize]
     public class FormH1Controller : ControllerBase
     {
         private readonly IMapper _mapper;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
         private readonly PinscherSpikeContext _con;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
+        int taxpeyerTypeId = 0;
         public FormH1Controller(
-            IOptions<ConnectionStrings> serviceSettings,
-            IMapper mapper,
-            PinscherSpikeContext con
+            IOptions<ConnectionStrings> serviceSettings,IMapper mapper, IHttpContextAccessor httpContextAccessor, PinscherSpikeContext con
         )
         {
             _serviceSettings = serviceSettings;
             _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
             _con = con;
+            string audience = _httpContextAccessor.HttpContext.User.Claims.First(i => i.Type == "TaxpayerTypeId").Value;
+            taxpeyerTypeId = audience == null ? 0 : Convert.ToInt16(audience);
         }
 
         [HttpGet]
@@ -48,7 +56,7 @@ namespace SelfPortalAPi.Controllers
             {
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                    o.TaxPayerId == Convert.ToInt32(companyId)
+                    o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 foreach (var r in res)
                 {
@@ -87,7 +95,7 @@ namespace SelfPortalAPi.Controllers
             {
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                    o.TaxPayerId == Convert.ToInt32(companyId)
+                    o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 foreach (var r in res)
                 {
@@ -184,7 +192,7 @@ namespace SelfPortalAPi.Controllers
             {
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                    o.TaxPayerId == Convert.ToInt32(companyId)
+                    o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId
                     && o.AssetId == Convert.ToInt32(businessId)
                 );
                 foreach (var r in res)
@@ -309,7 +317,7 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                    o.TaxPayerId == Convert.ToInt32(companyId)
+                    o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 var kkkk = new List<SspfiledFormH1ForSP>();
                 using var _context = new PinscherSpikeContext();
@@ -432,7 +440,7 @@ namespace SelfPortalAPi.Controllers
                             var res = string.Join(";", lstErrorRes);
                             r.status = false;
                             r.message = $"{res}";
-                           return await Task.FromResult<IActionResult>(Ok(r));
+                            return await Task.FromResult<IActionResult>(Ok(r));
                         }
                         var token = GetToken();
                         if (token != null)

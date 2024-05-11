@@ -9,22 +9,31 @@ using static SelfPortalAPi.AllFunction;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Net;
 using System.Globalization;
+using Newtonsoft.Json.Linq;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using SelfPortalAPi.Migrations;
 
 namespace SelfPortalAPi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class FormH3Controller : ControllerBase
     {
         private readonly IMapper _mapper;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
         private readonly PinscherSpikeContext _con;
-
-        public FormH3Controller(IOptions<ConnectionStrings> serviceSettings, IMapper mapper, PinscherSpikeContext con)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        int taxpeyerTypeId = 0;
+        public FormH3Controller(IOptions<ConnectionStrings> serviceSettings, IHttpContextAccessor httpContextAccessor, IMapper mapper, PinscherSpikeContext con)
         {
             _serviceSettings = serviceSettings;
-            _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
             _con = con;
+            string audience = _httpContextAccessor.HttpContext.User.Claims.First(i => i.Type == "TaxpayerTypeId").Value;
+            taxpeyerTypeId = audience == null ? 0 : Convert.ToInt16(audience);
         }
 
         [HttpGet]
@@ -36,7 +45,7 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
-                var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId));
+                var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId);
                 foreach (var r in res)
                 {
                     var empCountDet = _con.SspformH3s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
@@ -68,7 +77,7 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
-                var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId));
+                var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId);
                 foreach (var r in res)
                 {
                     var empCountDet = _con.SspformH3s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);

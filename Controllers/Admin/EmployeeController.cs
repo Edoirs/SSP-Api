@@ -8,11 +8,13 @@ using System.IO.Compression;
 using SelfPortalAPi.FormModel;
 using AutoMapper;
 using SelfPortalAPi.Vm;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SelfPortalAPi.Controllers.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EmployeeController : ControllerBase
     {
         private readonly PinscherSpikeContext _context; 

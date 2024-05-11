@@ -156,6 +156,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 user.Email = checker.Keys.FirstOrDefault() != null ? checker.Keys.FirstOrDefault().EmailAddress1 : "";
                 user.UniqueId = Guid.NewGuid().ToString();
                 user.PhoneNumber = "";
+                user.TaxpayerTypeId = model.CompanyRin.StartsWith("CMP") ? 2 : 4;
                 _con.Add(user);
                 _con.SaveChanges();
                 r.status = true;

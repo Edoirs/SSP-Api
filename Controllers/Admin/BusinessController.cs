@@ -8,11 +8,13 @@ using SelfPortalAPi.FormModel;
 using AutoMapper;
 using SelfPortalAPi.NewModel;
 using SelfPortalAPi.Model;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SelfPortalAPi.Controllers.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class BusinessController : ControllerBase
     {
         private readonly IMapper _mapper;

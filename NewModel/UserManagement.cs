@@ -26,6 +26,7 @@ public partial class UserManagement
     public string? Password { get; set; }
 
     public string? CompanyName { get; set; }
+    public int? TaxpayerTypeId { get; set; }
 
     public string? Email { get; set; }
 }
