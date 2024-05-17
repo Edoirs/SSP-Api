@@ -35,7 +35,7 @@ namespace SelfPortalAPi.Controllers
 
         int taxpeyerTypeId = 0;
         public FormH1Controller(
-            IOptions<ConnectionStrings> serviceSettings,IMapper mapper, IHttpContextAccessor httpContextAccessor, PinscherSpikeContext con
+            IOptions<ConnectionStrings> serviceSettings, IMapper mapper, IHttpContextAccessor httpContextAccessor, PinscherSpikeContext con
         )
         {
             _serviceSettings = serviceSettings;
@@ -54,9 +54,11 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
+
+                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                    o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId
+                    o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 foreach (var r in res)
                 {
@@ -72,7 +74,9 @@ namespace SelfPortalAPi.Controllers
                         empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
                 }
-                return Ok(finalBusinessReturnModel);
+                ReturnObject rd = new();
+                rd.data = finalBusinessReturnModel;
+                return Ok(rd);
             }
             catch (System.Exception ex)
             {
@@ -93,9 +97,11 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
+                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                    o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId
+                     o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 foreach (var r in res)
                 {
@@ -111,7 +117,9 @@ namespace SelfPortalAPi.Controllers
                         empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
                 }
-                return Ok(finalBusinessReturnModel);
+                ReturnObject rd = new();
+                rd.data = finalBusinessReturnModel;
+                return Ok(rd);
             }
             catch (System.Exception ex)
             {
@@ -133,39 +141,56 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 var r = new ReturnObject { message = "Record Updated Successfully", status = true };
+                var all = _con.SspformH1s.Where(o =>
+                        o.TaxPayerId == obj.TaxPayerId
+                        && o.BusinessId == obj.BusinessId
+                        && o.CompanyId == obj.CompanyId
+                    ).FirstOrDefault();
+                if (all == null)
+                {
+                    return Ok(new ReturnObject { message = "User Not Found", status = false });
+                }
                 _ = _con
-                    .FormH1s.Where(o =>
+                    .SspformH1s.Where(o =>
                         o.TaxPayerId == obj.TaxPayerId
                         && o.BusinessId == obj.BusinessId
                         && o.CompanyId == obj.CompanyId
                     )
                     .ExecuteUpdate(setters =>
                         setters
-                            .SetProperty(b => b.FIRSTNAME, obj.FIRSTNAME)
-                            .SetProperty(b => b.OtherIncome, obj.OtherIncome)
-                            .SetProperty(b => b.OTHERNAME, obj.OTHERNAME)
-                            .SetProperty(b => b.SURNAME, obj.SURNAME)
-                            .SetProperty(b => b.PHONENUMBER, obj.PHONENUMBER)
-                            .SetProperty(b => b.RIN, obj.RIN)
-                            .SetProperty(b => b.JTBTIN, obj.JTBTIN)
-                            .SetProperty(b => b.NIN, obj.NIN)
-                            .SetProperty(b => b.NATIONALITY, obj.NATIONALITY)
-                            .SetProperty(b => b.HOMEADDRESS, obj.HOMEADDRESS)
-                            .SetProperty(b => b.Designation, obj.Designation)
-                            .SetProperty(b => b.PENSION, obj.PENSION)
-                            .SetProperty(b => b.NHF, obj.NHF)
-                            .SetProperty(b => b.NHIS, obj.NHIS)
-                            .SetProperty(b => b.LIFEASSURANCE, obj.LIFEASSURANCE)
+                            // .SetProperty(b => b.FIRSTNAME, obj.FIRSTNAME)
+                            .SetProperty(b => b.OtherIncome, Convert.ToDecimal(obj.OtherIncome))
+
+
+                            .SetProperty(b => b.Pension, Convert.ToDecimal(obj.PENSION))
+                            .SetProperty(b => b.Nhf, Convert.ToDecimal(obj.NHIS))
+                            .SetProperty(b => b.Lifeassurance, Convert.ToDecimal(obj.LIFEASSURANCE))
                             .SetProperty(
-                                b => b.CONSOLIDATEDRELIEFALLOWANCECRA,
-                                obj.CONSOLIDATEDRELIEFALLOWANCECRA
+                                b => b.Consolidatedreliefallowancecra,
+                                Convert.ToDecimal(obj.CONSOLIDATEDRELIEFALLOWANCECRA)
                             )
-                            .SetProperty(b => b.ANNUALTAXPAID, obj.ANNUALTAXPAID)
-                            .SetProperty(b => b.TOTALMONTHSPAID, obj.TOTALMONTHSPAID)
-                            .SetProperty(b => b.Rent, obj.Rent)
-                            .SetProperty(b => b.Transport, obj.Transport)
-                            .SetProperty(b => b.Basic, obj.Basic)
+                            .SetProperty(b => b.Annualtaxpaid, Convert.ToDecimal(obj.ANNUALTAXPAID))
+                            .SetProperty(b => b.Totalmonthspaid, Convert.ToDecimal(obj.TOTALMONTHSPAID))
+                            .SetProperty(b => b.Rent, Convert.ToDecimal(obj.Rent))
+                            .SetProperty(b => b.Transport, Convert.ToDecimal(obj.Transport))
+                            .SetProperty(b => b.Basic, Convert.ToDecimal(obj.Basic))
                     );
+                _ = _con
+                   .Sspindividual.Where(o =>
+                       o.IndividalId == all.IndividalId
+                   )
+                   .ExecuteUpdate(setters =>
+                       setters
+                            .SetProperty(b => b.Firstname, obj.FIRSTNAME)
+                            .SetProperty(b => b.Othername, obj.OTHERNAME)
+                            .SetProperty(b => b.Surname, obj.SURNAME)
+                            .SetProperty(b => b.Phonenumber, obj.PHONENUMBER)
+                           .SetProperty(b => b.Rin, obj.RIN)
+                            .SetProperty(b => b.Jtbtin, obj.JTBTIN)
+                            .SetProperty(b => b.Nin, obj.NIN)
+                            .SetProperty(b => b.Designation, obj.Designation)
+                           .SetProperty(b => b.Nationality, obj.NATIONALITY)
+                           .SetProperty(b => b.Homeaddress, obj.HOMEADDRESS));
                 return Ok(r);
             }
             catch (System.Exception ex)
@@ -190,9 +215,11 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
+                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                    o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId
+                        o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                     && o.AssetId == Convert.ToInt32(businessId)
                 );
                 foreach (var r in res)
@@ -316,8 +343,10 @@ namespace SelfPortalAPi.Controllers
             var r = new ReturnObject();
             try
             {
+                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                    o.TaxPayerId == Convert.ToInt32(companyId) && o.TaxPayerTypeId == taxpeyerTypeId
+                        o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 var kkkk = new List<SspfiledFormH1ForSP>();
                 using var _context = new PinscherSpikeContext();
@@ -485,9 +514,7 @@ namespace SelfPortalAPi.Controllers
                                 if (rootobjectVm.Result.Count <= 0)
                                 {
                                     if (
-                                        fm.RIN != "NULL"
-                                        && fm.JTBTIN != "NULL"
-                                        && fm.PHONENUMBER != "NULL"
+                                        fm.PHONENUMBER != "NULL"
                                     )
                                     {
                                         mainBaseurl =
@@ -947,6 +974,12 @@ namespace SelfPortalAPi.Controllers
             var r = new ReturnObject();
             try
             {
+                if (obj.TaxYear == DateTime.Now.Year)
+                {
+                    r.status = false;
+                    r.message = $"You cant file for curent year";
+                    return Ok(r);
+                }
                 var lst = new List<SspfiledFormH1>();
                 var checker = _con.SspfiledFormH1s.FirstOrDefault(o =>
                     o.TaxYear == obj.TaxYear
