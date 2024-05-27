@@ -27,8 +27,7 @@ namespace SelfPortalAPi
     }
     public class FileFormH1 : FormH1FormModel
     {
-        public string BusinessId { get; set; }
-        public string CompanyId { get; set; }
+  
         public int TaxYear { get; set; }
     }
     public class TaxPayers: FormH1FM

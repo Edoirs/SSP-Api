@@ -62,7 +62,7 @@ namespace SelfPortalAPi.Controllers
                 );
                 foreach (var r in res)
                 {
-                    var empCountDet = _con.SspformH1s.Where(o =>
+                    var empCountDet = _con.SspfiledFormH1s.Where(o =>
                         o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
                     );
                     BusinessReturnModel m = new();
@@ -70,6 +70,8 @@ namespace SelfPortalAPi.Controllers
                     m.BusinessAddress = r.AssetAddress;
                     m.BusinessName = r.AssetName;
                     m.BusinessID = r.AssetId.ToString();
+                    m.ProjectionYear =
+                        empCountDet.Count() > 0 ? empCountDet.FirstOrDefault().TaxYear.ToString() : "0";
                     m.NoOfEmployees =
                         empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
@@ -92,7 +94,7 @@ namespace SelfPortalAPi.Controllers
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("getallformh3WithcompanyId/{companyId}")]
+        [Route("getallformh1WithcompanyId/{companyId}")]
         public async Task<IActionResult> getformh1([FromRoute] string companyId)
         {
             try
@@ -105,7 +107,7 @@ namespace SelfPortalAPi.Controllers
                 );
                 foreach (var r in res)
                 {
-                    var empCountDet = _con.SspformH1s.Where(o =>
+                    var empCountDet = _con.SspfiledFormH1s.Where(o =>
                         o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
                     );
                     BusinessReturnModel m = new();
@@ -113,6 +115,8 @@ namespace SelfPortalAPi.Controllers
                     m.BusinessAddress = r.AssetAddress;
                     m.BusinessName = r.AssetName;
                     m.BusinessID = r.AssetId.ToString();
+                    m.ProjectionYear =
+                        empCountDet.Count() > 0 ? empCountDet.FirstOrDefault().TaxYear.ToString() : "0";
                     m.NoOfEmployees =
                         empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
@@ -507,7 +511,7 @@ namespace SelfPortalAPi.Controllers
                                 else
                                 {
                                     lstErrorRes.Add(
-                                        $"{errorNote} in row {i + 1} as PHONENUMBER,RIN and TIN is missing."
+                                        $"{errorNote} in row {i + 1} Provide PHONENUMBER,RIN or TIN."
                                     );
                                 }
 

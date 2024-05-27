@@ -159,7 +159,7 @@ namespace SelfPortalAPi.Controllers
         //    {
         //        return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
         //        {
-        //            status = false,
+        //            status = false,ss.eirs.vip
         //            message = ex.Message
         //        }));
         //    }
@@ -260,7 +260,7 @@ namespace SelfPortalAPi.Controllers
                             .SetProperty(b => b.Pension, Convert.ToDecimal(obj.PENSION))
                             .SetProperty(b => b.Nhf, Convert.ToDecimal(obj.NHIS))
                             .SetProperty(b => b.Lifeassurance, Convert.ToDecimal(obj.LIFEASSURANCE))
-                            
+
                             .SetProperty(b => b.Rent, Convert.ToDecimal(obj.Rent))
                             .SetProperty(b => b.Transport, Convert.ToDecimal(obj.Transport))
                             .SetProperty(b => b.Basic, Convert.ToDecimal(obj.Basic))
@@ -282,7 +282,7 @@ namespace SelfPortalAPi.Controllers
                            .SetProperty(b => b.Nationality, obj.NATIONALITY)
                            .SetProperty(b => b.Homeaddress, obj.HOMEADDRESS));
                 return Ok(r);
-               
+
             }
             catch (System.Exception ex)
             {
@@ -357,8 +357,8 @@ namespace SelfPortalAPi.Controllers
                             )
                             {
                                 lstErrorRes.Add(
-                                    $"{errorNote} in row {i + 1} as PHONENUMBER,RIN and TIN is missing."
-                                );
+                                       $"{errorNote} in row {i + 1} Provide PHONENUMBER,RIN or TIN."
+                                   );
                             }
                         }
                         if (lstErrorRes.Any())
@@ -720,6 +720,10 @@ namespace SelfPortalAPi.Controllers
         [NonAction]
         static int CalculateMonthsLeft(string monthName)
         {
+            if (string.IsNullOrEmpty(monthName))
+            {
+                return 0;
+            }
             string[] allMonths = new string[]
             {
             "January", "February", "March", "April", "May", "June",
