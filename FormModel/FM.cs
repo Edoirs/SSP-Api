@@ -32,8 +32,14 @@ namespace SelfPortalAPi
     }
     public class TaxPayers: FormH1FM
     {
+
+        [Required(ErrorMessage = "BusinessId is required")]
         public string BusinessId { get; set; }
+
+        [Required(ErrorMessage = "CompanyId is required")]
         public string CompanyId { get; set; }
+
+        [Required(ErrorMessage = "TaxPayerId is required")]
         public string TaxPayerId { get; set; }
     }
 

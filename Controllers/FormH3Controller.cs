@@ -19,7 +19,7 @@ namespace SelfPortalAPi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+   [Authorize]
     public class FormH3Controller : ControllerBase
     {
         private readonly IMapper _mapper;
@@ -32,8 +32,63 @@ namespace SelfPortalAPi.Controllers
             _serviceSettings = serviceSettings;
             _httpContextAccessor = httpContextAccessor;
             _con = con;
-            string audience = _httpContextAccessor.HttpContext.User.Claims.First(i => i.Type == "TaxpayerTypeId").Value;
-            taxpeyerTypeId = audience == null ? 0 : Convert.ToInt16(audience);
+           string audience = _httpContextAccessor.HttpContext.User.Claims.First(i => i.Type == "TaxpayerTypeId").Value;
+           taxpeyerTypeId = audience == null ? 0 : Convert.ToInt16(audience);
+        }
+
+
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("newgetallformh3bycompanyId/{companyId}")]
+        public async Task<IActionResult> newgetallformh3([FromRoute] string companyId)
+        {
+            try
+            {
+                ReturnObject rd = new();
+                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+                var finalBusinessReturnModel = new List<NewBusinessReturnModel>();
+                var res = _con.AssetTaxPayerDetailsApis.Where(o =>
+                    o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
+                );
+                foreach (var r in res)
+                {
+                    var empCountDet = _con.SspfiledFormH3s.Where(o =>
+                        o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
+                    ).GroupBy(o => o.TaxYear).ToList();
+
+                    foreach (var r2 in empCountDet)
+                    {
+                        var jan31st = new DateTime(r2.Key.Value, 1, 31);
+                        var m = new NewBusinessReturnModel
+                        {
+
+                            BusinessRIN = r.AssetRin,
+                            CompanyRin = r.TaxPayerRinnumber,
+                            BusinessName = r.AssetName,
+                            BusinessID = r.AssetId.ToString(),
+                            TaxYear = r2.Key.ToString(),
+                            NoOfEmployees = r2.Count().ToString(),
+                            DateForwarded = r2.FirstOrDefault().Datetcreated.ToString(),
+                            AnnualReturnStatus = r2.FirstOrDefault().Datetcreated > jan31st ? "Defaulter" : "Complied",
+                        };
+
+                        finalBusinessReturnModel.Add(m);
+                    }
+                    rd.data = finalBusinessReturnModel;
+
+                }
+                return Ok(rd);
+            }
+            catch (System.Exception ex)
+            {
+                return (
+                    StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new ReturnObject { status = false, message = ex.Message }
+                    )
+                );
+            }
         }
 
         [HttpGet]
@@ -303,7 +358,7 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 using var _context = new PinscherSpikeContext();
-                var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
+                var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],   CASE WHEN B.OTHERNAME IS NOT NULL THEN  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME   ELSE B.FirstName + ' ' + B.SURNAME     END AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
                 var user = _context.SspfiledFormH3ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
                 r.status = true;
@@ -357,7 +412,7 @@ namespace SelfPortalAPi.Controllers
                             )
                             {
                                 lstErrorRes.Add(
-                                       $"{errorNote} in row {i + 1} Provide PHONENUMBER,RIN or TIN."
+                                       $"{errorNote} in row {i + 1} Provide PHONENUMBER or RIN or TIN."
                                    );
                             }
                         }
@@ -616,18 +671,49 @@ namespace SelfPortalAPi.Controllers
                 var user = _context.SspformH3s.FromSqlRaw(query).ToList();
                 foreach (var sr in user)
                 {
-                    var empSr = _mapper.Map<SspfiledFormH3>(sr);
-                    empSr.Id = 0;
-                    empSr.IndividalId = sr.IndividualId;
-                    empSr.DueDate = $"01-January-{DateTime.Now.Year + 1}";
-                    empSr.ComplianceStatus = presDate > lastDueDate ? "Defaulted" : "Complied";
-                    empSr.FiledStatus = ((int)ApprovalStatusEnum.Pending).ToString();
-                    empSr.TaxYear = obj.TaxYear;
-                    empSr.Datetcreated = DateTime.Now;
+                    var empSr = new SspfiledFormH3
+                    {
+                        BusinessId = sr.BusinessId,
+
+                        CompanyId = sr.CompanyId,
+
+                        TaxPayerId = sr.TaxPayerId,
+                        Rin = sr.Rin,
+
+                        Rent = sr.Rent,
+
+                        Transport = sr.Transport,
+
+                        Basic = sr.Basic,
+
+                        OtherIncome = sr.OtherIncome,
+
+                        Pension = sr.Pension,
+
+                        Nhf = sr.Nhf,
+
+                        Nhis = sr.Nhis,
+
+                        Lifeassurance = sr.Lifeassurance,
+
+                        Id = 0,
+                        IndividalId = sr.IndividualId,
+                        DueDate = $"31-January-{DateTime.Now.Year + 1}",
+                        ComplianceStatus = presDate > lastDueDate ? "Defaulted" : "Complied",
+                        FiledStatus = ((int)ApprovalStatusEnum.Pending).ToString(),
+                        TaxYear = obj.TaxYear,
+                        Datetcreated = DateTime.Now,
+                        Createdby = sr.Createdby,
+
+                        Datemodified = sr.Datemodified,
+
+                        Modifiedby = sr.Modifiedby,
+                    };
+
                     lst.Add(empSr);
 
-                    _con.SspfiledFormH3s.Add(empSr);
                 }
+                _con.SspfiledFormH3s.AddRange(lst);
                 _con.SaveChanges();
                 r.status = true;
                 r.message = "Record saved Successfully";
