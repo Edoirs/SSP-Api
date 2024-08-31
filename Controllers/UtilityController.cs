@@ -127,7 +127,8 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-              var r =await _repo.GetBusinessSubSector(); return Ok(r);
+              var r =await _repo.GetBusinessSubSector();
+                return Ok(r);
             }
             catch (System.Exception ex)
             {

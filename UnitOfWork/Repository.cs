@@ -10,10 +10,10 @@ namespace SelfPortalAPi.UnitOfWork
 {
     public class Repository<T> : IRepository<T> where T : BaseEntity
     {
-        private readonly PinscherSpikeContext _context;
+        private readonly PayeConnection _context;
         private readonly DbSet<T> entities;
         private string errorMessage = string.Empty;
-        public Repository(PinscherSpikeContext dbContext)
+        public Repository(PayeConnection dbContext)
         {
             _context = dbContext;
             entities = _context.Set<T>();

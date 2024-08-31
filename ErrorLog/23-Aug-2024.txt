@@ -1,0 +1,32 @@
+--------------------------------*Start @ 23/08/2024 18:44:32*------------------------------------------
+-----------Exception Details on  08/23/2024 18:44:32-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 08/23/2024 18:44:32
+
+Error Line No :    at System.Net.HttpWebRequest.GetResponse()
+   at System.Net.WebClient.GetWebResponse(WebRequest request)
+   at System.Net.WebClient.DownloadBits(WebRequest request, Stream writeStream)
+   at System.Net.WebClient.UploadBits(WebRequest request, FileStream readStream, Byte[] buffer, Int32 chunkSize, Byte[] header, Byte[] footer)
+   at System.Net.WebClient.UploadDataInternal(Uri address, String method, Byte[] data, WebRequest& request)
+   at System.Net.WebClient.UploadString(Uri address, String method, String data)
+   at SelfPortalAPi.Controllers.PhaseIIController.PhaseIIController.GetToken() in C:\NowNow\SSP\SelfPortalAPi\Controllers\PhaseIIController\PhaseIIController.cs:line 2134
+   at SelfPortalAPi.Controllers.PhaseIIController.PhaseIIController.AddEmployee(AddEmployeesInd1 emp) in C:\NowNow\SSP\SelfPortalAPi\Controllers\PhaseIIController\PhaseIIController.cs:line 575
+
+Error Message: WebException
+
+Exception Type: System.Net.WebException
+
+Error Location : The remote server returned an error: (500) Internal Server Error.
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+

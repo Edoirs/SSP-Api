@@ -1,0 +1,106 @@
+
+<div style="margin: 20px; border: 4px solid black; padding: 20px;">
+    <div class="portlet-title">
+        <div class="caption" align="center" style="width: 100%;">
+            <table align="center" style="width: 100%; border-collapse: collapse;">
+                <tr style="border-bottom: 2px solid lightsteelblue;">
+                    <td>
+                        <img alt="" src="https://pinscher.eirs.gov.ng/spike/logo/coat_of_arm.png" height="70" width="70" />
+                    </td>
+                    <td align="center">
+                        <b>EDO STATE INTERNAL REVENUE SERVICE<br />80, NEW LAGOS ROAD, BENIN CITY</b>
+                    </td>
+                    <td>
+                        <img alt="" src="https://pinscher.eirs.gov.ng/spike/logo/eirs_logo.png" height="70" width="70" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <br>
+    <br>
+
+    <div class="portlet light" align="center">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td valign="top" style="width: 28%;">
+                    <table border="1" style="width: 70%; font-size: 11px; text-align: left; border-collapse: collapse; border-color: lightsteelblue;">
+                        <tr style="border-bottom: 2px solid lightsteelblue;">
+                            <td><b>TAXPAYER NAME:</b></td>
+                            <td>@@TaxPayerName</td>
+                        </tr>
+                        <tr style="border-bottom: 2px solid lightsteelblue;">
+                            <td><b>BUSINESS NAME:</b></td>
+                            <td>@@BusinessName</td>
+                        </tr>
+                        <tr style="border-bottom: 2px solid lightsteelblue;">
+                            <td><b>ADDRESS:</b></td>
+                            <td>@@BusinessAddress</td>
+                        </tr>
+                    </table>
+                </td>
+                <td valign="top" style="width: 28%;">
+                    <table border="1" style="width: 50%; font-size: 12px; text-align: left; border-collapse: collapse; border-color: lightsteelblue;">
+                        <tr style="border-bottom: 2px solid lightsteelblue;">
+                            <td><b>TAX PAYER RIN:</b></td>
+                            <td>@@TaxpayerRin</td>
+                        </tr>
+                        <tr style="border-bottom: 2px solid lightsteelblue;">
+                            <td><b>BUSINESS RIN:</b></td>
+                            <td>@@BusinessRin</td>
+                        </tr>
+                        <tr style="border-bottom: 2px solid lightsteelblue;">
+                            <td><b>PHONE:</b></td>
+                            <td>@@BusinessPhone</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <br>
+    <br>
+
+    <div class="portlet light">
+        <div class="portlet-title">
+            <div class="caption" style="width: 100%; text-align: center;">
+                <b>@@CurrentYear PAYE TAX ANALYSIS<br /><br /></b>
+            </div>
+        </div>
+        <div style="overflow-x: scroll;">
+            <table class="table table-striped table-bordered" style="width: 100%; font-size: 12px; text-align: left; border-collapse: collapse; border-color: lightsteelblue;">
+                <thead>
+                    <tr style="border-bottom: 2px solid lightsteelblue;">
+                        <th>S/NO.</th>
+                        <th>RIN</th>
+                        <th>Name</th>
+                        <th>Tax Month</th>
+                        <th>Tax Year</th>
+                        <th>Gross</th>
+                        <th>CRA</th>
+                        <th>Pension</th>
+                        <th>NHF</th>
+                        <th>NHIS</th>
+                        <th>Tax Free Pay</th>
+                        <th>Ch. Income</th>
+                        <th>Tax</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @@Rows
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5" style="text-align: right;"><b>Total:</b></td>
+                        <td>@@TotalGross</td>
+                        <td colspan="6"></td>
+                        <td>@@TotalTax</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+

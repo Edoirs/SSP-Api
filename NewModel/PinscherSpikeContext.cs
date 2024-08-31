@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SelfPortalAPi.NewModel;
 
-public partial class PinscherSpikeContext : DbContext
+public partial class PayeConnection : DbContext
 {
-    public PinscherSpikeContext()
+    public PayeConnection()
     {
     }
 
-    public PinscherSpikeContext(DbContextOptions<PinscherSpikeContext> options)
+    public PayeConnection(DbContextOptions<PayeConnection> options)
         : base(options)
     {
     }

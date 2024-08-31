@@ -18,9 +18,9 @@ namespace SelfPortalAPi.Controllers.Admin
     public class BusinessController : ControllerBase
     {
         private readonly IMapper _mapper;
-        private readonly PinscherSpikeContext _repo;
+        private readonly PayeConnection _repo;
         private string errMsg = "Unable to process request, kindly try again";
-        public BusinessController(IMapper mapper, PinscherSpikeContext repo)
+        public BusinessController(IMapper mapper, PayeConnection repo)
         {
             _repo = repo;
             _mapper = mapper;
@@ -111,9 +111,9 @@ namespace SelfPortalAPi.Controllers.Admin
             {
                 list.Add(new BusinessVm
                 {
-                    business_id = det[i].AssetId.ToString(),
-                    business_name = det[i].AssetName,
-                    lga_name = det[i].AssetLga
+                    BusinessRin = det[i].AssetId.ToString(),
+                    BusinessName = det[i].AssetName,
+                    LgaName = det[i].AssetLga
                 });
             }
             return list;

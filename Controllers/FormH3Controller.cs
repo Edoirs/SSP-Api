@@ -24,16 +24,24 @@ namespace SelfPortalAPi.Controllers
     {
         private readonly IMapper _mapper;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
-        private readonly PinscherSpikeContext _con;
+        private readonly PayeConnection _con;
         private readonly IHttpContextAccessor _httpContextAccessor;
         int taxpeyerTypeId = 0;
-        public FormH3Controller(IOptions<ConnectionStrings> serviceSettings, IHttpContextAccessor httpContextAccessor, IMapper mapper, PinscherSpikeContext con)
+        public FormH3Controller(IOptions<ConnectionStrings> serviceSettings, IHttpContextAccessor httpContextAccessor, IMapper mapper, PayeConnection con)
         {
             _serviceSettings = serviceSettings;
             _httpContextAccessor = httpContextAccessor;
             _con = con;
            string audience = _httpContextAccessor.HttpContext.User.Claims.First(i => i.Type == "TaxpayerTypeId").Value;
-           taxpeyerTypeId = audience == null ? 0 : Convert.ToInt16(audience);
+            if (short.TryParse(audience, out short parsedValue))
+            {
+                taxpeyerTypeId = parsedValue;
+            }
+            else
+            {
+              taxpeyerTypeId = 0;
+            }
+            //taxpeyerTypeId = audience == null ? 0 : Convert.ToInt16(audience);
         }
 
 
@@ -228,7 +236,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-                using var _context = new PinscherSpikeContext();
+                using var _context = new PayeConnection();
                 //string query = $"SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where CompanyId = '{companyId}' and BusinessId = '{businessId}'";
                 string query = @"
              SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,
@@ -264,7 +272,7 @@ namespace SelfPortalAPi.Controllers
             var r = new ReturnObject();
             try
             {
-                using var _context = new PinscherSpikeContext();
+                using var _context = new PayeConnection();
                 var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
                 var user = _context.SspfiledFormH3ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
@@ -357,7 +365,7 @@ namespace SelfPortalAPi.Controllers
             var r = new ReturnObject();
             try
             {
-                using var _context = new PinscherSpikeContext();
+                using var _context = new PayeConnection();
                 var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],   CASE WHEN B.OTHERNAME IS NOT NULL THEN  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME   ELSE B.FirstName + ' ' + B.SURNAME     END AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
                 var user = _context.SspfiledFormH3ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
@@ -666,7 +674,7 @@ namespace SelfPortalAPi.Controllers
                 }
                 var presDate = DateTime.Now.Date;
                 var lastDueDate = new DateTime(DateTime.Now.Year, 1, 31);
-                using var _context = new PinscherSpikeContext();
+                using var _context = new PayeConnection();
                 string query = $"SELECT s.Id,s.IndividualId,s.Startmonth, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM [pinscher_spike].[dbo].[SSPFormH3s] s   left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
                 var user = _context.SspformH3s.FromSqlRaw(query).ToList();
                 foreach (var sr in user)
@@ -699,7 +707,7 @@ namespace SelfPortalAPi.Controllers
                         Id = 0,
                         IndividalId = sr.IndividualId,
                         DueDate = $"31-January-{DateTime.Now.Year + 1}",
-                        ComplianceStatus = presDate > lastDueDate ? "Defaulted" : "Complied",
+                        ComplianceStatus = presDate > lastDueDate ? "2" : "1",
                         FiledStatus = ((int)ApprovalStatusEnum.Pending).ToString(),
                         TaxYear = obj.TaxYear,
                         Datetcreated = DateTime.Now,

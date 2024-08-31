@@ -55,14 +55,15 @@ public partial class ReturnSspformH3 : NewBaseEntity
 
     public string? TaxPayerId { get; set; }
 
-    public string? IndividualId { get; set; }
-
+    public string? IndividalId { get; set; }
+    [NotMapped]
     public string? Startmonth { get; set; }
 
     public decimal? Rent { get; set; }
     public string? FIRSTNAME { get; set; }
     public string? SURNAME { get; set; }
     public string? NATIONALITY { get; set; }
+    [NotMapped]
     public decimal? Total { get; set; }
 
     public decimal? Transport { get; set; }

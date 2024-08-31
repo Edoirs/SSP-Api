@@ -13,11 +13,11 @@ namespace SelfPortalAPi.Controllers.Admin
     public class LoginController : ControllerBase
     {
         private readonly EirsContext _context;
-        private readonly PinscherSpikeContext _con;
+        private readonly PayeConnection _con;
         private readonly IIndividualRepository _repo;
         private readonly IValidator<TokenRequest> _validator;
         private string errMsg = "Unable to process request, kindly try again";
-        public LoginController(IIndividualRepository repo, PinscherSpikeContext con, EirsContext context, IValidator<TokenRequest> validator)
+        public LoginController(IIndividualRepository repo, PayeConnection con, EirsContext context, IValidator<TokenRequest> validator)
         {
             _repo = repo;
             _con = con;

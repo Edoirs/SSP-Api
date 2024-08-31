@@ -11,7 +11,7 @@ using SelfPortalAPi.NewModel;
 
 namespace SelfPortalAPi.Migrations
 {
-    [DbContext(typeof(PinscherSpikeContext))]
+    [DbContext(typeof(PayeConnection))]
     [Migration("20240510221539_TaxpayerTypeId")]
     partial class TaxpayerTypeId
     {

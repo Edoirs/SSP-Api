@@ -1,0 +1,64 @@
+--------------------------------*Start @ 25/08/2024 22:30:12*------------------------------------------
+-----------Exception Details on  08/25/2024 22:30:12-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 08/25/2024 22:30:12
+
+Error Line No :    at System.Net.HttpWebRequest.GetResponse()
+   at System.Net.WebClient.GetWebResponse(WebRequest request)
+   at System.Net.WebClient.DownloadBits(WebRequest request, Stream writeStream)
+   at System.Net.WebClient.UploadBits(WebRequest request, FileStream readStream, Byte[] buffer, Int32 chunkSize, Byte[] header, Byte[] footer)
+   at System.Net.WebClient.UploadDataInternal(Uri address, String method, Byte[] data, WebRequest& request)
+   at System.Net.WebClient.UploadString(Uri address, String method, String data)
+   at SelfPortalAPi.Controllers.PhaseIIController.PhaseIIController.GetToken() in C:\NowNow\SSP\SelfPortalAPi\Controllers\PhaseIIController\PhaseIIController.cs:line 2557
+   at SelfPortalAPi.Controllers.PhaseIIController.PhaseIIController.AddEmployee(AddEmployeesInd1 emp) in C:\NowNow\SSP\SelfPortalAPi\Controllers\PhaseIIController\PhaseIIController.cs:line 594
+
+Error Message: WebException
+
+Exception Type: System.Net.WebException
+
+Error Location : The remote server returned an error: (500) Internal Server Error.
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+
+--------------------------------*Start @ 25/08/2024 22:32:07*------------------------------------------
+-----------Exception Details on  08/25/2024 22:32:07-----------------
+-------------------------------------------------------------------------------------
+
+
+
+Log Written Date: 08/25/2024 22:32:07
+
+Error Line No :    at System.Net.HttpWebRequest.GetResponse()
+   at System.Net.WebClient.GetWebResponse(WebRequest request)
+   at System.Net.WebClient.DownloadBits(WebRequest request, Stream writeStream)
+   at System.Net.WebClient.UploadBits(WebRequest request, FileStream readStream, Byte[] buffer, Int32 chunkSize, Byte[] header, Byte[] footer)
+   at System.Net.WebClient.UploadDataInternal(Uri address, String method, Byte[] data, WebRequest& request)
+   at System.Net.WebClient.UploadString(Uri address, String method, String data)
+   at SelfPortalAPi.Controllers.PhaseIIController.PhaseIIController.GetToken() in C:\NowNow\SSP\SelfPortalAPi\Controllers\PhaseIIController\PhaseIIController.cs:line 2557
+   at SelfPortalAPi.Controllers.PhaseIIController.PhaseIIController.AddEmployee(AddEmployeesInd1 emp) in C:\NowNow\SSP\SelfPortalAPi\Controllers\PhaseIIController\PhaseIIController.cs:line 594
+
+Error Message: WebException
+
+Exception Type: System.Net.WebException
+
+Error Location : A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond. [::ffff:92.205.57.77]:443 (api.eirs.vip:443)
+
+ Error Page Url: 
+
+User Host IP: 
+
+
+--------------------------------*End*------------------------------------------
+
+
+

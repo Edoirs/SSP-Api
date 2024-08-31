@@ -10,7 +10,7 @@ using SelfPortalAPi.NewModel;
 
 namespace SelfPortalAPi.Migrations
 {
-    [DbContext(typeof(PinscherSpikeContext))]
+    [DbContext(typeof(PayeConnection))]
     partial class PinscherSpikeContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

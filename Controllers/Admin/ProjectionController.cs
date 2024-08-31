@@ -50,7 +50,7 @@ namespace SelfPortalAPi.Controllers.Admin
                     message = ex.Message
                 }));
             }
-        }
+        }  
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]

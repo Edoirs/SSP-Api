@@ -1,19 +1,27 @@
-﻿
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OfficeOpenXml;
-using SelfPortalAPi.ErasModel;
+using OfficeOpenXml.Style;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using SelfPortalAPi.Document.HtmlContent.ErasModel;
 using SelfPortalAPi.Model;
+using SelfPortalAPi.Models;
 using SelfPortalAPi.NewModel;
 using SelfPortalAPi.UnitOfWork;
 using System.Data;
+using System.Drawing.Imaging;
+using System.Drawing.Printing;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using Exception = System.Exception;
+
 
 namespace SelfPortalAPi
 {
@@ -21,8 +29,11 @@ namespace SelfPortalAPi
     {
         public void ConfigureServices(WebApplicationBuilder builder)
         {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             var services = builder.Services;
-            string? conn = builder.Configuration.GetConnectionString("DefaultConnection");
+            QuestPDF.Settings.License = LicenseType.Community;
+
+            string? conn = builder.Configuration.GetConnectionString("SelfServiceConnect");
             string? connII = builder.Configuration.GetConnectionString("EirsContext");
             string? connIII = builder.Configuration.GetConnectionString("ERASContext");
             string? connIV = builder.Configuration.GetConnectionString("PayeConnection");
@@ -51,14 +62,24 @@ namespace SelfPortalAPi
             services.AddDbContext<ApiDbContext>(opt => opt.UseSqlServer(connII));
             // services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
             services.AddDbContext<EirsContext>(opt => opt.UseSqlServer(connIII));
-            services.AddDbContext<PinscherSpikeContext>(opt => opt.UseSqlServer(connIV));
-            services.AddDbContext<SelfPortalAPi.NewModel.PinscherSpikeContext>(opt => opt.UseSqlServer(connIV));
+            services.AddDbContext<PayeConnection>(opt => opt.UseSqlServer(connIV));
+            services.AddDbContext<SelfServiceConnect>(opt => opt.UseSqlServer(conn));
+            services.AddDbContext<SelfPortalAPi.NewModel.PayeConnection>(opt => opt.UseSqlServer(connIV));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped(typeof(INewRepository<>), typeof(NewRepository<>));
+            services.AddScoped(typeof(ISelfRepository<>), typeof(SelfRepository<>));
             services.AddScoped<IValidator<TokenRequest>, TokenRequestValidator>();
             services.AddScoped<IIndividualRepository, IndividualRepository>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<IUtilityRepository, UtilityRepository>();
+            services.AddScoped<IPhaseIIRepo, PhaseIIRepo>();
+            services.AddHealthChecks()
+                .AddSqlServer(connIII, name: "ErasContext")
+                .AddSqlServer(connII, name: "ApiDbContext")
+                .AddSqlServer(conn, name: "SelfServiceConnect")
+                .AddSqlServer(connIV, name: "PinscherSpikeContext");
+            services.AddScoped<PhaseBenchMark>();
+
 
             services.AddCors();
             services.AddControllers();
@@ -108,7 +129,7 @@ namespace SelfPortalAPi
 
             public string ContentDisposition => $"form-data; name={Name}; filename={FileName}";
 
-            public string ContentType => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; // Adjust according to your Excel file type.
+            public string ContentType => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
             public IHeaderDictionary Headers => new HeaderDictionary();
 
@@ -261,6 +282,42 @@ namespace SelfPortalAPi
             }
             return data;
         }
+        public static List<T> ConvertDataTable2<T>(DataTable dt)
+        {
+            List<T> data = new List<T>();
+            foreach (DataRow row in dt.Rows)
+            {
+                T item = GetItem<T>(row);
+                foreach (var prop in typeof(T).GetProperties())
+                {
+                    if (prop.PropertyType == typeof(decimal) || prop.PropertyType == typeof(decimal?))
+                    {
+                        if (row.Table.Columns.Contains(prop.Name) && row[prop.Name] != DBNull.Value)
+                        {
+                            if (decimal.TryParse(row[prop.Name].ToString(), out decimal result))
+                            {
+                                prop.SetValue(item, result);
+                            }
+                            else
+                            {
+                                // Handle the case where conversion fails
+                                prop.SetValue(item, 0m); // or throw an exception based on your needs
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (row.Table.Columns.Contains(prop.Name))
+                        {
+                            prop.SetValue(item, row[prop.Name]);
+                        }
+                    }
+                }
+                data.Add(item);
+            }
+            return data;
+        }
+
         public static T GetItem<T>(DataRow dr)
         {
             Type temp = typeof(T);
@@ -412,6 +469,228 @@ namespace SelfPortalAPi
                 e.ToString();
             }
         }
+
+        public static async Task<FileContentResult> GenerateExcelFileAsync<T>(List<T> data, string sheetName, string fileName, string heading)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add(sheetName);
+
+                // Add custom heading
+                worksheet.Cells["A1"].Value = heading;
+                worksheet.Cells["A1:N1"].Merge = true; // Adjust the range based on how many columns you want to merge
+                worksheet.Cells["A1"].Style.Font.Bold = true;
+                worksheet.Cells["A1"].Style.Font.Size = 16;
+                worksheet.Cells["A1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                // Add data starting from row 3
+                worksheet.Cells["A3"].LoadFromCollection(data, true);
+
+                // Style header row
+                using (var range = worksheet.Cells[3, 1, 3, worksheet.Dimension.End.Column])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                    range.AutoFitColumns(); // Adjust the column width to fit content
+                }
+
+                // Adjust print settings for A4 page size
+                worksheet.PrinterSettings.PaperSize = ePaperSize.A4;
+                worksheet.PrinterSettings.FitToWidth = 1;
+                worksheet.PrinterSettings.FitToHeight = 0; // Keep the height proportional
+
+                var stream = new MemoryStream();
+                await package.SaveAsAsync(stream);
+
+                stream.Position = 0;
+                return new FileContentResult(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                {
+                    FileDownloadName = fileName
+                };
+            }
+        }
+
+
+        public static byte[] GeneratePdfFromHtml(string htmlContent)
+        {
+            var pdfBytes = IronPdf.HtmlToPdf.StaticRenderHtmlAsPdf(htmlContent).BinaryData;
+            return pdfBytes;
+        }
+
+        public static string GenerateTableRows(List<Schedulepdf> schedule)
+        {
+            var rows = new StringBuilder();
+            foreach (var item in schedule)
+            {
+                rows.Append("<tr>")
+                    .Append($"<td>{item.SerialNo}</td>")
+                    .Append($"<td>{item.Rin}</td>")
+                    .Append($"<td>{item.Name}</td>")
+                    .Append($"<td>{item.TaxMonth}</td>")
+                    .Append($"<td>{item.TaxYear}</td>")
+                    .Append($"<td>{item.Gross}</td>")
+                    .Append($"<td>{item.Cra}</td>")
+                    .Append($"<td>{item.Pension}</td>")
+                    .Append($"<td>{item.Nhf}</td>")
+                    .Append($"<td>{item.Nhis}</td>")
+                    .Append($"<td>{item.Tfp}</td>")
+                    .Append($"<td>{item.Ci}</td>")
+                    .Append($"<td>{item.Tax}</td>")
+                    .Append("</tr>");
+            }
+            return rows.ToString();
+        }
+
+        //public static byte[] GeneratePdf<T>(Dictionary<string, List<T>> tableData)
+        //{
+        //    var htmlContent = new StringBuilder();
+        //    htmlContent.Append("<html><body>");
+
+        //    foreach (var entry in tableData)
+        //    {
+        //        htmlContent.Append($"<h2>{entry.Key}</h2>");
+        //        htmlContent.Append(ConvertListToHtmlTable(entry.Value));
+        //    }
+
+        //    htmlContent.Append("</body></html>");
+
+        //    var converter = new SynchronizedConverter(new PdfTools());
+        //    var doc = new HtmlToPdfDocument()
+        //    {
+        //        GlobalSettings = {
+        //    ColorMode = ColorMode.Color,
+        //    Orientation = Orientation.Portrait,
+        //    PaperSize = PaperKind.A4,
+        //},
+        //        Objects = {
+        //    new ObjectSettings() {
+        //        PagesCount = true,
+        //        HtmlContent = htmlContent.ToString(),
+        //        WebSettings = { DefaultEncoding = "utf-8" },
+        //        HeaderSettings = { FontName = "Arial", FontSize = 9, Right = "Page [page] of [toPage]", Line = true, Spacing = 2.812 },
+        //        FooterSettings = { FontName = "Arial", FontSize = 9, Line = true, Center = "This is the footer" }
+        //    }
+        //}
+        //    };
+
+        //    return converter.Convert(doc);
+        //}
+
+        //private static string ConvertListToHtmlTable<T>(List<T> dataList)
+        //{
+        //    if (dataList == null || dataList.Count == 0)
+        //    {
+        //        return "<p>No data available</p>";
+        //    }
+
+        //    var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+        //    var tableHtml = new StringBuilder();
+        //    tableHtml.Append("<table style='width:100%; border:1px solid black; border-collapse:collapse;'>");
+
+        //    // Table header
+        //    tableHtml.Append("<tr>");
+        //    foreach (var prop in properties)
+        //    {
+        //        tableHtml.Append($"<th style='border:1px solid black;'>{prop.Name}</th>");
+        //    }
+        //    tableHtml.Append("</tr>");
+
+        //    // Table rows
+        //    foreach (var item in dataList)
+        //    {
+        //        tableHtml.Append("<tr>");
+        //        foreach (var prop in properties)
+        //        {
+        //            var value = prop.GetValue(item)?.ToString() ?? string.Empty;
+        //            tableHtml.Append($"<td style='border:1px solid black;'>{value}</td>");
+        //        }
+        //        tableHtml.Append("</tr>");
+        //    }
+
+        //    tableHtml.Append("</table>");
+
+        //    return tableHtml.ToString();
+        //}
+
+        //public static byte[] GeneratePdf(Dictionary<string, List<object>> tableData)
+        //{
+        //    var document = Document.Create(container =>
+        //    {
+        //        container.Page(page =>
+        //        {
+        //            page.Size(PageSizes.A4);
+        //            page.Margin(2, Unit.Centimetre);
+        //            page.PageColor(Colors.White);
+        //            page.DefaultTextStyle(x => x.FontSize(14));
+
+        //            page.Header().Text("Tax Analysis").SemiBold().FontSize(20).FontColor(Colors.Blue.Medium);
+
+        //            page.Content().Column(column =>
+        //            {
+        //                foreach (var entry in tableData)
+        //                {
+        //                    column.Item().Text(entry.Key).SemiBold().FontSize(16).Underline();
+        //                    column.Item().Table(table =>
+        //                    {
+        //                        table.ColumnsDefinition(columns =>
+        //                        {
+        //                            foreach (var prop in entry.Value.First().GetType().GetProperties())
+        //                            {
+        //                                columns.RelativeColumn();
+        //                            }
+        //                        });
+
+        //                        // Define header cells
+        //                        table.Header(header =>
+        //                        {
+        //                            foreach (var prop in entry.Value.First().GetType().GetProperties())
+        //                            {
+        //                                header.Cell().Element(CellStyle).Text(prop.Name);
+        //                            }
+        //                        });
+
+        //                        // Define data rows and cells
+        //                        foreach (var item in entry.Value)
+        //                        {
+        //                            table.Cell().Element(CellStyle).Text(item.GetType().GetProperties().First().GetValue(item)?.ToString());
+
+        //                            foreach (var prop in item.GetType().GetProperties())
+        //                            {
+        //                                table.Cell().Element(CellStyle).Text(prop.GetValue(item)?.ToString());
+        //                            }
+        //                        }
+        //                    });
+
+        //                    column.Item().Text("");
+        //                }
+        //            });
+
+        //            page.Footer().AlignCenter().Text(x =>
+        //            {
+        //                x.Span("Page ");
+        //                x.CurrentPageNumber();
+        //                x.Span(" of ");
+        //                x.TotalPages();
+        //            });
+        //        });
+        //    });
+
+        //    return document.GeneratePdf();
+        //}
+
+        //private static IContainer CellStyle(IContainer container)
+        //{
+        //    return container
+        //        .Border(1)
+        //        .BorderColor(Colors.Grey.Lighten2)
+        //        .Padding(5)
+        //        .AlignLeft()
+        //        .AlignMiddle();
+        //}
+
 
     }
 }

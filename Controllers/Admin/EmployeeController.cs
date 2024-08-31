@@ -17,12 +17,12 @@ namespace SelfPortalAPi.Controllers.Admin
     [Authorize]
     public class EmployeeController : ControllerBase
     {
-        private readonly PinscherSpikeContext _context; 
+        private readonly PayeConnection _context; 
         private readonly IMapper _mapper;
         private readonly UnitOfWork.IRepository<employee> _repo;
         private readonly UnitOfWork.IRepository<Cooperate> _repoCop;
         private string errMsg = "Unable to process request, kindly try again";
-        public EmployeeController(UnitOfWork.IRepository<employee> repo, UnitOfWork.IRepository<Cooperate> repoCop,IMapper mapper, PinscherSpikeContext context)
+        public EmployeeController(UnitOfWork.IRepository<employee> repo, UnitOfWork.IRepository<Cooperate> repoCop,IMapper mapper, PayeConnection context)
         {
             _repo = repo;
             _repoCop = repoCop;

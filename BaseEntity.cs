@@ -27,6 +27,13 @@ namespace SelfPortalAPi
         public long ModifiedBy { get; set; }
         public bool IsDeleted { get; set; }
     }
+    public class SelfBaseEntity
+    {
+        [Key]
+        public int Id { get; set; }
+        [NotMapped]
+        public string? EmployeeId { get; set; }
+    }
     public class Receiver
     {
         public bool Success { get; set; }
@@ -77,6 +84,7 @@ namespace SelfPortalAPi
         public string username { get; set; }
         public string password { get; set; }
         public string templatepath { get; set; }
+        public string HtmlTemplatePath { get; set; }
         public string upload { get; set; }
         public string EirsContext { get; set; }
         public string ERASContext { get; set; }

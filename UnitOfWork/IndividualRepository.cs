@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SelfPortalAPi.ErasModel;
+using SelfPortalAPi.Document.HtmlContent.ErasModel;
 using SelfPortalAPi.Model;
 using SelfPortalAPi.NewModel;
 using static SelfPortalAPi.AllFunction;
@@ -26,10 +26,10 @@ namespace SelfPortalAPi.UnitOfWork
     public class IndividualRepository : IIndividualRepository
     {
         private readonly ApiDbContext _db;
-        private readonly PinscherSpikeContext _con;
+        private readonly PayeConnection _con;
         private readonly ErasContext _context;
         private readonly IConfiguration _conFig;
-        public IndividualRepository(ApiDbContext db, PinscherSpikeContext con, ErasContext context, IConfiguration conFig)
+        public IndividualRepository(ApiDbContext db, PayeConnection con, ErasContext context, IConfiguration conFig)
         {
             _db = db;
             _con = con;

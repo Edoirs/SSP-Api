@@ -4,11 +4,13 @@ using Microsoft.OpenApi.Models;
 using SelfPortalAPi.NewModel;
 using SelfPortalAPi;
 using SelfPortalAPi.UnitOfWork;
-using SelfPortalAPi.ErasModel;
+//using SelfPortalAPi.ErasModel;
 using SelfPortalAPi.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using HealthChecks.UI.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
@@ -23,6 +25,11 @@ app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("/swagger/V1/swagger.json", "Self Service Portal WebAPI");
+});
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
 app.UseSwagger();

@@ -49,4 +49,32 @@ namespace SelfPortalAPi.Vm
         public Cooperate Cooperates { get; set; }
 
     }
+
+    public class EmployeeRES
+    {
+
+        public string? Title { get; set; }
+        public string? Firstname { get; set; }
+        public string? Surname { get; set; }
+        public string? Othername { get; set; }
+        public string? Phonenumber { get; set; }
+        public string? Email { get; set; }
+        public string? TaxpayerId { get; set; }
+        public string? Jtbtin { get; set; }
+        public string? Nin { get; set; }
+        public string? Nationality { get; set; }
+        public string? Homeaddress { get; set; }
+        public string? Designation { get; set; }
+        public string? LgaCode { get; set; }
+        public string? ZipCode  { get; set; }
+        public string Basic { get; set; } = null!;
+        public decimal Rent { get; set; }
+        public string Transport { get; set; } = null!;
+        public string OtherIncome { get; set; } = null!;
+        public string Nhf { get; set; } = null!;
+        public string Nhis { get; set; } = null!;
+        public decimal Pension { get; set; }
+        public decimal LifeAssurance { get; set; }
+        public string? StartMonth { get; set; }
+    }
 }

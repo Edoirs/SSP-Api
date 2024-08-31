@@ -46,4 +46,69 @@ namespace SelfPortalAPi.FormModel
         public string? asset_id { get; set; }
         public int business_id { get; set; }
     }
+
+    public class  AddEmployeesInd
+    {
+        public string? BusinessId { get; set; }
+        public string? CompanyId { get; set; }
+        public string? Title { get; set; }
+        public string? Firstname { get; set; }
+        public string? Surname { get; set; }
+        public string? Othername { get; set; }
+        public string? Phonenumber { get; set; }
+        public string? Email { get; set; }
+        public string? EmployeeRin { get; set; }
+        public string? Jtbtin { get; set; }
+        public string? Nin { get; set; }
+        public string? Nationality { get; set; }
+        public string? Homeaddress { get; set; }
+        public string? Designation { get; set; }
+        public string? LgaCode { get; set; }
+        public string? ZipCode { get; set; }
+        public decimal Basic { get; set; }
+        public decimal Rent { get; set; }
+        public decimal Transport { get; set; } 
+        public decimal OtherIncome { get; set; }
+        public decimal Nhf { get; set; } 
+        public decimal Nhis { get; set; } 
+        public decimal Pension { get; set; }
+        public decimal LifeAssurance { get; set; }
+        public decimal Ltg { get; set; }
+        public decimal Meal { get; set; }
+        public decimal Utility { get; set; }
+        public string? StartMonth { get; set; }
+
+    }
+    public class  AddEmployeesInd1
+    {
+        public string? BusinessRin { get; set; }
+        public string? CompanyRin { get; set; }
+        public string? Title { get; set; }
+        public string? Firstname { get; set; }
+        public string? Surname { get; set; }
+        public string? Othername { get; set; }
+        public string? Phonenumber { get; set; }
+        public string? Email { get; set; }
+        public string? EmployeeRin { get; set; }
+        public string? Jtbtin { get; set; }
+        public string? Nin { get; set; }
+        public string? Nationality { get; set; }
+        public string? Homeaddress { get; set; }
+        public string? Designation { get; set; }
+        public string? LgaCode { get; set; }
+        public string? ZipCode { get; set; }
+        public decimal Basic { get; set; }
+        public decimal Rent { get; set; }
+        public decimal Transport { get; set; } 
+        public decimal OtherIncome { get; set; }
+        public decimal Nhf { get; set; } 
+        public decimal Nhis { get; set; } 
+        public decimal Pension { get; set; }
+        public decimal LifeAssurance { get; set; }
+        public decimal Ltg { get; set; }
+        public decimal Meal { get; set; }
+        public decimal Utility { get; set; }
+        public string? StartMonth { get; set; }
+
+    }
 }
