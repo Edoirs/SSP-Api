@@ -65,7 +65,6 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             _phaseBench = phaseBench;
             _httpContextAccessor = httpContextAccessor;
             _serviceSettings = serviceSettings;
-
         }
 
         [HttpGet]
