@@ -140,7 +140,8 @@ namespace SelfPortalAPi.UnitOfWork
 
                                 if (!string.IsNullOrEmpty(token))
                                 {
-                                    mObjFuncResponse.data = new { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.Id, comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email, TaxpayerTypeId = ret.TaxpayerTypeId };
+                                    mObjFuncResponse.data = new
+                                    { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.Id, comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email, TaxpayerTypeId = ret.TaxpayerTypeId };
                                 }
                                 else
                                 {

@@ -264,12 +264,15 @@ namespace SelfPortalAPi
         public string PhoneNumber_RIN { get; set; }
         public string Password { get; set; }
         public string UserType { get; set; }
-    }  
-    public class UpdateUser
+    }   
+    public class ChangePassword
     {
-        public string PhoneNumber_RIN { get; set; }
+        public string CompanyRin { get; set; }
+    }  
+    public class UpdateUser: ChangePassword
+    {
         public string NewPassword { get; set; }
-        public string UserType { get; set; }
+        public int OTP { get; set; }
     }
     public class TokenRequestValidator : AbstractValidator<TokenRequest>
     {

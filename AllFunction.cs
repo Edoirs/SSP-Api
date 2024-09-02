@@ -220,6 +220,87 @@ namespace SelfPortalAPi
             }
             return 0;
         }
+        public async Task<bool> SendTiloSMS(string pStrToNumber, string body)
+        {
+            string recPnt = "";
+            if (pStrToNumber.StartsWith("+234"))
+            {
+                recPnt = pStrToNumber;
+            }
+            else if (pStrToNumber.StartsWith("234"))
+            {
+                recPnt = $"+{pStrToNumber}";
+            }
+            else
+            {
+                recPnt = $"+234{pStrToNumber}";
+            }
+            string msg = "";
+
+            msg = bin2hex(body);
+            // var msg = fnStringConverterCodepage(bytes);
+            var client = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://sxmp.gw1.vanso.com/api/sxmp/1.0");
+            var content = new StringContent($"<?xml version=\"1.0\"?>\n<operation type=\"submit\">\n    <account username=\"NG.106.0717\" password=\"Fa9mhLDl\"/>\n    <submitRequest>\n        <deliveryReport>true</deliveryReport>\n        <sourceAddress type=\"alphanumeric\">NOWNOW</sourceAddress>\n        <destinationAddress type=\"international\">{pStrToNumber}</destinationAddress>\n        <text encoding=\"ISO-8859-1\">{msg}</text>\n    </submitRequest>\n</operation>", null, "text/xml");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var res = await response.Content.ReadAsStringAsync();
+            res = $"This is the response I got when i sent sms to this number:{recPnt} vanso sent : {res}";
+            return true;
+        }
+
+        public static string bin2hex(string bindata)
+        {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            byte[] bytes = Encoding.GetEncoding(1252).GetBytes(bindata);
+            string hexString = "";
+            for (int ii = 0; ii < bytes.Length; ii++)
+            {
+                hexString += bytes[ii].ToString("x2");
+            }
+            return hexString;
+        }
+
+        public async Task<string> CallAPi(string baseUrl, string st, string httpMethod, string? jsonData)
+        {
+            string token = null;
+            string res = "";
+            HttpRequestMessage request = new();
+            HttpResponseMessage response = new();
+            var client = new HttpClient();
+            switch (httpMethod.ToLower().Trim())
+            {
+                case "get":
+                    request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
+                    request.Headers.Add("Authorization", $"Bearer {st}");
+                    response = await client.SendAsync(request);
+                    res = await response.Content.ReadAsStringAsync();
+                    break;
+                case "post":
+                    if (!string.IsNullOrEmpty(st))
+                    {
+                        request = new HttpRequestMessage(HttpMethod.Post, baseUrl);
+                        request.Headers.Add("Authorization", $"Bearer {st}");
+                        var content = new StringContent(jsonData, null, "application/json");
+                        request.Content = content;
+                        response = await client.SendAsync(request);
+                        res = await response.Content.ReadAsStringAsync();
+                    }
+                    else
+                    {
+                        request = new HttpRequestMessage(HttpMethod.Post, baseUrl);
+                        var content = new StringContent(jsonData, null, "application/json");
+                        request.Content = content;
+                        response = await client.SendAsync(request);
+                        res = await response.Content.ReadAsStringAsync();
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return res;
+        }
 
         public static string RootPath()
         {

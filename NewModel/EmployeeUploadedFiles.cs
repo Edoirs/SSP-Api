@@ -38,8 +38,10 @@
     }
     public class MarkEmpInactive1
     {
-        public string? BusinessRin { get; set; }
-        public string? CompanyRin { get; set; }
+        [Required]
+        public string BusinessRin { get; set; }
+        [Required]
+        public string CompanyRin { get; set; }
         public string? EmployeeRin { get; set; }
     }
 

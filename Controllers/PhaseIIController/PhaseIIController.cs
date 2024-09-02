@@ -35,6 +35,8 @@ using Grpc.Core;
 using Bogus.DataSets;
 using System.ComponentModel.Design;
 using static QuestPDF.Helpers.Colors;
+using Humanizer;
+using static System.Net.WebRequestMethods;
 
 
 namespace SelfPortalAPi.Controllers.PhaseIIController
@@ -49,19 +51,21 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         private readonly PhaseBenchMark _phaseBench;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
-       
+        private readonly PayeConnection _con;
+
         private string errMsg = "Unable to process request, kindly try again";
 
 
-        public PhaseIIController(IMapper mapper, SelfServiceConnect repo, IPhaseIIRepo repos, PhaseBenchMark phaseBench, IHttpContextAccessor httpContextAccessor, IOptions<ConnectionStrings> serviceSettings)
+        public PhaseIIController(IMapper mapper, SelfServiceConnect repo, PayeConnection con, IPhaseIIRepo repos, PhaseBenchMark phaseBench, IHttpContextAccessor httpContextAccessor, IOptions<ConnectionStrings> serviceSettings)
         {
             _repo = repo;
+            _con = con;
             _mapper = mapper;
             _phaseIIRepo = repos;
             _phaseBench = phaseBench;
             _httpContextAccessor = httpContextAccessor;
             _serviceSettings = serviceSettings;
-            
+
         }
 
         [HttpGet]
@@ -78,12 +82,13 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             try
             {
                 var ret = await _phaseIIRepo.GetAllBusinessesAsync(pageNumber, pageSize);
-                var ret2 = await _repo.AssetTaxPayerDetailsApis.CountAsync();
+                // no point doing two calls you can use dictionary,turple to get all the values
+                // var ret2 = await _repo.AssetTaxPayerDetailsApis.CountAsync();
 
                 var result = new CombinedResult
                 {
-                    Businesses = ret,
-                    TotalCount = ret2
+                    Businesses = ret.Keys.FirstOrDefault() ?? new List<BusinessVm>(),
+                    TotalCount = ret.Values.FirstOrDefault()
                 };
 
                 r.data = result;
@@ -99,6 +104,68 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             }
         }
 
+        [HttpPut]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("ChangePassword")]
+        public async Task<IActionResult> ChangePassword([FromBody] UpdateUser model)
+        {
+            string newP = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+            var r = new ReturnObject();
+
+            int affectedRows = await _con.UserManagements
+                .Where(b => b.CompanyRin == model.CompanyRin && b.VerificationOtp == model.OTP)
+                .ExecuteUpdateAsync(s => s.SetProperty(b => b.Password, newP));
+
+            // Check if the update was successful
+            if (affectedRows > 0)
+            {
+                r.status = true;
+                r.message = "Password Changed Successfully";
+            }
+            else
+            {
+                r.status = false;
+                r.message = "Failed to change password. Please check the OTP or CompanyRin.";
+            }
+
+            return Ok(r);
+        }
+        [HttpPost]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("InitiateChangePassword")]
+        public async Task<IActionResult> InitiateChangePassword(CompanyStep1 model)
+        {
+            AllFunction allFunction = new AllFunction();
+            var r = new ReturnObject();
+            Random ran = new Random();
+            var q = ran.Next(0, 1000000);
+
+            int affectedRows = await _con.UserManagements.Where(b => b.CompanyRin == model.CompanyRin)
+                .ExecuteUpdateAsync(s =>
+                s.SetProperty(b => b.VerificationOtp, Convert.ToInt32(q))
+                .SetProperty(b => b.PhoneNumber, model.PhoneNumber)
+                );
+
+            // Check if the update was successful
+            if (affectedRows > 0)
+            {
+                var blnSMSSent = await allFunction.SendTiloSMS(model.PhoneNumber, $"Dear User, Kindly Use {q} As OTP To Change Your Password");
+
+                r.status = true;
+                r.message = "Password Changed Initiated And OTP Successfully Sent";
+            }
+            else
+            {
+                r.status = false;
+                r.message = "Failed to change password. Please check the OTP or CompanyRin.";
+            }
+
+            return Ok(r);
+        }
+
+
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -113,12 +180,11 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             try
             {
                 var ret = await _phaseIIRepo.getallEmployeesCount(pageNumber, pageSize);
-                var ret2 = await _repo.AssetTaxPayerDetailsApis.CountAsync();
 
                 var result = new CombinedResult2
                 {
-                    Businesses = ret,
-                    TotalCount = ret2
+                    Businesses = ret.Keys.FirstOrDefault() ?? new List<BusinessRinVm>(),
+                    TotalCount = ret.Values.FirstOrDefault()
                 };
 
                 r.data = result;
@@ -874,104 +940,43 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         {
             try
             {
-                if (obj.EmployeeRin == null || obj.BusinessRin == null || obj.CompanyRin == null)
+                int det = 1;
+                MarkEmpInactive ObjBus = new MarkEmpInactive();
+                if (obj.BusinessRin == null || obj.CompanyRin == null)
                 {
                     return NotFound(new ReturnObject { message = "EmployeeId, BusinessId, or CompanyId Cannot Be Null", status = false });
                 }
                 else
                 {
                     var r = new ReturnObject { message = "Successfully Marked", status = true };
-                    var Ind = await _repo.Individuals.FirstOrDefaultAsync(x => x.EmployeeRin == obj.EmployeeRin);
 
+                    if (!string.IsNullOrEmpty(obj.EmployeeRin))
+                    {
+                        var Ind = await _repo.Individuals.FirstOrDefaultAsync(x => x.EmployeeRin == obj.EmployeeRin);
+                        ObjBus.Employeeid = Ind.EmployeeId;
+                        det = 2;
+                    }
                     var buss = GetBusinessCompanyId(obj.BusinessRin, obj.CompanyRin);
 
-                    MarkEmpInactive ObjBus = new MarkEmpInactive
+                    ObjBus.BusinessId = buss.Result.BusinessId;
+                    ObjBus.Companyid = buss.Result.Companyid;
+                    //    .FirstOrDefaultAsync();
+                    switch (det)
                     {
-                        BusinessId = buss.Result.BusinessId,
-                        Companyid = buss.Result.Companyid,
-                        Employeeid = Ind.EmployeeId,
-
-                    };
-
-                    var stat = await _repo.EmployeesMonthlyIncomes
-                        .Where(e => e.EmployeeId == Ind.EmployeeId && e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
-                        .Select(o => o.Status)
-                        .FirstOrDefaultAsync();
-
-                    if (stat != null)
-                    {
-                        r.data = await _repo.EmployeesMonthlyIncomes
-                            .Where(e => e.EmployeeId == Ind.EmployeeId && e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
-                            .ExecuteUpdateAsync(setters =>
-                                setters.SetProperty(b => b.Status, stat == true ? false : true));
-                    }
-                    else
-                    {
-                        return NotFound(new ReturnObject { message = "Employee not found", status = false });
-                    }
-
-                    return Ok(r);
-                }
-
-            }
-            catch (System.Exception ex)
-            {
-                return (
-                    StatusCode(
-                        StatusCodes.Status500InternalServerError,
-                        new ReturnObject { status = false, message = ex.Message }
-                    )
-                );
-            }
-        }
-
-        [HttpPut]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
-        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("Mark-All-Employee-Inactive")]
-        public async Task<IActionResult> MarkAllEmployeeInactive([FromBody] MarkH3Inactive obj)
-        {
-            try
-            {
-                if (obj.BusinessRin == null || obj.CompanyRin == null)
-                {
-                    return NotFound(new ReturnObject { message = "BusinessId, or CompanyId Cannot Be Null", status = false });
-                }
-                else
-                {
-                    var r = new ReturnObject { message = "Successfully Marked All", status = true };
-                    //var Ind = await _repo.Individuals.FirstOrDefaultAsync(x => x.EmployeeRin == obj.EmployeeRin);
-
-                    var buss = GetBusinessCompanyId(obj.BusinessRin, obj.CompanyRin);
-
-                    MarkEmpInactive ObjBus = new MarkEmpInactive
-                    {
-                        BusinessId = buss.Result.BusinessId,
-                        Companyid = buss.Result.Companyid
-                    };
-
-                    if (ObjBus != null)
-                    {
-                        var stat = await _repo.EmployeesMonthlyIncomes
-                                         .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
-                                         .Select(o => o.Status)
-                                         .FirstOrDefaultAsync();
-
-                        if (stat != null)
-                        {
+                        case 1:
                             r.data = await _repo.EmployeesMonthlyIncomes
-                                .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
-                                .ExecuteUpdateAsync(setters =>
-                                    setters.SetProperty(b => b.Status, false));
-                        }
-                        else
-                        {
-                            return NotFound(new ReturnObject { message = "Employees not found", status = false });
-                        }
-                    }
-                    else
-                    {
-                        return NotFound(new ReturnObject { message = "Employer not found", status = false });
+                            .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
+                            .ExecuteUpdateAsync(setters =>
+                                setters.SetProperty(b => b.Status, false));
+                            break;
+                        case 2:
+                            r.data = await _repo.EmployeesMonthlyIncomes
+    .Where(e => e.EmployeeId == ObjBus.Employeeid && e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
+    .ExecuteUpdateAsync(setters =>
+        setters.SetProperty(b => b.Status, false));
+                            break;
+                        default:
+                            return NotFound(new ReturnObject { message = "Employee not found", status = false });
                     }
                     return Ok(r);
                 }
@@ -987,6 +992,70 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                 );
             }
         }
+
+        //[HttpPut]
+        //[SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        //[SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        //[Route("Mark-All-Employee-Inactive")]
+        //public async Task<IActionResult> MarkAllEmployeeInactive([FromBody] MarkH3Inactive obj)
+        //{
+        //    try
+        //    {
+        //        if (obj.BusinessRin == null || obj.CompanyRin == null)
+        //        {
+        //            return NotFound(new ReturnObject { message = "BusinessId, or CompanyId Cannot Be Null", status = false });
+        //        }
+        //        else
+        //        {
+        //            var r = new ReturnObject { message = "Successfully Marked All", status = true };
+        //            //var Ind = await _repo.Individuals.FirstOrDefaultAsync(x => x.EmployeeRin == obj.EmployeeRin);
+
+        //            var buss = GetBusinessCompanyId(obj.BusinessRin, obj.CompanyRin);
+
+        //            MarkEmpInactive ObjBus = new MarkEmpInactive
+        //            {
+        //                BusinessId = buss.Result.BusinessId,
+        //                Companyid = buss.Result.Companyid
+        //            };
+
+        //            if (ObjBus != null)
+        //            {
+        //                // not needed to check it an update even if it meet no one with the condition it will fly;
+        //                var stat = await _repo.EmployeesMonthlyIncomes
+        //                                 .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
+        //                                 .Select(o => o.Status)
+        //                                 .FirstOrDefaultAsync();
+
+        //                if (stat != null)
+        //                {
+        //                    r.data = await _repo.EmployeesMonthlyIncomes
+        //                        .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
+        //                        .ExecuteUpdateAsync(setters =>
+        //                            setters.SetProperty(b => b.Status, false));
+        //                }
+        //                else
+        //                {
+        //                    return NotFound(new ReturnObject { message = "Employees not found", status = false });
+        //                }
+        //            }
+        //            else
+        //            {
+        //                return NotFound(new ReturnObject { message = "Employer not found", status = false });
+        //            }
+        //            return Ok(r);
+        //        }
+
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        return (
+        //            StatusCode(
+        //                StatusCodes.Status500InternalServerError,
+        //                new ReturnObject { status = false, message = ex.Message }
+        //            )
+        //        );
+        //    }
+        //}
 
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]

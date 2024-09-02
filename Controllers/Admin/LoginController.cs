@@ -58,40 +58,7 @@ namespace SelfPortalAPi.Controllers.Admin
                 }));
             }
         } 
-        [HttpPut]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
-        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("ChangePassword")]
-        public async Task<IActionResult> ChangePassword([FromBody] TokenRequest ivm)
-        {
-            var r = new ReturnObject();
-            if (!ivm.UserType.Equals(ivm.UserType, StringComparison.OrdinalIgnoreCase))
-            {
-                r.status = false;
-                r.message = "Invalid User Type";
-                return Ok(r);
-            }
-
-            try
-            {
-                var validationResult = await _validator.ValidateAsync(ivm);
-                if (!validationResult.IsValid)
-                {
-                    return (IActionResult)Results.ValidationProblem(validationResult.ToDictionary());
-                }
-                var ret = _repo.Login(ivm);
-                return Ok(ret);
-            }
-            catch (System.Exception ex)
-            {
-                return await Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
-                {
-                    status = false,
-                    message = ex.Message
-                }));
-            }
-        }
-
+     
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -136,6 +103,40 @@ namespace SelfPortalAPi.Controllers.Admin
 
             return Ok(r);
         }
+        [HttpPut]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("ChangePassword")]
+        public async Task<IActionResult> ChangePassword([FromBody] TokenRequest ivm)
+        {
+            var r = new ReturnObject();
+            if (!ivm.UserType.Equals(ivm.UserType, StringComparison.OrdinalIgnoreCase))
+            {
+                r.status = false;
+                r.message = "Invalid User Type";
+                return Ok(r);
+            }
+
+            try
+            {
+                var validationResult = await _validator.ValidateAsync(ivm);
+                if (!validationResult.IsValid)
+                {
+                    return (IActionResult)Results.ValidationProblem(validationResult.ToDictionary());
+                }
+                var ret = _repo.Login(ivm);
+                return Ok(ret);
+            }
+            catch (System.Exception ex)
+            {
+                return await Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]

@@ -14,14 +14,15 @@ using System.Runtime.Intrinsics.Arm;
 using Bogus;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 
 namespace SelfPortalAPi.UnitOfWork
 {
     public interface IPhaseIIRepo
     {
-        Task<List<BusinessVm>> GetAllBusinessesAsync(int pageNumber, int pageSize);
-        Task<List<BusinessRinVm>> getallEmployeesCount(int pageNumber, int pageSize);
+        Task<Dictionary<List<BusinessVm>, int>> GetAllBusinessesAsync(int pageNumber, int pageSize);
+        Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(int pageNumber, int pageSize);
         Task<List<EmployeeIncomeVm>> GetEmployeeIncomeView(EmployeesViewFmModel emp);
         Task<List<EmployeesMonthlyIncome>> GetMonthlyIncomeAsync(EmpSchedule obj);
         Task<List<EmployeesMonthlyIncome>> GetEmployeeMonthlyIncomeAsync(EmpSchedule obj);
@@ -50,21 +51,29 @@ namespace SelfPortalAPi.UnitOfWork
             _dbContext = dbContext;
         }
 
-        public async Task<List<BusinessVm>> GetAllBusinessesAsync(int pageNumber, int pageSize)
+        public async Task<Dictionary<List<BusinessVm>, int>> GetAllBusinessesAsync(int pageNumber, int pageSize)
         {
-            return await _dbContext.AssetTaxPayerDetailsApis
-                   .Skip((pageNumber - 1) * pageSize)
-                   .Take(pageSize)
+            var query =  _dbContext.AssetTaxPayerDetailsApis
                    .Select(o => new BusinessVm
                    {
                        BusinessRin = o.AssetRin,
                        BusinessName = o.AssetName,
                        CompanyRin = o.TaxPayerRinnumber,
                        LgaName = o.AssetAddress,
-                   }).ToListAsync();
+                   });
+
+            int totalCount =await  query.CountAsync();
+            var pageRes =await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            return new Dictionary<List<BusinessRinVm>, int> 
+            {
+                {pageRes,totalCount }
+            };
         }
 
-        public async Task<List<BusinessRinVm>> getallEmployeesCount(int pageNumber, int pageSize)
+        public async Task<Dictionary<List<BusinessRinVm>, int >> getallEmployeesCount(int pageNumber, int pageSize)
         {
             var query = from asset in _dbContext.AssetTaxPayerDetailsApis
                         join employee in _dbContext.EmployeesMonthlyIncomes
@@ -79,11 +88,14 @@ namespace SelfPortalAPi.UnitOfWork
                             businessLga = g.Key.AssetLga,
                             NoOfEmployees = g.Count()
                         };
-
-            return await query
+            int totalCount = await query.CountAsync();
+            var pageRes= await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+            return new Dictionary<List<BusinessRinVm>, int> {
+                {pageRes,totalCount }
+            };
         }
 
         public async Task<List<EmployeeIncomeVm>> GetEmployeeIncomeView(EmployeesViewFmModel emp)
