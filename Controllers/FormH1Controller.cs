@@ -12,9 +12,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.VisualBasic;
 using Nancy.Json;
 using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
-
-using SelfPortalAPi.Migrations;
-using SelfPortalAPi.Model;
+using SelfPortalAPi.Models;
 using SelfPortalAPi.NewModel;
 using SelfPortalAPi.NewModel.ResModel;
 using SelfPortalAPi.UnitOfWork;
@@ -31,12 +29,12 @@ namespace SelfPortalAPi.Controllers
     {
         private readonly IMapper _mapper;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
-        private readonly PayeConnection _con;
+        private readonly SelfServiceConnect _con;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         int taxpeyerTypeId = 0;
         public FormH1Controller(
-            IOptions<ConnectionStrings> serviceSettings, IMapper mapper, IHttpContextAccessor httpContextAccessor, PayeConnection con
+            IOptions<ConnectionStrings> serviceSettings, IMapper mapper, IHttpContextAccessor httpContextAccessor, SelfServiceConnect con
         )
         {
             _serviceSettings = serviceSettings;
@@ -322,7 +320,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 string query =
                     $"SELECT s.[Id],s.[BusinessId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[CompanyId],(s.[Rent] + s.[Basic] +s.[OTHERINCOME]+s.[TRANSPORT]) as Total,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName FROM [SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where s.CompanyId = '{companyId}' and s.BusinessId = '{businessId}'";
                 var user = _context.ReturnSspformH1.FromSqlRaw(query).ToList();
@@ -348,7 +346,7 @@ namespace SelfPortalAPi.Controllers
             var r = new ReturnObject();
             try
             {
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 var query =
                     $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
                 var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
@@ -377,31 +375,7 @@ namespace SelfPortalAPi.Controllers
             [FromRoute] string companyId
         )
         {
-            //try
-            //{
-            //    var finalBusinessReturnModel = new List<BusinessReturnModel>();
-            //    var res = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerId == Convert.ToInt32(companyId));
-            //    foreach (var r in res)
-            //    {
-            //        var empCountDet = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
-            //        BusinessReturnModel m = new();
-            //        m.BusinessRIN = r.AssetRin;
-            //        m.BusinessAddress = r.AssetAddress;
-            //        m.BusinessName = r.AssetName;
-            //        m.BusinessID = r.AssetId.ToString();
-            //        m.NoOfEmployees = empCountDet.Count() > 0 ? empCountDet.Count().ToString() : "0";
-            //        finalBusinessReturnModel.Add(m);
-            //    }
-            //    return Ok(finalBusinessReturnModel);
-            //}
-            //catch (System.Exception ex)
-            //{
-            //    return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
-            //    {
-            //        status = false,
-            //        message = ex.Message
-            //    }));
-            //}
+           
             var r = new ReturnObject();
             try
             {
@@ -411,7 +385,7 @@ namespace SelfPortalAPi.Controllers
                         o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 var kkkk = new List<SspfiledFormH1ForSP>();
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 var query1 =
                     $"SELECT top(1) S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
                 var user1 = _context.SspfiledFormH1ForSPs.FromSqlRaw(query1).ToList();
@@ -460,7 +434,7 @@ namespace SelfPortalAPi.Controllers
             var r = new ReturnObject();
             try
             {
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 var query =
                     $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  CASE WHEN B.OTHERNAME IS NOT NULL THEN  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME   ELSE B.FirstName + ' ' + B.SURNAME     END AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
                 var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
@@ -497,7 +471,7 @@ namespace SelfPortalAPi.Controllers
             List<SspformH1> lstFormH1 = new();
             List<Sspindividual> lstIndividual = new();
             Receiver rootobjectVm = new();
-
+AllFunction af = new AllFunction();
             try
             {
                 var la = new List<FormH1FM>();
@@ -533,7 +507,8 @@ namespace SelfPortalAPi.Controllers
                             r.message = $"{res}";
                             return await Task.FromResult<IActionResult>(Ok(r));
                         }
-                        var token = GetToken();
+                        
+                        var token = af.GetToken();
                         if (token != null)
                         {
                             for (int i = 0; i < la.Count(); i++)
@@ -545,7 +520,7 @@ namespace SelfPortalAPi.Controllers
                                         baseUrl
                                         + "TaxPayer/SearchTaxPayerByMobileNumber?MobileNumber="
                                         + fm.PHONENUMBER;
-                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    resp = await af.CallAPi(mainBaseurl, token, "get", "");
                                     rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else if (fm.RIN != "NULL")
@@ -554,7 +529,7 @@ namespace SelfPortalAPi.Controllers
                                         baseUrl
                                         + "TaxPayer/SearchTaxPayerByRIN?TaxPayerRIN="
                                         + fm.RIN;
-                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    resp = await af.CallAPi(mainBaseurl, token, "get", "");
                                     rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else if (fm.JTBTIN != "NULL")
@@ -563,7 +538,7 @@ namespace SelfPortalAPi.Controllers
                                         baseUrl
                                         + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN="
                                         + fm.JTBTIN;
-                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    resp = await af.CallAPi(mainBaseurl, token, "get", "");
                                     rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else
@@ -601,7 +576,7 @@ namespace SelfPortalAPi.Controllers
                                         ad.NotificationMethodID = 1;
                                         ad.ContactAddress = fm.HOMEADDRESS;
                                         string jsonData = js.Serialize(ad);
-                                        resp = await CallAPi(mainBaseurl, token, "post", jsonData);
+                                        resp = await af.CallAPi(mainBaseurl, token, "post", jsonData);
                                         rootobjectVm = js.Deserialize<Receiver>(resp);
                                         if (rootobjectVm.Success == true)
                                         {
@@ -626,7 +601,7 @@ namespace SelfPortalAPi.Controllers
                                                     + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN="
                                                     + fm.JTBTIN;
                                             }
-                                            resp = await CallAPi(baseUrl, token, "get", "");
+                                            resp = await af.CallAPi(baseUrl, token, "get", "");
                                             rootobjectVm = js.Deserialize<Receiver>(resp);
                                             if (rootobjectVm.Success == true)
                                             {
@@ -1056,7 +1031,7 @@ namespace SelfPortalAPi.Controllers
                 }
                 var presDate = DateTime.Now.Date;
                 var lastDueDate = new DateTime(DateTime.Now.Year, 1, 31);
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 string query =
                     $"SELECT s.Id, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
                 var user = _context.SspformH1s.FromSqlRaw(query).ToList();
@@ -1160,57 +1135,40 @@ namespace SelfPortalAPi.Controllers
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        [NonAction]
-        public string GetToken()
-        {
-            string URI = _serviceSettings.Value.ErasBaseUrl + "Account/Login";
-            string user = _serviceSettings.Value.eirsusername;
-            string password = _serviceSettings.Value.eirspassword;
-            string myParameters =
-                "UserName=" + user + "&Password=" + password + "&grant_type=password";
-            string BearerToken = "";
-            using (WebClient wc = new WebClient())
-            {
-                wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
-                BearerToken = wc.UploadString(URI, myParameters);
-            }
+       
 
-            Token TokenObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Token>(BearerToken);
-            return TokenObj.access_token;
-        }
-
-        [NonAction]
-        public async Task<string> CallAPi(
-            string baseUrl,
-            string st,
-            string httpMethod,
-            string? jsonData
-        )
-        {
-            string res = "";
-            HttpRequestMessage request = new();
-            HttpResponseMessage response = new();
-            var client = new HttpClient();
-            switch (httpMethod.ToLower().Trim())
-            {
-                case "get":
-                    request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
-                    request.Headers.Add("Authorization", $"Bearer {st}");
-                    response = await client.SendAsync(request);
-                    res = await response.Content.ReadAsStringAsync();
-                    break;
-                case "post":
-                    request = new HttpRequestMessage(HttpMethod.Post, baseUrl);
-                    request.Headers.Add("Authorization", $"Bearer {st}");
-                    var content = new StringContent(jsonData, null, "application/json");
-                    request.Content = content;
-                    response = await client.SendAsync(request);
-                    res = await response.Content.ReadAsStringAsync();
-                    break;
-                default:
-                    break;
-            }
-            return res;
-        }
+        // [NonAction]
+        // public async Task<string> CallAPi(
+        //     string baseUrl,
+        //     string st,
+        //     string httpMethod,
+        //     string? jsonData
+        // )
+        // {
+        //     string res = "";
+        //     HttpRequestMessage request = new();
+        //     HttpResponseMessage response = new();
+        //     var client = new HttpClient();
+        //     switch (httpMethod.ToLower().Trim())
+        //     {
+        //         case "get":
+        //             request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
+        //             request.Headers.Add("Authorization", $"Bearer {st}");
+        //             response = await client.SendAsync(request);
+        //             res = await response.Content.ReadAsStringAsync();
+        //             break;
+        //         case "post":
+        //             request = new HttpRequestMessage(HttpMethod.Post, baseUrl);
+        //             request.Headers.Add("Authorization", $"Bearer {st}");
+        //             var content = new StringContent(jsonData, null, "application/json");
+        //             request.Content = content;
+        //             response = await client.SendAsync(request);
+        //             res = await response.Content.ReadAsStringAsync();
+        //             break;
+        //         default:
+        //             break;
+        //     }
+        //     return res;
+        // }
     }
 }

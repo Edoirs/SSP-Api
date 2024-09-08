@@ -5,10 +5,12 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using Quartz.Impl;
+using Quartz.Spi;
+using Quartz;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using SelfPortalAPi.Document.HtmlContent.ErasModel;
 using SelfPortalAPi.Model;
 using SelfPortalAPi.Models;
 using SelfPortalAPi.NewModel;
@@ -21,12 +23,25 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using Exception = System.Exception;
+using static SelfPortalAPi.BackgroundJobs;
+using System.Net;
+using Microsoft.Extensions.Options;
 
 
 namespace SelfPortalAPi
 {
     public class AllFunction
     {
+        public AllFunction()
+        {
+
+        }
+
+        private readonly IOptions<ConnectionStrings> _serviceSettings;
+        public AllFunction(IOptions<ConnectionStrings> serviceSettings)
+        {
+            _serviceSettings = serviceSettings;
+        }
         public void ConfigureServices(WebApplicationBuilder builder)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -36,9 +51,23 @@ namespace SelfPortalAPi
             string? conn = builder.Configuration.GetConnectionString("SelfServiceConnect");
             string? connII = builder.Configuration.GetConnectionString("EirsContext");
             string? connIII = builder.Configuration.GetConnectionString("ERASContext");
-            string? connIV = builder.Configuration.GetConnectionString("PayeConnection");
+            //string? connIV = builder.Configuration.GetConnectionString("PayeConnection");
             services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
 
+            string? TaxOfficeJobTime = builder.Configuration.GetConnectionString("TaxOfficeJob");
+            // Add Quartz services
+            //services.AddSingleton<IJobFactory, SingletonJobFactory>();
+            //services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
+
+            //// Add our job
+            //services.AddSingleton<AllJob>();
+
+            //// Create the job and trigger
+            //services.AddSingleton(new JobSchedule(
+            //    jobType: typeof(AllJob),
+            //    cronExpression: "0 0 6 * * ?")); // Cron expression for 6 AM daily
+
+            //services.AddHostedService<QuartzHostedService>();
             services.AddAutoMapper(typeof(Program));
             services.AddEndpointsApiExplorer();
             services.AddAuthentication(opt =>
@@ -58,15 +87,11 @@ namespace SelfPortalAPi
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("JWT:Secret").Value))
                 };
             });
-            services.AddDbContext<ErasContext>(opt => opt.UseSqlServer(connIII));
+            //services.AddDbContext<ErasContext>(opt => opt.UseSqlServer(connIII));
             services.AddDbContext<ApiDbContext>(opt => opt.UseSqlServer(connII));
-            // services.AddDbContextPool<PayeeContext>(opt => opt.UseSqlServer(conn));
             services.AddDbContext<EirsContext>(opt => opt.UseSqlServer(connIII));
-            services.AddDbContext<PayeConnection>(opt => opt.UseSqlServer(connIV));
             services.AddDbContext<SelfServiceConnect>(opt => opt.UseSqlServer(conn));
-            services.AddDbContext<SelfPortalAPi.NewModel.PayeConnection>(opt => opt.UseSqlServer(connIV));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            services.AddScoped(typeof(INewRepository<>), typeof(NewRepository<>));
             services.AddScoped(typeof(ISelfRepository<>), typeof(SelfRepository<>));
             services.AddScoped<IValidator<TokenRequest>, TokenRequestValidator>();
             services.AddScoped<IIndividualRepository, IndividualRepository>();
@@ -76,8 +101,8 @@ namespace SelfPortalAPi
             services.AddHealthChecks()
                 .AddSqlServer(connIII, name: "ErasContext")
                 .AddSqlServer(connII, name: "ApiDbContext")
-                .AddSqlServer(conn, name: "SelfServiceConnect")
-                .AddSqlServer(connIV, name: "PinscherSpikeContext");
+                .AddSqlServer(conn, name: "SelfServiceConnect");
+            // .AddSqlServer(connIV, name: "PinscherSpikeContext");
             services.AddScoped<PhaseBenchMark>();
 
 
@@ -115,7 +140,98 @@ namespace SelfPortalAPi
     });
             });
         }
+        public class QuartzHostedService : IHostedService
+        {
+            private readonly ISchedulerFactory _schedulerFactory;
+            private readonly IJobFactory _jobFactory;
+            private readonly IEnumerable<JobSchedule> _jobSchedules;
+            public IScheduler Scheduler { get; set; }
 
+            public QuartzHostedService(
+                ISchedulerFactory schedulerFactory,
+                IJobFactory jobFactory,
+                IEnumerable<JobSchedule> jobSchedules)
+            {
+                _schedulerFactory = schedulerFactory;
+                _jobFactory = jobFactory;
+                _jobSchedules = jobSchedules;
+            }
+
+            public async Task StartAsync(CancellationToken cancellationToken)
+            {
+                Scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
+                Scheduler.JobFactory = _jobFactory;
+
+                foreach (var jobSchedule in _jobSchedules)
+                {
+                    var job = CreateJob(jobSchedule);
+                    var trigger = CreateTrigger(jobSchedule);
+
+                    await Scheduler.ScheduleJob(job, trigger, cancellationToken);
+                }
+
+                await Scheduler.Start(cancellationToken);
+            }
+
+            public async Task StopAsync(CancellationToken cancellationToken)
+            {
+                await Scheduler?.Shutdown(cancellationToken);
+            }
+
+            private IJobDetail CreateJob(JobSchedule schedule)
+            {
+                var jobType = schedule.JobType;
+                return JobBuilder
+                    .Create(jobType)
+                    .WithIdentity(jobType.FullName)
+                    .WithDescription(jobType.Name)
+                    .Build();
+            }
+
+            private ITrigger CreateTrigger(JobSchedule schedule)
+            {
+                return TriggerBuilder
+                    .Create()
+                    .WithIdentity($"{schedule.JobType.FullName}.trigger")
+                    .WithCronSchedule(schedule.CronExpression)
+                    .WithDescription(schedule.CronExpression)
+                    .Build();
+            }
+        }
+        public class SingletonJobFactory : IJobFactory
+        {
+            private readonly IServiceProvider _serviceProvider;
+
+            public SingletonJobFactory(IServiceProvider serviceProvider)
+            {
+                _serviceProvider = serviceProvider;
+            }
+
+            public IJob NewJob(TriggerFiredBundle bundle, IScheduler scheduler)
+            {
+                return _serviceProvider.GetService(bundle.JobDetail.JobType) as IJob;
+            }
+
+            public void ReturnJob(IJob job) { }
+        }
+        public string GetToken()
+        {
+
+
+            string URI = _serviceSettings.Value.ErasBaseUrl + "Account/Login";
+            string user = _serviceSettings.Value.eirsusername;
+            string password = _serviceSettings.Value.eirspassword;
+            string myParameters =  "UserName=" + user + "&Password=" + password + "&grant_type=password";
+            string BearerToken = "";
+            using (WebClient wc = new WebClient())
+            {
+                wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
+                BearerToken = wc.UploadString(URI, myParameters);
+            }
+
+            Token TokenObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Token>(BearerToken);
+            return TokenObj.access_token;
+        }
         public class Base64FormFile : IFormFile
         {
             private readonly byte[] _fileContent;
@@ -197,29 +313,6 @@ namespace SelfPortalAPi
         {
             public string access_token { get; set; }
         }
-        public async Task<int> ValidateToken(string token)
-        {
-            if (token != null)
-            {
-                if (token.Contains("Bearer"))
-                {
-                    token = token.Replace("Bearer ", "").Trim();
-                }
-                else
-                {
-                    token = token.Replace("Basic ", "").Trim();
-                }
-
-                using var _context = new ErasContext();
-                var user = await _context.MstUserTokens.FromSqlRaw($"SELECT top(1) * FROM [MST_UserToken] WHERE token = '{token}'").FirstOrDefaultAsync();
-
-                if (user != null)
-                {
-                    return user.UserId.Value;
-                }
-            }
-            return 0;
-        }
         public async Task<bool> SendTiloSMS(string pStrToNumber, string body)
         {
             string recPnt = "";
@@ -272,10 +365,19 @@ namespace SelfPortalAPi
             switch (httpMethod.ToLower().Trim())
             {
                 case "get":
-                    request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
-                    request.Headers.Add("Authorization", $"Bearer {st}");
-                    response = await client.SendAsync(request);
-                    res = await response.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrEmpty(st))
+                    {
+                        request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
+                        request.Headers.Add("Authorization", $"Bearer {st}");
+                        response = await client.SendAsync(request);
+                        res = await response.Content.ReadAsStringAsync();
+                    }
+                    else
+                    {
+                        request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
+                        response = await client.SendAsync(request);
+                        res = await response.Content.ReadAsStringAsync();
+                    }
                     break;
                 case "post":
                     if (!string.IsNullOrEmpty(st))
@@ -551,7 +653,7 @@ namespace SelfPortalAPi
             }
         }
 
-        public static async Task<FileContentResult> GenerateExcelFileAsync<T>(List<T> data, string sheetName, string fileName, string heading)
+        public async Task<FileContentResult> GenerateExcelFileAsync<T>(List<T> data, string sheetName, string fileName, string heading)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
@@ -623,155 +725,5 @@ namespace SelfPortalAPi
             }
             return rows.ToString();
         }
-
-        //public static byte[] GeneratePdf<T>(Dictionary<string, List<T>> tableData)
-        //{
-        //    var htmlContent = new StringBuilder();
-        //    htmlContent.Append("<html><body>");
-
-        //    foreach (var entry in tableData)
-        //    {
-        //        htmlContent.Append($"<h2>{entry.Key}</h2>");
-        //        htmlContent.Append(ConvertListToHtmlTable(entry.Value));
-        //    }
-
-        //    htmlContent.Append("</body></html>");
-
-        //    var converter = new SynchronizedConverter(new PdfTools());
-        //    var doc = new HtmlToPdfDocument()
-        //    {
-        //        GlobalSettings = {
-        //    ColorMode = ColorMode.Color,
-        //    Orientation = Orientation.Portrait,
-        //    PaperSize = PaperKind.A4,
-        //},
-        //        Objects = {
-        //    new ObjectSettings() {
-        //        PagesCount = true,
-        //        HtmlContent = htmlContent.ToString(),
-        //        WebSettings = { DefaultEncoding = "utf-8" },
-        //        HeaderSettings = { FontName = "Arial", FontSize = 9, Right = "Page [page] of [toPage]", Line = true, Spacing = 2.812 },
-        //        FooterSettings = { FontName = "Arial", FontSize = 9, Line = true, Center = "This is the footer" }
-        //    }
-        //}
-        //    };
-
-        //    return converter.Convert(doc);
-        //}
-
-        //private static string ConvertListToHtmlTable<T>(List<T> dataList)
-        //{
-        //    if (dataList == null || dataList.Count == 0)
-        //    {
-        //        return "<p>No data available</p>";
-        //    }
-
-        //    var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-        //    var tableHtml = new StringBuilder();
-        //    tableHtml.Append("<table style='width:100%; border:1px solid black; border-collapse:collapse;'>");
-
-        //    // Table header
-        //    tableHtml.Append("<tr>");
-        //    foreach (var prop in properties)
-        //    {
-        //        tableHtml.Append($"<th style='border:1px solid black;'>{prop.Name}</th>");
-        //    }
-        //    tableHtml.Append("</tr>");
-
-        //    // Table rows
-        //    foreach (var item in dataList)
-        //    {
-        //        tableHtml.Append("<tr>");
-        //        foreach (var prop in properties)
-        //        {
-        //            var value = prop.GetValue(item)?.ToString() ?? string.Empty;
-        //            tableHtml.Append($"<td style='border:1px solid black;'>{value}</td>");
-        //        }
-        //        tableHtml.Append("</tr>");
-        //    }
-
-        //    tableHtml.Append("</table>");
-
-        //    return tableHtml.ToString();
-        //}
-
-        //public static byte[] GeneratePdf(Dictionary<string, List<object>> tableData)
-        //{
-        //    var document = Document.Create(container =>
-        //    {
-        //        container.Page(page =>
-        //        {
-        //            page.Size(PageSizes.A4);
-        //            page.Margin(2, Unit.Centimetre);
-        //            page.PageColor(Colors.White);
-        //            page.DefaultTextStyle(x => x.FontSize(14));
-
-        //            page.Header().Text("Tax Analysis").SemiBold().FontSize(20).FontColor(Colors.Blue.Medium);
-
-        //            page.Content().Column(column =>
-        //            {
-        //                foreach (var entry in tableData)
-        //                {
-        //                    column.Item().Text(entry.Key).SemiBold().FontSize(16).Underline();
-        //                    column.Item().Table(table =>
-        //                    {
-        //                        table.ColumnsDefinition(columns =>
-        //                        {
-        //                            foreach (var prop in entry.Value.First().GetType().GetProperties())
-        //                            {
-        //                                columns.RelativeColumn();
-        //                            }
-        //                        });
-
-        //                        // Define header cells
-        //                        table.Header(header =>
-        //                        {
-        //                            foreach (var prop in entry.Value.First().GetType().GetProperties())
-        //                            {
-        //                                header.Cell().Element(CellStyle).Text(prop.Name);
-        //                            }
-        //                        });
-
-        //                        // Define data rows and cells
-        //                        foreach (var item in entry.Value)
-        //                        {
-        //                            table.Cell().Element(CellStyle).Text(item.GetType().GetProperties().First().GetValue(item)?.ToString());
-
-        //                            foreach (var prop in item.GetType().GetProperties())
-        //                            {
-        //                                table.Cell().Element(CellStyle).Text(prop.GetValue(item)?.ToString());
-        //                            }
-        //                        }
-        //                    });
-
-        //                    column.Item().Text("");
-        //                }
-        //            });
-
-        //            page.Footer().AlignCenter().Text(x =>
-        //            {
-        //                x.Span("Page ");
-        //                x.CurrentPageNumber();
-        //                x.Span(" of ");
-        //                x.TotalPages();
-        //            });
-        //        });
-        //    });
-
-        //    return document.GeneratePdf();
-        //}
-
-        //private static IContainer CellStyle(IContainer container)
-        //{
-        //    return container
-        //        .Border(1)
-        //        .BorderColor(Colors.Grey.Lighten2)
-        //        .Padding(5)
-        //        .AlignLeft()
-        //        .AlignMiddle();
-        //}
-
-
     }
 }

@@ -13,7 +13,13 @@ namespace SelfPortalAPi.NewModel.ResModel
         public string DateForwarded { get; set; }
         public string ProjectionYear { get; set; }
 
-    } 
+    }
+
+    public class TaxOfficeRecord
+    {
+        public int TaxOffIceId { get; set; }
+        public string TaxOffIceName { get; set; }
+    }
     public class NewBusinessReturnModel
     {
         public string BusinessID { get; set; }

@@ -14,20 +14,25 @@ using System.Runtime.Intrinsics.Arm;
 using Bogus;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using Newtonsoft.Json;
+using System.Net.Http;
+using Microsoft.Extensions.Options;
+//using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 
 namespace SelfPortalAPi.UnitOfWork
 {
     public interface IPhaseIIRepo
     {
-        Task<Dictionary<List<BusinessVm>, int>> GetAllBusinessesAsync(int pageNumber, int pageSize);
+        Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize);
+        Task<Dictionary<string, object>> GetAllBusinessesAsync(string businName);
         Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(int pageNumber, int pageSize);
+        Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(string businessName);
         Task<List<EmployeeIncomeVm>> GetEmployeeIncomeView(EmployeesViewFmModel emp);
         Task<List<EmployeesMonthlyIncome>> GetMonthlyIncomeAsync(EmpSchedule obj);
         Task<List<EmployeesMonthlyIncome>> GetEmployeeMonthlyIncomeAsync(EmpSchedule obj);
         Task<List<EmpScheduleDetails>> CalculateMonthScheduleAsync(EmpSchedule empSch);
-        Task SaveChangesAsync();
+        Task<ReturnObject> Login(AdminSignUp adminSign);
         int CalculateMonthsLeft(string monthName);
         decimal CalculateTax(decimal ch_income, decimal gross);
         Task<List<ScheduleGetAllRes>> GetAllSchedulesAsync();
@@ -43,37 +48,64 @@ namespace SelfPortalAPi.UnitOfWork
     {
         private readonly IMapper _mapper;
         private readonly SelfServiceConnect _dbContext;
+        private readonly IOptions<ConnectionStrings> _serviceSettings;
+        //  private readonly IHttpClientFactory _httpClientFactory;
 
 
-        public PhaseIIRepo(IMapper mapper, SelfServiceConnect dbContext)
+        public PhaseIIRepo(IMapper mapper, SelfServiceConnect dbContext, IOptions<ConnectionStrings> serviceSettings)
         {
             _mapper = mapper;
             _dbContext = dbContext;
+            // _httpClientFactory = httpClientFactory;
+            _serviceSettings = serviceSettings;
         }
-
-        public async Task<Dictionary<List<BusinessVm>, int>> GetAllBusinessesAsync(int pageNumber, int pageSize)
+        public async Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize)
         {
-            var query =  _dbContext.AssetTaxPayerDetailsApis
-                   .Select(o => new BusinessVm
-                   {
-                       BusinessRin = o.AssetRin,
-                       BusinessName = o.AssetName,
-                       CompanyRin = o.TaxPayerRinnumber,
-                       LgaName = o.AssetAddress,
-                   });
+            var query = _dbContext.AssetTaxPayerDetailsApis
+                .Select(o => new BusinessVm
+                {
+                    BusinessRin = o.AssetRin,
+                    BusinessName = o.AssetName,
+                    CompanyRin = o.TaxPayerRinnumber,
+                    LgaName = o.AssetAddress,
+                });
 
-            int totalCount =await  query.CountAsync();
-            var pageRes =await query
+            int totalCount = await query.CountAsync();
+            var pageRes = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-            return new Dictionary<List<BusinessRinVm>, int> 
-            {
-                {pageRes,totalCount }
-            };
+
+            return new Dictionary<string, object>
+    {
+        { "Businesses", pageRes },
+        { "TotalCount", totalCount }
+    };
+        }
+        public async Task<Dictionary<string, object>> GetAllBusinessesAsync(string busName)
+        {
+            var query = _dbContext.AssetTaxPayerDetailsApis
+                .Where(o => o.AssetName.ToLower().Trim() == busName.ToLower().Trim())
+                .Select(o => new BusinessVm
+                {
+                    BusinessRin = o.AssetRin,
+                    BusinessName = o.AssetName,
+                    CompanyRin = o.TaxPayerRinnumber,
+                    LgaName = o.AssetAddress,
+                });
+
+            int totalCount = await query.CountAsync();
+            var pageRes = await query
+                .ToListAsync();
+
+            return new Dictionary<string, object>
+    {
+        { "Businesses", pageRes },
+        { "TotalCount", totalCount }
+    };
         }
 
-        public async Task<Dictionary<List<BusinessRinVm>, int >> getallEmployeesCount(int pageNumber, int pageSize)
+        public async Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(int pageNumber, int pageSize)
         {
             var query = from asset in _dbContext.AssetTaxPayerDetailsApis
                         join employee in _dbContext.EmployeesMonthlyIncomes
@@ -89,9 +121,32 @@ namespace SelfPortalAPi.UnitOfWork
                             NoOfEmployees = g.Count()
                         };
             int totalCount = await query.CountAsync();
-            var pageRes= await query
+            var pageRes = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .ToListAsync();
+            return new Dictionary<List<BusinessRinVm>, int> {
+                {pageRes,totalCount }
+            };
+        }
+        public async Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(string businessName)
+        {
+            var query = from asset in _dbContext.AssetTaxPayerDetailsApis
+                        join employee in _dbContext.EmployeesMonthlyIncomes
+                        on asset.AssetId.ToString() equals employee.BusinessId
+                        where asset.AssetName.ToLower().Trim() == businessName.ToLower().Trim()
+                        group asset by new { asset.AssetRin, asset.AssetName, asset.AssetAddress, asset.AssetLga, asset.TaxPayerRinnumber } into g
+                        select new BusinessRinVm
+                        {
+                            businessRin = g.Key.AssetRin,
+                            CompanyRin = g.Key.TaxPayerRinnumber,
+                            businessName = g.Key.AssetName,
+                            businessAddress = g.Key.AssetAddress,
+                            businessLga = g.Key.AssetLga,
+                            NoOfEmployees = g.Count()
+                        };
+            int totalCount = await query.CountAsync();
+            var pageRes = await query
                 .ToListAsync();
             return new Dictionary<List<BusinessRinVm>, int> {
                 {pageRes,totalCount }
@@ -211,10 +266,6 @@ namespace SelfPortalAPi.UnitOfWork
 
             return scheduleDetailsList;
         }
-        public async Task SaveChangesAsync()
-        {
-            await _dbContext.SaveChangesAsync();
-        }
 
         public decimal CalculateTax(decimal ch_income, decimal gross)
         {
@@ -297,7 +348,7 @@ namespace SelfPortalAPi.UnitOfWork
                             TaxYear = g.Min(x => x.s.TaxYear),
                             EmployeeCount = g.Count(x => x.s.EmployeeRin != null),
                             TotalIncome = g.Sum(x => (x.i.Basic + x.i.Rent + x.i.Transport + x.i.Ltg + x.i.Utility + x.i.Meal + x.i.Others + x.i.Nhf + x.i.Nhis + x.i.Pension + x.i.LifeAssurance)),
-                            MonthlyTax = g.Sum(x =>x.s.Tax), 
+                            MonthlyTax = g.Sum(x => x.s.Tax),
                             DateForwarded = g.Min(x => x.s.CreatedDate),
                             AssessementStatus = g.Min(x => x.s.AssessementStatusId) == 1 ? "Approved" : g.Min(x => x.s.AssessementStatusId) == 2 ? "Awaiting Approval" : "Re-Assessed"
                         };
@@ -363,7 +414,7 @@ namespace SelfPortalAPi.UnitOfWork
             var query = from s in _dbContext.EmployeesMonthlySchedules
                         join a in _dbContext.AssetTaxPayerDetailsApis on new { s.BusinessId, s.EmployerId } equals new { BusinessId = a.AssetId.ToString(), EmployerId = a.TaxPayerId.ToString() } into sa
                         from a in sa.DefaultIfEmpty()
-                        where s.BusinessId == obj.BusinessId && s.EmployerId == obj.CompanyId && s.AssessementStatusId == 2
+                        where s.BusinessId == obj.BusinessId && s.EmployerId == obj.CompanyId && s.AssessementStatusId == 2 && obj.TaxMonth == s.TaxMonth && obj.TaxYear == s.TaxYear
                         group s by new
                         {
                             a.TaxPayerTypeId,
@@ -389,11 +440,12 @@ namespace SelfPortalAPi.UnitOfWork
 
             foreach (var item in AaaAll)
             {
-                var assessmentRulesQuery = from ar in _dbContext.AssessmentRules
-                                           where ar.TaxYear == obj.TaxYear && ar.AssessmentRuleName.Contains(obj.TaxMonth)
+                int monthId = GetMonthIdByName(obj.TaxMonth);
+                var assessmentRulesQuery = from ar in _dbContext.AssessmentRules1
+                                           where ar.TaxYear == obj.TaxYear && ar.TaxMonth.Equals(monthId)
                                            select new
                                            {
-                                               Profile = ar.Profile,
+                                               Profile = ar.ProfileId,
                                                AssessmentRuleId = ar.AssessmentRuleId
                                            };
 
@@ -534,7 +586,80 @@ namespace SelfPortalAPi.UnitOfWork
 
             return buss;
         }
+        public int GetMonthIdByName(string monthName)
+        {
+            // Convert the month name to title case to handle case sensitivity
+            monthName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(monthName.ToLower());
 
+            // Parse the month name to get the corresponding month ID
+            DateTime result;
+            if (DateTime.TryParseExact(monthName, "MMMM", System.Globalization.CultureInfo.CurrentCulture, System.Globalization.DateTimeStyles.None, out result))
+            {
+                return result.Month;
+            }
+
+            // If the month name is invalid, return -1 or throw an exception
+            return -1;  // Or throw new ArgumentException("Invalid month name");
+        }
+
+        public async Task<ReturnObject> Login(AdminSignUp adminSign)
+        {
+            var r = new ReturnObject();
+            try
+            {
+                string url = _serviceSettings.Value.ErasBaseUrl;
+                url = url + $"User/TaxOfficer?EmailAddress={adminSign.UserName}";
+
+                AllFunction al = new AllFunction();
+
+                //var client = //_httpClientFactory.CreateClient();
+                var response = await al.CallAPi(url, "", "Get", "");
+                var apiRecords = JsonConvert.DeserializeObject<TaxOfficerLoginDetail>(response);
+                if (apiRecords.Result == null)
+                {
+                    return new ReturnObject
+                    {
+                        status = false,
+                        message = "User Not Found From Eras"
+                    };
+                }
+                //
+                var userExist = _dbContext.AdminUsers.FirstOrDefault(o => o.TaxOfficeId == apiRecords.Result.TaxOfficeID);
+                if (userExist == null)
+                {
+                    var user = new Models.AdminUser
+                    {
+                        TaxOfficeId = apiRecords.Result.TaxOfficeID,
+                        TaxOfficeName = apiRecords.Result.TaxOfficeName,
+                        Username = apiRecords.Result.UserName,
+                        Email = apiRecords.Result.EmailAddress,
+                        Phone = apiRecords.Result.ContactNumber,
+                        ContactName = apiRecords.Result.ContactName
+                    };
+                    _dbContext.AdminUsers.Add(user);
+                }
+                else
+                {
+                    userExist.TaxOfficeId = apiRecords.Result.TaxOfficeID;
+                    userExist.TaxOfficeName = apiRecords.Result.TaxOfficeName;
+                    userExist.Username = apiRecords.Result.UserName;
+                    userExist.Email = apiRecords.Result.EmailAddress;
+                    //userExist.Phone = apiRecords.Result.ContactNumber;
+                    userExist.ContactName = apiRecords.Result.ContactName;
+                };
+
+                _dbContext.SaveChanges();
+            }
+            catch (System.Exception ex)
+            {
+                return new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                };
+            }
+            return r;
+        }
     }
 }
 

@@ -37,6 +37,7 @@ using System.ComponentModel.Design;
 using static QuestPDF.Helpers.Colors;
 using Humanizer;
 using static System.Net.WebRequestMethods;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 
 namespace SelfPortalAPi.Controllers.PhaseIIController
@@ -51,15 +52,12 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         private readonly PhaseBenchMark _phaseBench;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
-        private readonly PayeConnection _con;
-
         private string errMsg = "Unable to process request, kindly try again";
 
 
-        public PhaseIIController(IMapper mapper, SelfServiceConnect repo, PayeConnection con, IPhaseIIRepo repos, PhaseBenchMark phaseBench, IHttpContextAccessor httpContextAccessor, IOptions<ConnectionStrings> serviceSettings)
+        public PhaseIIController(IMapper mapper, SelfServiceConnect repo, IPhaseIIRepo repos, PhaseBenchMark phaseBench, IHttpContextAccessor httpContextAccessor, IOptions<ConnectionStrings> serviceSettings)
         {
             _repo = repo;
-            _con = con;
             _mapper = mapper;
             _phaseIIRepo = repos;
             _phaseBench = phaseBench;
@@ -70,26 +68,83 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("GetAllTaxOffice")]
+        public async Task<IActionResult> GetAllTaxOffice()
+        {
+            var r = new ReturnObject();
+            r.status = true;
+            r.message = "Records Fetched Successfully";
+            try
+            {
+
+                r.data = _repo.TaxOffices1.AsNoTracking().ToList();
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                });
+            }
+        }
+
+        [HttpPost]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("AdminSignUp")]
+        public async Task<IActionResult> AdminSignUp([FromBody] AdminSignUp ivm)
+        {
+            var r = new ReturnObject();
+            try
+            {
+
+                var ret = _phaseIIRepo.Login(ivm);
+                return Ok(ret);
+            }
+            catch (System.Exception ex)
+            {
+                return await Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+                {
+                    status = false,
+                    message = ex.Message
+                }));
+            }
+        }
+
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("GetallBusinesses")]
-        public async Task<IActionResult> GetAllBusinesses([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100)
+        public async Task<IActionResult> GetAllBusinesses([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100, [FromQuery] string businessName = "")
         {
             var r = new ReturnObject();
             var BusinessList = new List<BusinessRinVm>();
             var businesses = new BusinessRinVm();
             r.status = true;
             r.message = "Records Fetched Successfully";
+            var ret = new Dictionary<string, object>();
             try
             {
-                var ret = await _phaseIIRepo.GetAllBusinessesAsync(pageNumber, pageSize);
+                if (string.IsNullOrEmpty(businessName))
+                {
+                    ret = await _phaseIIRepo.GetAllBusinessesAsync(pageNumber, pageSize);
+                }
+                else
+                {
+                    ret = await _phaseIIRepo.GetAllBusinessesAsync(businessName);
+
+                }
                 // no point doing two calls you can use dictionary,turple to get all the values
+
                 // var ret2 = await _repo.AssetTaxPayerDetailsApis.CountAsync();
 
-                var result = new CombinedResult
-                {
-                    Businesses = ret.Keys.FirstOrDefault() ?? new List<BusinessVm>(),
-                    TotalCount = ret.Values.FirstOrDefault()
-                };
+                var result = new CombinedResult();
 
+                result.Businesses = ret.ContainsKey("Businesses") ? ret["Businesses"] as List<BusinessVm> : new List<BusinessVm>();
+                result.TotalCount = ret.ContainsKey("TotalCount") ? (int)ret["TotalCount"] : 0;
+               
                 r.data = result;
                 return Ok(r);
             }
@@ -111,12 +166,19 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         {
             string newP = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
             var r = new ReturnObject();
-
-            int affectedRows = await _con.UserManagements
-                .Where(b => b.CompanyRin == model.CompanyRin && b.VerificationOtp == model.OTP)
-                .ExecuteUpdateAsync(s => s.SetProperty(b => b.Password, newP));
-
-            // Check if the update was successful
+            int affectedRows = 0;
+            if (!model.IsAdmin)
+            {
+                affectedRows = await _repo.UserManagements
+                   .Where(b => b.CompanyRin == model.CompanyRin_Phone && b.VerificationOtp == model.OTP)
+                   .ExecuteUpdateAsync(s => s.SetProperty(b => b.Password, newP));
+            }
+            else
+            {
+                affectedRows = await _repo.AdminUsers
+                    .Where(b => b.Phone == model.CompanyRin_Phone)
+                    .ExecuteUpdateAsync(s => s.SetProperty(b => b.Password, newP));
+            }
             if (affectedRows > 0)
             {
                 r.status = true;
@@ -130,6 +192,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
 
             return Ok(r);
         }
+
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -140,13 +203,20 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             var r = new ReturnObject();
             Random ran = new Random();
             var q = ran.Next(0, 1000000);
-
-            int affectedRows = await _con.UserManagements.Where(b => b.CompanyRin == model.CompanyRin)
-                .ExecuteUpdateAsync(s =>
-                s.SetProperty(b => b.VerificationOtp, Convert.ToInt32(q))
-                .SetProperty(b => b.PhoneNumber, model.PhoneNumber)
-                );
-
+            int affectedRows = 0;
+            if (!model.IsAdmin)
+            {
+                affectedRows = await _repo.UserManagements.Where(b => b.CompanyRin == model.CompanyRin)
+                   .ExecuteUpdateAsync(s =>
+                   s.SetProperty(b => b.VerificationOtp, Convert.ToInt32(q))
+                   .SetProperty(b => b.PhoneNumber, model.PhoneNumber)
+                   );
+            }
+            else
+            {
+                var all = await _repo.AdminUsers.Where(b => b.Phone == model.PhoneNumber).ToListAsync();
+                affectedRows = all.Count();
+            }
             // Check if the update was successful
             if (affectedRows > 0)
             {
@@ -161,6 +231,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                 r.message = "Failed to change password. Please check the OTP or CompanyRin.";
             }
 
+
             return Ok(r);
         }
 
@@ -169,23 +240,26 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("GetallBusinessEmployees")]
-        public async Task<IActionResult> GetAllBusinessEmployees([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100)
+        public async Task<IActionResult> GetAllBusinessEmployees([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100, [FromQuery] string businessName="")
         {
             var r = new ReturnObject();
             var BusinessList = new List<BusinessRinVm>();
             var businesses = new BusinessRinVm();
             r.status = true;
             r.message = "Records Fetched Successfully";
+            var ret = new Dictionary<List<BusinessRinVm>, int>();
             try
             {
-                var ret = await _phaseIIRepo.getallEmployeesCount(pageNumber, pageSize);
+                if(string.IsNullOrEmpty(businessName))
+                    ret = await _phaseIIRepo.getallEmployeesCount(pageNumber, pageSize);
+                else
+                    ret = await _phaseIIRepo.getallEmployeesCount(businessName);
 
-                var result = new CombinedResult2
-                {
-                    Businesses = ret.Keys.FirstOrDefault() ?? new List<BusinessRinVm>(),
-                    TotalCount = ret.Values.FirstOrDefault()
-                };
 
+                var result = new CombinedResult2();
+
+                result.Businesses = ret.Keys.FirstOrDefault() ?? new List<BusinessRinVm>();
+                result.TotalCount = ret.Values.FirstOrDefault();
                 r.data = result;
                 return Ok(r);
             }
@@ -220,11 +294,11 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             {
                 var buss = GetBusinessCompanyId(businessRin, companyRin);
 
-                var emp = new EmployeesViewFmModel
-                {
-                    BusinessId = buss.Result.BusinessId,
-                    CompanyId = buss.Result.Companyid
-                };
+                var emp = new EmployeesViewFmModel();
+
+                emp.BusinessId = buss.Result.BusinessId;
+                emp.CompanyId = buss.Result.Companyid;
+
 
                 var ret = await _phaseIIRepo.GetEmployeeIncomeView(emp);
                 r.data = ret;
@@ -309,6 +383,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [Route("UploadEmployees")]
         public async Task<IActionResult> UploadEmployees([FromForm] AddFormEmployee emp)
         {
+            AllFunction af = new AllFunction();
             var r = new ReturnObject();
             var lstErrorRes = new List<string>();
             string errorNote = "There Is An Error On Row";
@@ -359,7 +434,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                             r.message = $"{res}";
                             await Task.FromResult<IActionResult>(Ok(r));
                         }
-                        var token = GetToken();
+                        var token = af.GetToken();
                         if (token != null)
                         {
                             foreach (var fm in conv)
@@ -370,7 +445,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                     baseUrl
                                     + "TaxPayer/SearchTaxPayerByMobileNumber?MobileNumber="
                                     + fm.PhoneNumber;
-                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    resp = await af.CallAPi(mainBaseurl, token, "get", "");
                                     rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else if (fm.RIN != "NULL")
@@ -379,13 +454,13 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                    baseUrl
                                    + "TaxPayer/SearchTaxPayerByRIN?TaxPayerRIN="
                                    + fm.RIN;
-                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    resp = await af.CallAPi(mainBaseurl, token, "get", "");
                                     rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else if (fm.JTBTIN != "NULL")
                                 {
                                     mainBaseurl = baseUrl + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN=" + fm.JTBTIN;
-                                    resp = await CallAPi(mainBaseurl, token, "get", "");
+                                    resp = await af.CallAPi(mainBaseurl, token, "get", "");
                                     rootobjectVm = js.Deserialize<Receiver>(resp);
                                 }
                                 else
@@ -422,7 +497,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                         ad.NotificationMethodID = 1;
                                         ad.ContactAddress = fm.HomeAddress;
                                         string jsonData = js.Serialize(ad);
-                                        resp = await CallAPi(mainBaseurl, token, "post", jsonData);
+                                        resp = await af.CallAPi(mainBaseurl, token, "post", jsonData);
                                         rootobjectVm = js.Deserialize<Receiver>(resp);
                                         if (rootobjectVm.Success == true)
                                         {
@@ -438,7 +513,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                             {
                                                 baseUrl = baseUrl + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN=" + fm.JTBTIN;
                                             }
-                                            resp = await CallAPi(baseUrl, token, "get", "");
+                                            resp = await af.CallAPi(baseUrl, token, "get", "");
                                             rootobjectVm = js.Deserialize<Receiver>(resp);
                                             if (rootobjectVm.Success == true)
                                             {
@@ -630,6 +705,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [Route("AddEmployee")]
         public async Task<IActionResult> AddEmployee([FromBody] AddEmployeesInd1 emp)
         {
+            AllFunction af =  new AllFunction();
             var r = new ReturnObject();
             var lstErrorRes = new List<string>();
             string errorNote = "There Is An Error ";
@@ -672,25 +748,25 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                         r.message = $"{res}";
                         return Ok(r);
                     }
-                    var token = GetToken();
+                    var token = af.GetToken();
                     if (token != null)
                     {
                         if (emp.Phonenumber != "NULL")
                         {
                             mainBaseurl = baseUrl + "TaxPayer/SearchTaxPayerByMobileNumber?MobileNumber=" + emp.Phonenumber;
-                            resp = await CallAPi(mainBaseurl, token, "get", "");
+                            resp = await af.CallAPi(mainBaseurl, token, "get", "");
                             rootobjectVm = js.Deserialize<Receiver>(resp);
                         }
                         else if (emp.EmployeeRin != "NULL")
                         {
                             mainBaseurl = baseUrl + "TaxPayer/SearchTaxPayerByRIN?TaxPayerRIN=" + emp.EmployeeRin;
-                            resp = await CallAPi(mainBaseurl, token, "get", "");
+                            resp = await af.CallAPi(mainBaseurl, token, "get", "");
                             rootobjectVm = js.Deserialize<Receiver>(resp);
                         }
                         else if (emp.Jtbtin != "NULL")
                         {
                             mainBaseurl = baseUrl + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN=" + emp.Jtbtin;
-                            resp = await CallAPi(mainBaseurl, token, "get", "");
+                            resp = await af.CallAPi(mainBaseurl, token, "get", "");
                             rootobjectVm = js.Deserialize<Receiver>(resp);
                         }
                         else
@@ -723,7 +799,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                 ad.NotificationMethodID = 1;
                                 ad.ContactAddress = emp.Homeaddress;
                                 string jsonData = js.Serialize(ad);
-                                resp = await CallAPi(mainBaseurl, token, "post", jsonData);
+                                resp = await af.CallAPi(mainBaseurl, token, "post", jsonData);
                                 rootobjectVm = js.Deserialize<Receiver>(resp);
 
                                 if (rootobjectVm.Success == true)
@@ -740,7 +816,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                     {
                                         baseUrl = baseUrl + "TaxPayer/SearchTaxPayerByTIN?TaxPayerTIN=" + emp.Jtbtin;
                                     }
-                                    resp = await CallAPi(baseUrl, token, "get", "");
+                                    resp = await af.CallAPi(baseUrl, token, "get", "");
                                     rootobjectVm = js.Deserialize<Receiver>(resp);
                                     if (rootobjectVm.Success == true)
                                     {
@@ -959,7 +1035,52 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
 
                     ObjBus.BusinessId = buss.Result.BusinessId;
                     ObjBus.Companyid = buss.Result.Companyid;
-                    //    .FirstOrDefaultAsync();
+
+                    switch (obj.ActiveDet)
+                    {
+                        case 1:
+
+                            switch (det)
+                            {
+                                case 1:
+                                    r.data = await _repo.EmployeesMonthlyIncomes
+                                    .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
+                                    .ExecuteUpdateAsync(setters =>
+                                        setters.SetProperty(b => b.Status, false));
+                                    break;
+                                case 2:
+                                    r.data = await _repo.EmployeesMonthlyIncomes
+            .Where(e => e.EmployeeId == ObjBus.Employeeid && e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
+            .ExecuteUpdateAsync(setters =>
+                setters.SetProperty(b => b.Status, false));
+                                    break;
+                                default:
+                                    return NotFound(new ReturnObject { message = "Employee not found", status = false });
+                            }
+                            break;
+                        case 2:
+
+                            switch (det)
+                            {
+                                case 1:
+                                    r.data = await _repo.EmployeesMonthlyIncomes
+                                    .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
+                                    .ExecuteUpdateAsync(setters =>
+                                        setters.SetProperty(b => b.Status, true));
+                                    break;
+                                case 2:
+                                    r.data = await _repo.EmployeesMonthlyIncomes
+            .Where(e => e.EmployeeId == ObjBus.Employeeid && e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
+            .ExecuteUpdateAsync(setters =>
+                setters.SetProperty(b => b.Status, true));
+                                    break;
+                                default:
+                                    return NotFound(new ReturnObject { message = "Employee not found", status = false });
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                     switch (det)
                     {
                         case 1:
@@ -992,69 +1113,6 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             }
         }
 
-        //[HttpPut]
-        //[SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
-        //[SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        //[Route("Mark-All-Employee-Inactive")]
-        //public async Task<IActionResult> MarkAllEmployeeInactive([FromBody] MarkH3Inactive obj)
-        //{
-        //    try
-        //    {
-        //        if (obj.BusinessRin == null || obj.CompanyRin == null)
-        //        {
-        //            return NotFound(new ReturnObject { message = "BusinessId, or CompanyId Cannot Be Null", status = false });
-        //        }
-        //        else
-        //        {
-        //            var r = new ReturnObject { message = "Successfully Marked All", status = true };
-        //            //var Ind = await _repo.Individuals.FirstOrDefaultAsync(x => x.EmployeeRin == obj.EmployeeRin);
-
-        //            var buss = GetBusinessCompanyId(obj.BusinessRin, obj.CompanyRin);
-
-        //            MarkEmpInactive ObjBus = new MarkEmpInactive
-        //            {
-        //                BusinessId = buss.Result.BusinessId,
-        //                Companyid = buss.Result.Companyid
-        //            };
-
-        //            if (ObjBus != null)
-        //            {
-        //                // not needed to check it an update even if it meet no one with the condition it will fly;
-        //                var stat = await _repo.EmployeesMonthlyIncomes
-        //                                 .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
-        //                                 .Select(o => o.Status)
-        //                                 .FirstOrDefaultAsync();
-
-        //                if (stat != null)
-        //                {
-        //                    r.data = await _repo.EmployeesMonthlyIncomes
-        //                        .Where(e => e.BusinessId == ObjBus.BusinessId && e.CompanyId == ObjBus.Companyid)
-        //                        .ExecuteUpdateAsync(setters =>
-        //                            setters.SetProperty(b => b.Status, false));
-        //                }
-        //                else
-        //                {
-        //                    return NotFound(new ReturnObject { message = "Employees not found", status = false });
-        //                }
-        //            }
-        //            else
-        //            {
-        //                return NotFound(new ReturnObject { message = "Employer not found", status = false });
-        //            }
-        //            return Ok(r);
-        //        }
-
-        //    }
-        //    catch (System.Exception ex)
-        //    {
-        //        return (
-        //            StatusCode(
-        //                StatusCodes.Status500InternalServerError,
-        //                new ReturnObject { status = false, message = ex.Message }
-        //            )
-        //        );
-        //    }
-        //}
 
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
@@ -1164,6 +1222,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [Route("download-employee-details")]
         public async Task<IActionResult> DownloadEmployeeDetails([FromQuery] DownloadEmployeeFm Obj)
         {
+            AllFunction allf = new AllFunction();
             var r = new ReturnObject
             {
                 status = false,
@@ -1181,7 +1240,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                 {
                     var heading = $"Company Name: {GetBusDetail.AssetName} BusinessRin: {Obj.BusinessRin}";
                     var fileName = $"EmployeeDetails_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-                    var result = await GenerateExcelFileAsync(lstEmpDwn, "EmployeeDetails", fileName, heading);
+                    var result = await allf.GenerateExcelFileAsync(lstEmpDwn, "EmployeeDetails", fileName, heading);
                     return result;
                 }
                 else
@@ -1309,6 +1368,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [Route("SendToRDM")]
         public async Task<IActionResult> SendToRDM([FromBody] BusSchFm Obj)
         {
+            AllFunction af = new AllFunction();
             var username = _httpContextAccessor.HttpContext.User.Identity?.Name ?? Environment.UserName;
             var baseUrl = _serviceSettings.Value.ErasBaseUrl;
             EmployerMonthlyAssessment AddMontAss = new EmployerMonthlyAssessment();
@@ -1320,18 +1380,19 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             };
             try
             {
-                var buss = GetBusinessCompanyId(Obj.BusinessRin, Obj.CompanyRin);
+                var buss = await GetBusinessCompanyId(Obj.BusinessRin, Obj.CompanyRin);
 
                 BusSchFm1 ObjBus = new BusSchFm1
                 {
-                    BusinessId = buss.Result.BusinessId,
-                    CompanyId = buss.Result.Companyid,
+                    BusinessId = buss.BusinessId,
+                    CompanyId = buss.Companyid,
                     TaxMonth = Obj.TaxMonth,
                     TaxYear = Obj.TaxYear
                 };
 
                 var AssRDM = await _phaseIIRepo.GetAssessmentRDMAsync(ObjBus);
-                if (AssRDM != null && AssRDM.Any())
+                //it a list cant be null
+                if (AssRDM.Any())
                 {
                     foreach (var item in AssRDM)
                     {
@@ -1357,8 +1418,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                         };
 
                         var client = new HttpClient();
-                        var token = GetToken();
-                        //var mainBaseurl = "https://api.eirs.gov.ng/RevenueData/Assessment/Insert";
+                        var token = af.GetToken();
                         var mainBaseurl = baseUrl + "RevenueData/Assessment/Insert";
                         var request = new HttpRequestMessage(HttpMethod.Post, mainBaseurl);
                         request.Headers.Add("Authorization", token);
@@ -1370,41 +1430,39 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                         {
                             var responseBody = await response.Content.ReadAsStringAsync();
                             var responseObject = JsonConvert.DeserializeObject<ResponseModel>(responseBody);
-                            if (ObjBus != null)
+
+                            if (responseObject != null)
                             {
-                                if (responseObject != null)
+                                foreach (var RefItem in responseObject.Result)
                                 {
-                                    foreach (var RefItem in responseObject.Result)
+                                    using var _context = new EirsContext();
+                                    string query = $"select * from assessment where assessmentrefno = '{RefItem.AssessmentRefNo}'";
+                                    var Assitem = _context.Assessments.FromSqlRaw(query).ToList();
+
+                                    if (Assitem.Any())
                                     {
-                                        using var _context = new EirsContext();
-                                        string query = $"select * from assessment where assessmentrefno = '{RefItem.AssessmentRefNo}'";
-                                        var Assitem = _context.Assessments.FromSqlRaw(query).ToList();
-
-                                        if (Assitem.Any())
+                                        foreach (var Ass in Assitem)
                                         {
-                                            foreach (var Ass in Assitem)
-                                            {
-                                                string Txid = AddAssRDM.TaxPayerID;
-                                                var Rin = GetEmployeeRin(Txid);
+                                            string Txid = AddAssRDM.TaxPayerID;
+                                            var Rin = GetEmployeeRin(Txid);
 
-                                                AddMontAss.EmployerId = ObjBus.CompanyId;
-                                                AddMontAss.BusinessId = ObjBus.BusinessId;
-                                                AddMontAss.EmployerRin = Rin.ToString();
-                                                AddMontAss.TaxYear = (int)Obj.TaxYear;
-                                                AddMontAss.TaxMonth = Obj.TaxMonth;
-                                                AddMontAss.TotalAmount = AddAssRDM.TaxBaseAmount;
-                                                AddMontAss.TotalAssessed = AddAssRDM.TaxBaseAmount;
-                                                AddMontAss.AssessmentRefNo = RefItem.AssessmentRefNo;
-                                                AddMontAss.AssessmentRefId = (int)Ass.AssessmentId;
-                                                AddMontAss.CreatedBy = username ?? "Unknown";
-                                                AddMontAss.CreatedDate = DateTime.Now;
-                                                lstEmpAss.Add(AddMontAss);
-                                            }
+                                            AddMontAss.EmployerId = ObjBus.CompanyId;
+                                            AddMontAss.BusinessId = ObjBus.BusinessId;
+                                            AddMontAss.EmployerRin = Rin.ToString();
+                                            AddMontAss.TaxYear = (int)Obj.TaxYear;
+                                            AddMontAss.TaxMonth = Obj.TaxMonth;
+                                            AddMontAss.TotalAmount = AddAssRDM.TaxBaseAmount;
+                                            AddMontAss.TotalAssessed = AddAssRDM.TaxBaseAmount;
+                                            AddMontAss.AssessmentRefNo = RefItem.AssessmentRefNo;
+                                            AddMontAss.AssessmentRefId = (int)Ass.AssessmentId;
+                                            AddMontAss.CreatedBy = username ?? "Unknown";
+                                            AddMontAss.CreatedDate = DateTime.Now;
+                                            lstEmpAss.Add(AddMontAss);
                                         }
-                                        await _repo.EmployerMonthlyAssessments.AddRangeAsync(lstEmpAss);
-                                        _repo.SaveChanges();
-                                    };
-                                }
+                                    }
+                                    await _repo.EmployerMonthlyAssessments.AddRangeAsync(lstEmpAss);
+                                    _repo.SaveChanges();
+                                };
                             }
                             return Ok(r);
                         }
@@ -1988,6 +2046,74 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             }
         }
 
+        // [HttpGet]
+        // [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        // [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        // [Route("GetAllAssessments")]
+        // public async Task<IActionResult> GetAllAssessments()
+        // {
+        //     var r = new ReturnObject
+        //     {
+        //         status = true,
+        //         message = "Record Fetched Successfully"
+        //     };
+
+        //     List<AllAssessmentRess> lstAss = new();
+        //     try
+        //     {
+
+
+        //                 var AllAss = await _repo.EmployerMonthlyAssessments
+        //                         .Where(x => x.BusinessId == sch.BusinessId &&
+        //                         x.EmployerId == sch.EmployerId
+        //                      )
+        //                         .ToListAsync();
+
+        //                     foreach (var ass in AllAss)
+        //                     {
+        //                         var Allbus = await _repo.AssetTaxPayerDetailsApis
+        //                             .Where(o => o.AssetRin == Obj.BusinessRin &&
+        //                             o.TaxPayerRinnumber == Obj.CompanyRin)
+        //                             .ToListAsync();
+        //                         if (Allbus != null)
+        //                         {
+        //                             decimal? totalMonthlyTax = AllAss.Sum(a => a.TotalAssessed);
+        //                             decimal? totalAmountPaid = AllAss.Sum(a => a.TotalAmount);
+        //                             int totalEmployees = AllAss.Count;
+
+        //                             foreach (var bus in Allbus)
+        //                             {
+        //                                 AllAssessmentRess Addass = new();
+        //                                 Addass.BusinessRin = Obj.BusinessRin;
+        //                                 Addass.BusinessName = bus.AssetName;
+        //                                 Addass.DateGenerated = ass.CreatedDate;
+        //                                 Addass.TaxYear = ass.TaxYear;
+        //                                 Addass.TaxMonth = ass.TaxMonth;
+        //                                 Addass.ListofEmployees = totalEmployees;
+        //                                 Addass.AssessmentRefNo = ass.AssessmentRefNo;
+        //                                 Addass.AssessmentRefId = ass.AssessmentRefId;
+        //                                 Addass.TotalMonthlyTax = totalMonthlyTax;
+        //                                 Addass.AmountPaid += totalAmountPaid;
+        //                                 Addass.Balance = totalMonthlyTax - totalAmountPaid;
+        //                                 Addass.PaymentStatus = totalAmountPaid >= totalMonthlyTax ? "Settled" : totalAmountPaid < totalMonthlyTax ? "Partial" : "Assessed";
+
+        //                                 lstAss.Add(Addass);
+        //                             }
+        //                         }
+        //                     }
+        //         r.data = lstAss;
+        //         return Ok(r);
+        //                     }
+        //     catch (System.Exception ex)
+        //     {
+        //         return StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+        //         {
+        //             status = false,
+        //             message = ex.Message
+        //         });
+        //     }
+        // }
+
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -2492,75 +2618,51 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         }
 
 
+        //[NonAction]
+        //public string GetToken()
+        //{
+        //    string URI = _serviceSettings.Value.ErasBaseUrl + "Account/Login";
+        //    string user = _serviceSettings.Value.eirsusername;
+        //    string password = _serviceSettings.Value.eirspassword;
+        //    string myParameters = "UserName=" + user + "&Password=" + password + "&grant_type=password";
+        //    string BearerToken = "";
+        //    using (WebClient wc = new WebClient())
+        //    {
+        //        wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
+        //        BearerToken = wc.UploadString(URI, myParameters);
+        //    }
 
-
-
-
-
-
-
-        [NonAction]
-        private IList<BusinessRinVm> GetList(List<AssetTaxPayerDetailsApi> det)
-        {
-            var list = new List<BusinessRinVm>();
-            for (int i = 0; i < det.Count(); i++)
-            {
-                list.Add(new BusinessRinVm
-                {
-                    businessRin = det[i].TaxPayerRinnumber,
-                    businessName = det[i].AssetName,
-                    businessAddress = det[i].AssetAddress,
-                    CompanyRin = det[i].TaxPayerRinnumber
-
-                });
-            }
-            return list;
-        }
-        [NonAction]
-        public string GetToken()
-        {
-            string URI = _serviceSettings.Value.ErasBaseUrl + "Account/Login";
-            string user = _serviceSettings.Value.eirsusername;
-            string password = _serviceSettings.Value.eirspassword;
-            string myParameters = "UserName=" + user + "&Password=" + password + "&grant_type=password";
-            string BearerToken = "";
-            using (WebClient wc = new WebClient())
-            {
-                wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
-                BearerToken = wc.UploadString(URI, myParameters);
-            }
-
-            Token TokenObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Token>(BearerToken);
-            return TokenObj.access_token;
-        }
-        [NonAction]
-        public async Task<string> CallAPi(string baseUrl, string st, string httpMethod, string? jsonData)
-        {
-            string res = "";
-            HttpRequestMessage request = new();
-            HttpResponseMessage response = new();
-            var client = new HttpClient();
-            switch (httpMethod.ToLower().Trim())
-            {
-                case "get":
-                    request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
-                    request.Headers.Add("Authorization", $"Bearer {st}");
-                    response = await client.SendAsync(request);
-                    res = await response.Content.ReadAsStringAsync();
-                    break;
-                case "post":
-                    request = new HttpRequestMessage(HttpMethod.Post, baseUrl);
-                    request.Headers.Add("Authorization", $"Bearer {st}");
-                    var content = new StringContent(jsonData, null, "application/json");
-                    request.Content = content;
-                    response = await client.SendAsync(request);
-                    res = await response.Content.ReadAsStringAsync();
-                    break;
-                default:
-                    break;
-            }
-            return res;
-        }
+        //    Token TokenObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Token>(BearerToken);
+        //    return TokenObj.access_token;
+        //}
+        //[NonAction]
+        //public async Task<string> CallAPi(string baseUrl, string st, string httpMethod, string? jsonData)
+        //{
+        //    string res = "";
+        //    HttpRequestMessage request = new();
+        //    HttpResponseMessage response = new();
+        //    var client = new HttpClient();
+        //    switch (httpMethod.ToLower().Trim())
+        //    {
+        //        case "get":
+        //            request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
+        //            request.Headers.Add("Authorization", $"Bearer {st}");
+        //            response = await client.SendAsync(request);
+        //            res = await response.Content.ReadAsStringAsync();
+        //            break;
+        //        case "post":
+        //            request = new HttpRequestMessage(HttpMethod.Post, baseUrl);
+        //            request.Headers.Add("Authorization", $"Bearer {st}");
+        //            var content = new StringContent(jsonData, null, "application/json");
+        //            request.Content = content;
+        //            response = await client.SendAsync(request);
+        //            res = await response.Content.ReadAsStringAsync();
+        //            break;
+        //        default:
+        //            break;
+        //    }
+        //    return res;
+        //}
         private async Task<List<DownloadEmployeeResponse>> GetEmployeeDetailsAsync(DownloadEmployeeFm Obj)
         {
             var lstEmpDwn = new List<DownloadEmployeeResponse>();
@@ -2640,17 +2742,6 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
 
         }
 
-        [NonAction]
-        private async Task<string> GetEmployeeID(string taxpayerRin)
-        {
-            var buss = await _repo.Individuals
-                           .Where(e => e.EmployeeRin == taxpayerRin)
-                           .FirstOrDefaultAsync();
-
-            string taxId = buss.EmployeeId;
-            return taxId;
-
-        }
 
         [NonAction]
         public async Task<List<Individual>> GetEmployeeList(string EmployeeRin)

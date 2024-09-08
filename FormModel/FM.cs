@@ -259,19 +259,39 @@ namespace SelfPortalAPi
         [JsonProperty("error")]
         public string Error { get; set; }
     }
+    public class AdminSignUp
+    {
+        public string PhoneNumber { get; set; }
+        public string UserName { get; set; }
+    }
+
+    public class JobSchedule
+    {
+        public Type JobType { get; }
+        public string CronExpression { get; }
+
+        public JobSchedule(Type jobType, string cronExpression)
+        {
+            JobType = jobType;
+            CronExpression = cronExpression;
+        }
+    }
+
     public class TokenRequest
     {
         public string PhoneNumber_RIN { get; set; }
         public string Password { get; set; }
         public string UserType { get; set; }
     }   
-    public class ChangePassword
+    //public class ChangePassword
+    //{
+    //    public string CompanyRin { get; set; }
+    //}  
+    public class UpdateUser
     {
-        public string CompanyRin { get; set; }
-    }  
-    public class UpdateUser: ChangePassword
-    {
+        public bool IsAdmin { get; set; }
         public string NewPassword { get; set; }
+        public string CompanyRin_Phone { get; set; }
         public int OTP { get; set; }
     }
     public class TokenRequestValidator : AbstractValidator<TokenRequest>

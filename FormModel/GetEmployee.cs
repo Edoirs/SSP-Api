@@ -21,6 +21,7 @@ namespace SelfPortalAPi.FormModel
     }
     public class CompanyStep1
     {
+        public bool IsAdmin { get; set; }
         [Required(ErrorMessage = "Please enter Company Rin")]
         [Display(Name = "Company Rin")]
         public string CompanyRin { get; set; }

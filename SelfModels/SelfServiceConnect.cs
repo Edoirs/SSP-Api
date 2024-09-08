@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using SelfPortalAPi.NewModel;
 
 namespace SelfPortalAPi.Models;
 
@@ -15,10 +16,24 @@ public partial class SelfServiceConnect : DbContext
     {
     }
 
+
+    public virtual DbSet<SspfiledFormH1> SspfiledFormH1s { get; set; }
+    public virtual DbSet<SspfiledFormH1ForSP> SspfiledFormH1ForSPs { get; set; }
+    public virtual DbSet<SspfiledFormH3ForSP> SspfiledFormH3ForSPs { get; set; }
+    public virtual DbSet<SspfiledFormH1ListOfYears> SspfiledFormH1ListOfYears { get; set; }
+
+
+    public virtual DbSet<SspformH1> SspformH1s { get; set; }
+    public virtual DbSet<ReturnSspformH1> ReturnSspformH1 { get; set; }
+
+    public virtual DbSet<SspformH3> SspformH3s { get; set; }
+    public virtual DbSet<ReturnSspformH3> ReturnSspformH3 { get; set; }
+
     public virtual DbSet<AddPayeInputFile> AddPayeInputFiles { get; set; }
 
     public virtual DbSet<AdminUser> AdminUsers { get; set; }
 
+    public virtual DbSet<Sspindividual> Sspindividual { get; set; }
     public virtual DbSet<AnnualReturn> AnnualReturns { get; set; }
 
     public virtual DbSet<Assessment> Assessments { get; set; }
@@ -309,16 +324,11 @@ public partial class SelfServiceConnect : DbContext
             entity.Property(e => e.Email)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.FirstName)
+            entity.Property(e => e.ContactName)
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.IsActive).HasDefaultValue((byte)1);
-            entity.Property(e => e.LastName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.MiddleName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+          
             entity.Property(e => e.ModifiedBy).HasMaxLength(255);
             entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
             entity.Property(e => e.Password)

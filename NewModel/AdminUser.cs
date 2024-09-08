@@ -6,6 +6,7 @@ namespace SelfPortalAPi.NewModel;
 public partial class AdminUser
 {
     public int AdminUserId { get; set; }
+    public int TaxOfficeId { get; set; }
 
     public string? AdminUserTypeName { get; set; }
 

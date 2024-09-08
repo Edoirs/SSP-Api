@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SelfPortalAPi.NewModel;
 using SelfPortalAPi;
 using Swashbuckle.AspNetCore.Annotations;
 using SelfPortalAPi.UnitOfWork;
@@ -9,6 +8,9 @@ using SelfPortalAPi.FormModel;
 using AutoMapper;
 using SelfPortalAPi.Vm;
 using Microsoft.AspNetCore.Authorization;
+using SelfPortalAPi.Models;
+using SelfPortalAPi.NewModel;
+using Cooperate = SelfPortalAPi.NewModel.Cooperate;
 
 namespace SelfPortalAPi.Controllers.Admin
 {
@@ -17,12 +19,12 @@ namespace SelfPortalAPi.Controllers.Admin
     [Authorize]
     public class EmployeeController : ControllerBase
     {
-        private readonly PayeConnection _context; 
+        private readonly SelfServiceConnect _context; 
         private readonly IMapper _mapper;
         private readonly UnitOfWork.IRepository<employee> _repo;
         private readonly UnitOfWork.IRepository<Cooperate> _repoCop;
         private string errMsg = "Unable to process request, kindly try again";
-        public EmployeeController(UnitOfWork.IRepository<employee> repo, UnitOfWork.IRepository<Cooperate> repoCop,IMapper mapper, PayeConnection context)
+        public EmployeeController(UnitOfWork.IRepository<employee> repo, UnitOfWork.IRepository<Cooperate> repoCop,IMapper mapper, SelfServiceConnect context)
         {
             _repo = repo;
             _repoCop = repoCop;

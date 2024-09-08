@@ -7,6 +7,8 @@ public partial class AdminUser
 {
     public int AdminUserId { get; set; }
 
+    public int TaxOfficeId { get; set; }
+    public string TaxOfficeName { get; set; }
     public string? AdminUserTypeName { get; set; }
 
     public int PayeUserTypeId { get; set; }
@@ -19,11 +21,7 @@ public partial class AdminUser
 
     public string? Email { get; set; }
 
-    public string? FirstName { get; set; }
-
-    public string? LastName { get; set; }
-
-    public string? MiddleName { get; set; }
+    public string? ContactName { get; set; }
 
     public string? Designation { get; set; }
 
@@ -38,4 +36,29 @@ public partial class AdminUser
     public string? CreatedBy { get; set; }
 
     public DateTime? CreateddDate { get; set; }
+}
+
+
+public partial class AdminUserMain 
+{
+    public int UserID { get; set; }
+    public int UserTypeID { get; set; }
+    public string UserTypeName { get; set; }
+    public string UserName { get; set; }
+    public string Password { get; set; }
+    public string ContactName { get; set; }
+    public string EmailAddress { get; set; }
+    public string ContactNumber { get; set; }
+    public bool Active { get; set; }
+    public string ActiveText { get; set; }
+    public bool IsTOManager { get; set; }
+    public string IsTOManagerText { get; set; }
+    public int TaxOfficeID { get; set; }
+    public string TaxOfficeName { get; set; }
+    public object TOManagerID { get; set; }
+    public object TOManagerName { get; set; }
+    public object SignaturePath { get; set; }
+    public bool IsDirector { get; set; }
+    public string IsDirectorText { get; set; }
+
 }

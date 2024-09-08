@@ -1,14 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SelfPortalAPi.NewModel;
-using SelfPortalAPi;
 using Swashbuckle.AspNetCore.Annotations;
 using SelfPortalAPi.UnitOfWork;
 using SelfPortalAPi.FormModel;
 using AutoMapper;
-using SelfPortalAPi.NewModel;
-using SelfPortalAPi.Model;
 using Microsoft.AspNetCore.Authorization;
+using SelfPortalAPi.Models;
 
 namespace SelfPortalAPi.Controllers.Admin
 {
@@ -18,9 +15,9 @@ namespace SelfPortalAPi.Controllers.Admin
     public class BusinessController : ControllerBase
     {
         private readonly IMapper _mapper;
-        private readonly PayeConnection _repo;
+        private readonly SelfServiceConnect _repo;
         private string errMsg = "Unable to process request, kindly try again";
-        public BusinessController(IMapper mapper, PayeConnection repo)
+        public BusinessController(IMapper mapper, SelfServiceConnect repo)
         {
             _repo = repo;
             _mapper = mapper;

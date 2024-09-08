@@ -43,6 +43,8 @@
         [Required]
         public string CompanyRin { get; set; }
         public string? EmployeeRin { get; set; }
+        [Required]
+        public int ActiveDet { get; set; }
     }
 
     public class UpdateEmpIncome

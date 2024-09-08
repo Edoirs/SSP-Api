@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Nancy.Json;
 using SelfPortalAPi.NewModel.ResModel;
-using SelfPortalAPi.NewModel;
+//using SelfPortalAPi.NewModel;
 using static SelfPortalAPi.AllFunction;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Net;
@@ -13,7 +13,9 @@ using Newtonsoft.Json.Linq;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using SelfPortalAPi.Migrations;
+using SelfPortalAPi.Models;
+using SelfPortalAPi.NewModel;
+using SspfiledFormH3 = SelfPortalAPi.Models.SspfiledFormH3;
 
 namespace SelfPortalAPi.Controllers
 {
@@ -24,10 +26,10 @@ namespace SelfPortalAPi.Controllers
     {
         private readonly IMapper _mapper;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
-        private readonly PayeConnection _con;
+        private readonly SelfServiceConnect _con;
         private readonly IHttpContextAccessor _httpContextAccessor;
         int taxpeyerTypeId = 0;
-        public FormH3Controller(IOptions<ConnectionStrings> serviceSettings, IHttpContextAccessor httpContextAccessor, IMapper mapper, PayeConnection con)
+        public FormH3Controller(IOptions<ConnectionStrings> serviceSettings, IHttpContextAccessor httpContextAccessor, IMapper mapper, SelfServiceConnect con)
         {
             _serviceSettings = serviceSettings;
             _httpContextAccessor = httpContextAccessor;
@@ -205,29 +207,7 @@ namespace SelfPortalAPi.Controllers
                 }));
             }
         }
-        //[HttpGet]
-        //[SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
-        //[SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        //[Route("getalluplaodedformh3bycompanyId/{companyId}/bybusinessId/{businessId}")]
-        //public async Task<IActionResult> getalluplaodedformh3bybusinessId([FromRoute] string companyId, [FromRoute] string businessId)
-        //{
-        //    try
-        //    {
-        //        using var _context = new PinscherSpikeContext();
-        //        string query = $"SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where CompanyId = '{companyId}' and BusinessId = '{businessId}'";
-        //        var user = _context.ReturnSspformH3.FromSqlRaw(query).ToList();
-        //        return Ok(user);
-        //    }
-        //    catch (System.Exception ex)
-        //    {
-        //        return (StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
-        //        {
-        //            status = false,ss.eirs.vip
-        //            message = ex.Message
-        //        }));
-        //    }
-        //}
-
+      
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -236,7 +216,7 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 //string query = $"SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where CompanyId = '{companyId}' and BusinessId = '{businessId}'";
                 string query = @"
              SELECT s.[Id],s.[BusinessId],s.[CompanyId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,
@@ -272,7 +252,7 @@ namespace SelfPortalAPi.Controllers
             var r = new ReturnObject();
             try
             {
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
                 var user = _context.SspfiledFormH3ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
@@ -365,7 +345,7 @@ namespace SelfPortalAPi.Controllers
             var r = new ReturnObject();
             try
             {
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 var query = $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],   CASE WHEN B.OTHERNAME IS NOT NULL THEN  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME   ELSE B.FirstName + ' ' + B.SURNAME     END AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
                 var user = _context.SspfiledFormH3ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
@@ -390,6 +370,7 @@ namespace SelfPortalAPi.Controllers
         [Route("UploadFormH3")]
         public async Task<IActionResult> UploadFormH3([FromForm] AddFormH obj)
         {
+            AllFunction af = new AllFunction();
             var lstErrorRes = new List<string>();
             string errorNote = "There Is An Error On Row";
             var r = new ReturnObject();
@@ -431,7 +412,8 @@ namespace SelfPortalAPi.Controllers
                             r.message = $"{res}";
                             await Task.FromResult<IActionResult>(Ok(r));
                         }
-                        var token = GetToken();
+
+                        var token = af.GetToken();
                         if (token != null)
                         {
                             foreach (var fm in la)
@@ -674,7 +656,7 @@ namespace SelfPortalAPi.Controllers
                 }
                 var presDate = DateTime.Now.Date;
                 var lastDueDate = new DateTime(DateTime.Now.Year, 1, 31);
-                using var _context = new PayeConnection();
+                using var _context = new SelfServiceConnect();
                 string query = $"SELECT s.Id,s.IndividualId,s.Startmonth, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM [pinscher_spike].[dbo].[SSPFormH3s] s   left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
                 var user = _context.SspformH3s.FromSqlRaw(query).ToList();
                 foreach (var sr in user)

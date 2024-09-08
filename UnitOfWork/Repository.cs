@@ -1,4 +1,5 @@
 ﻿
+using SelfPortalAPi.Models;
 using SelfPortalAPi.NewModel;
 using System;
 using System.Collections.Generic;
@@ -10,10 +11,10 @@ namespace SelfPortalAPi.UnitOfWork
 {
     public class Repository<T> : IRepository<T> where T : BaseEntity
     {
-        private readonly PayeConnection _context;
+        private readonly SelfServiceConnect _context;
         private readonly DbSet<T> entities;
         private string errorMessage = string.Empty;
-        public Repository(PayeConnection dbContext)
+        public Repository(SelfServiceConnect dbContext)
         {
             _context = dbContext;
             entities = _context.Set<T>();
