@@ -33,15 +33,21 @@ namespace SelfPortalAPi.Controllers
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         int taxpeyerTypeId = 0;
+
         public FormH1Controller(
-            IOptions<ConnectionStrings> serviceSettings, IMapper mapper, IHttpContextAccessor httpContextAccessor, SelfServiceConnect con
+            IOptions<ConnectionStrings> serviceSettings,
+            IMapper mapper,
+            IHttpContextAccessor httpContextAccessor,
+            SelfServiceConnect con
         )
         {
             _serviceSettings = serviceSettings;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
             _con = con;
-            string audience = _httpContextAccessor.HttpContext.User.Claims.First(i => i.Type == "TaxpayerTypeId").Value;
+            string audience = _httpContextAccessor
+                .HttpContext.User.Claims.First(i => i.Type == "TaxpayerTypeId")
+                .Value;
             taxpeyerTypeId = audience == null ? 0 : Convert.ToInt16(audience);
         }
 
@@ -53,15 +59,18 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-
-                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+                var getRin = _con.UserManagements.FirstOrDefault(o =>
+                    o.Id == Convert.ToInt32(companyId)
+                );
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
                     o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 foreach (var r in res)
                 {
-                    var empCount = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
+                    var empCount = _con.SspformH1s.Where(o =>
+                        o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
+                    );
 
                     var empCountDet = _con.SspfiledFormH1s.Where(o =>
                         o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
@@ -72,9 +81,10 @@ namespace SelfPortalAPi.Controllers
                     m.BusinessName = r.AssetName;
                     m.BusinessID = r.AssetId.ToString();
                     m.ProjectionYear =
-                        empCountDet.Count() > 0 ? empCountDet.FirstOrDefault().TaxYear.ToString() : "0";
-                    m.NoOfEmployees =
-                        empCount.Count() > 0 ? empCount.Count().ToString() : "0";
+                        empCountDet.Count() > 0
+                            ? empCountDet.FirstOrDefault().TaxYear.ToString()
+                            : "0";
+                    m.NoOfEmployees = empCount.Count() > 0 ? empCount.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
                 }
                 ReturnObject rd = new();
@@ -91,6 +101,7 @@ namespace SelfPortalAPi.Controllers
                 );
             }
         }
+
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -99,25 +110,28 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-             
                 ReturnObject rd = new();
-                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+                var getRin = _con.UserManagements.FirstOrDefault(o =>
+                    o.Id == Convert.ToInt32(companyId)
+                );
                 var finalBusinessReturnModel = new List<NewBusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
                     o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 foreach (var r in res)
                 {
-                    var empCountDet = _con.SspfiledFormH1s.Where(o =>
-                        o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
-                    ).GroupBy(o => o.TaxYear).ToList();
+                    var empCountDet = _con
+                        .SspfiledFormH1s.Where(o =>
+                            o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
+                        )
+                        .GroupBy(o => o.TaxYear)
+                        .ToList();
 
                     foreach (var r2 in empCountDet)
                     {
                         var jan31st = new DateTime(r2.Key.Value, 1, 31);
                         var m = new NewBusinessReturnModel
                         {
-
                             BusinessRIN = r.AssetRin,
                             CompanyRin = r.TaxPayerRinnumber,
                             BusinessName = r.AssetName,
@@ -125,13 +139,15 @@ namespace SelfPortalAPi.Controllers
                             TaxYear = r2.Key.ToString(),
                             NoOfEmployees = r2.Count().ToString(),
                             DateForwarded = r2.FirstOrDefault().Datetcreated.ToString(),
-                            AnnualReturnStatus = r2.FirstOrDefault().Datetcreated > jan31st ? "Defaulter" : "Complied",
+                            AnnualReturnStatus =
+                                r2.FirstOrDefault().Datetcreated > jan31st
+                                    ? "Defaulter"
+                                    : "Complied",
                         };
 
                         finalBusinessReturnModel.Add(m);
                     }
                     rd.data = finalBusinessReturnModel;
-
                 }
                 return Ok(rd);
             }
@@ -154,15 +170,19 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+                var getRin = _con.UserManagements.FirstOrDefault(o =>
+                    o.Id == Convert.ToInt32(companyId)
+                );
 
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                     o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
+                    o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 foreach (var r in res)
                 {
-                    var empCount = _con.SspformH1s.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId);
+                    var empCount = _con.SspformH1s.Where(o =>
+                        o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
+                    );
                     var empCountDet = _con.SspfiledFormH1s.Where(o =>
                         o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
                     );
@@ -172,9 +192,10 @@ namespace SelfPortalAPi.Controllers
                     m.BusinessName = r.AssetName;
                     m.BusinessID = r.AssetId.ToString();
                     m.ProjectionYear =
-                        empCountDet.Count() > 0 ? empCountDet.FirstOrDefault().TaxYear.ToString() : "0";
-                    m.NoOfEmployees =
-                        empCount.Count() > 0 ? empCount.Count().ToString() : "0";
+                        empCountDet.Count() > 0
+                            ? empCountDet.FirstOrDefault().TaxYear.ToString()
+                            : "0";
+                    m.NoOfEmployees = empCount.Count() > 0 ? empCount.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
                 }
                 ReturnObject rd = new();
@@ -201,11 +222,13 @@ namespace SelfPortalAPi.Controllers
             try
             {
                 var r = new ReturnObject { message = "Record Updated Successfully", status = true };
-                var all = _con.SspformH1s.Where(o =>
+                var all = _con
+                    .SspformH1s.Where(o =>
                         o.TaxPayerId == obj.TaxPayerId
                         && o.BusinessId == obj.BusinessId
                         && o.CompanyId == obj.CompanyId
-                    ).FirstOrDefault();
+                    )
+                    .FirstOrDefault();
                 if (all == null)
                 {
                     return Ok(new ReturnObject { message = "User Not Found", status = false });
@@ -220,8 +243,6 @@ namespace SelfPortalAPi.Controllers
                         setters
                             // .SetProperty(b => b.FIRSTNAME, obj.FIRSTNAME)
                             .SetProperty(b => b.OtherIncome, Convert.ToDecimal(obj.OtherIncome))
-
-
                             .SetProperty(b => b.Pension, Convert.ToDecimal(obj.PENSION))
                             .SetProperty(b => b.Nhf, Convert.ToDecimal(obj.NHIS))
                             .SetProperty(b => b.Lifeassurance, Convert.ToDecimal(obj.LIFEASSURANCE))
@@ -230,27 +251,29 @@ namespace SelfPortalAPi.Controllers
                                 Convert.ToDecimal(obj.CONSOLIDATEDRELIEFALLOWANCECRA)
                             )
                             .SetProperty(b => b.Annualtaxpaid, Convert.ToDecimal(obj.ANNUALTAXPAID))
-                            .SetProperty(b => b.Totalmonthspaid, Convert.ToDecimal(obj.TOTALMONTHSPAID))
+                            .SetProperty(
+                                b => b.Totalmonthspaid,
+                                Convert.ToDecimal(obj.TOTALMONTHSPAID)
+                            )
                             .SetProperty(b => b.Rent, Convert.ToDecimal(obj.Rent))
                             .SetProperty(b => b.Transport, Convert.ToDecimal(obj.Transport))
                             .SetProperty(b => b.Basic, Convert.ToDecimal(obj.Basic))
                     );
                 _ = _con
-                   .Sspindividual.Where(o =>
-                       o.IndividalId == all.IndividalId
-                   )
-                   .ExecuteUpdate(setters =>
-                       setters
+                    .Sspindividual.Where(o => o.IndividalId == all.IndividalId)
+                    .ExecuteUpdate(setters =>
+                        setters
                             .SetProperty(b => b.Firstname, obj.FIRSTNAME)
                             .SetProperty(b => b.Othername, obj.OTHERNAME)
                             .SetProperty(b => b.Surname, obj.SURNAME)
                             .SetProperty(b => b.Phonenumber, obj.PHONENUMBER)
-                           .SetProperty(b => b.Rin, obj.RIN)
+                            .SetProperty(b => b.Rin, obj.RIN)
                             .SetProperty(b => b.Jtbtin, obj.JTBTIN)
                             .SetProperty(b => b.Nin, obj.NIN)
                             .SetProperty(b => b.Designation, obj.Designation)
-                           .SetProperty(b => b.Nationality, obj.NATIONALITY)
-                           .SetProperty(b => b.Homeaddress, obj.HOMEADDRESS));
+                            .SetProperty(b => b.Nationality, obj.NATIONALITY)
+                            .SetProperty(b => b.Homeaddress, obj.HOMEADDRESS)
+                    );
                 return Ok(r);
             }
             catch (System.Exception ex)
@@ -275,11 +298,14 @@ namespace SelfPortalAPi.Controllers
         {
             try
             {
-                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+                var getRin = _con.UserManagements.FirstOrDefault(o =>
+                    o.Id == Convert.ToInt32(companyId)
+                );
 
                 var finalBusinessReturnModel = new List<BusinessReturnModel>();
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                        o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
+                    o.TaxPayerRinnumber == getRin.CompanyRin
+                    && o.TaxPayerTypeId == taxpeyerTypeId
                     && o.AssetId == Convert.ToInt32(businessId)
                 );
                 foreach (var r in res)
@@ -375,14 +401,15 @@ namespace SelfPortalAPi.Controllers
             [FromRoute] string companyId
         )
         {
-           
             var r = new ReturnObject();
             try
             {
-                var getRin = _con.UserManagements.FirstOrDefault(o => o.Id == Convert.ToInt32(companyId));
+                var getRin = _con.UserManagements.FirstOrDefault(o =>
+                    o.Id == Convert.ToInt32(companyId)
+                );
 
                 var res = _con.AssetTaxPayerDetailsApis.Where(o =>
-                        o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
+                    o.TaxPayerRinnumber == getRin.CompanyRin && o.TaxPayerTypeId == taxpeyerTypeId
                 );
                 var kkkk = new List<SspfiledFormH1ForSP>();
                 using var _context = new SelfServiceConnect();
@@ -471,7 +498,7 @@ namespace SelfPortalAPi.Controllers
             List<SspformH1> lstFormH1 = new();
             List<Sspindividual> lstIndividual = new();
             Receiver rootobjectVm = new();
-AllFunction af = new AllFunction();
+            AllFunction af = new AllFunction();
             try
             {
                 var la = new List<FormH1FM>();
@@ -507,8 +534,11 @@ AllFunction af = new AllFunction();
                             r.message = $"{res}";
                             return await Task.FromResult<IActionResult>(Ok(r));
                         }
-                        
-                        var token = af.GetToken();
+                        var token = af.GetToken(
+                            _serviceSettings.Value.ErasBaseUrl,
+                            _serviceSettings.Value.eirsusername,
+                            _serviceSettings.Value.eirspassword
+                        );
                         if (token != null)
                         {
                             for (int i = 0; i < la.Count(); i++)
@@ -550,9 +580,7 @@ AllFunction af = new AllFunction();
 
                                 if (rootobjectVm.Result.Count <= 0)
                                 {
-                                    if (
-                                        fm.PHONENUMBER != "NULL"
-                                    )
+                                    if (fm.PHONENUMBER != "NULL")
                                     {
                                         mainBaseurl =
                                             _serviceSettings.Value.ErasBaseUrl
@@ -576,7 +604,12 @@ AllFunction af = new AllFunction();
                                         ad.NotificationMethodID = 1;
                                         ad.ContactAddress = fm.HOMEADDRESS;
                                         string jsonData = js.Serialize(ad);
-                                        resp = await af.CallAPi(mainBaseurl, token, "post", jsonData);
+                                        resp = await af.CallAPi(
+                                            mainBaseurl,
+                                            token,
+                                            "post",
+                                            jsonData
+                                        );
                                         rootobjectVm = js.Deserialize<Receiver>(resp);
                                         if (rootobjectVm.Success == true)
                                         {
@@ -1033,7 +1066,7 @@ AllFunction af = new AllFunction();
                 var lastDueDate = new DateTime(DateTime.Now.Year, 1, 31);
                 using var _context = new SelfServiceConnect();
                 string query =
-                    $"SELECT s.Id, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM [pinscher_spike].[dbo].[SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
+                    $"SELECT s.Id, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM SSPFormH1s s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
                 var user = _context.SspformH1s.FromSqlRaw(query).ToList();
                 foreach (var sr in user)
                 {
@@ -1135,7 +1168,7 @@ AllFunction af = new AllFunction();
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-       
+
 
         // [NonAction]
         // public async Task<string> CallAPi(

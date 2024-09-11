@@ -1,5 +1,4 @@
-﻿using Bogus.DataSets;
-
+﻿
 namespace SelfPortalAPi.Vm
 {
     public class AssessmentRDMRes
@@ -21,16 +20,32 @@ namespace SelfPortalAPi.Vm
         public decimal? TaxBaseAmount { get; set; } // Ensure this property matches your data source
     }
 
-    public class ResponseModel
+    
+    public class ApiResponse
     {
         public bool Success { get; set; }
         public string Message { get; set; }
-        public List<AssessmentRefRes> Result { get; set; } // Adjust based on your actual API response structure
+        public string Result { get; set; }
     }
-    public class AssessmentRefRes
+
+    public class EmpMtAssAllIII:EmpMtAssAllII
     {
-        public string? AssessmentRefNo { get; set; }
-        public string? AssessmentRefId { get; set; }
+        public string? Comment { get; set; }
+    }
+    public class EmpMtAssAll
+    {
+        public string? BusinessId { get; set; }
+        public string? CompanyID { get; set; }
+    } 
+    public class AssEmpMtAssAll
+    {
+        public string? BusinessRin { get; set; }
+        public string? CompanyRin { get; set; }
+    }
+    public class EmpMtAssAllII : EmpMtAssAll
+    {
+        public string? TaxMonth { get; set; }
+        public int TaxYear { get; set; }
     }
     public class EmpMtAss
     {

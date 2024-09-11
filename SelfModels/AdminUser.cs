@@ -5,38 +5,74 @@ namespace SelfPortalAPi.Models;
 
 public partial class AdminUser
 {
+//    public int AdminUserId { get; set; }
+
+//    public int TaxOfficeId { get; set; }
+//    public string TaxOfficeName { get; set; }
+//    public string? AdminUserTypeName { get; set; }
+
+//    public int PayeUserTypeId { get; set; }
+
+//    public int RoleId { get; set; }
+
+//    public string? Password { get; set; }
+
+//    public string? Username { get; set; }
+
+//    public string? Email { get; set; }
+
+//    public string? ContactName { get; set; }
+
+//    public string? Designation { get; set; }
+
+//    public string? Phone { get; set; }
+
+//    public byte IsActive { get; set; }
+
+//    public string? ModifiedBy { get; set; }
+
+//    public DateTime? ModifiedDate { get; set; }
+
+//    public string? CreatedBy { get; set; }
+
+//    public DateTime? CreateddDate { get; set; }
+//}
+
     public int AdminUserId { get; set; }
 
-    public int TaxOfficeId { get; set; }
-    public string TaxOfficeName { get; set; }
-    public string? AdminUserTypeName { get; set; }
+public string? AdminUserTypeName { get; set; }
 
-    public int PayeUserTypeId { get; set; }
+public int PayeUserTypeId { get; set; }
 
-    public int RoleId { get; set; }
+public int RoleId { get; set; }
 
-    public string? Password { get; set; }
+public string? Password { get; set; }
 
-    public string? Username { get; set; }
+public string? Username { get; set; }
 
-    public string? Email { get; set; }
+public string? Email { get; set; }
 
-    public string? ContactName { get; set; }
+public string? ContactName { get; set; }
 
-    public string? Designation { get; set; }
+public string? Designation { get; set; }
 
-    public string? Phone { get; set; }
+public string? Phone { get; set; }
 
-    public byte IsActive { get; set; }
+public byte IsActive { get; set; }
 
-    public string? ModifiedBy { get; set; }
+public string? ModifiedBy { get; set; }
 
-    public DateTime? ModifiedDate { get; set; }
+public DateTime? ModifiedDate { get; set; }
 
-    public string? CreatedBy { get; set; }
+public string? CreatedBy { get; set; }
 
-    public DateTime? CreateddDate { get; set; }
+public DateTime? CreateddDate { get; set; }
+
+public int? TaxOfficeId { get; set; }
+
+public string TaxOfficeName { get; set; } = null!;
 }
+
 
 
 public partial class AdminUserMain 

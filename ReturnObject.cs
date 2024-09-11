@@ -14,7 +14,7 @@ namespace SelfPortalAPi
         public object Message { get; set; }
     }
 
-    public class GetPayeTaxOffice: ReturnAPIObject
+    public class GetPayeTaxOffice : ReturnAPIObject
     {
         public ResultGetPayeTaxOffice[] Result { get; set; }
     }
@@ -31,27 +31,29 @@ namespace SelfPortalAPi
         public Result Result { get; set; }
     }
 
+
+   
+
     public class Result
     {
         public int UserID { get; set; }
         public int UserTypeID { get; set; }
-        public string? UserTypeName { get; set; }
-        public string? UserName { get; set; }
-        public string? Password { get; set; }
-        public string? ContactName { get; set; }
-        public string? EmailAddress { get; set; }
-        public string? ContactNumber { get; set; }
+        public string UserTypeName { get; set; }
+        public string UserName { get; set; }
+        public string Password { get; set; }
+        public string ContactName { get; set; }
+        public string EmailAddress { get; set; }
+        public string ContactNumber { get; set; }
         public bool Active { get; set; }
-        public string? ActiveText { get; set; }
-        public bool? IsTOManager { get; set; }
-        public string? IsTOManagerText { get; set; }
+        public string ActiveText { get; set; }
+        public object IsTOManager { get; set; }
+        public string IsTOManagerText { get; set; }
         public int TaxOfficeID { get; set; }
-        public string? TaxOfficeName { get; set; }
-        public string? TOManagerID { get; set; }
-        public string? TOManagerName { get; set; }
-        public string? SignaturePath { get; set; }
-        public bool IsDirector { get; set; }
-        public string? IsDirectorText { get; set; }
+        public string TaxOfficeName { get; set; }
+        public object TOManagerID { get; set; }
+        public object TOManagerName { get; set; }
+        public object SignaturePath { get; set; }
+        public object IsDirector { get; set; }
+        public string IsDirectorText { get; set; }
     }
-
 }

@@ -23,6 +23,11 @@ public partial class EmployerMonthlyAssessment
 
     public string? AssessmentRefNo { get; set; }
 
+    //to be added the first 3
+    public int? ProfileId { get; set; }
+    public int? AssessmentItemId { get; set; }
+    public long? AssessmentRuleID { get; set; }
+
     public int? AssessmentRefId { get; set; }
 
     public string? CreatedBy { get; set; }

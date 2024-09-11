@@ -8,9 +8,6 @@ using OfficeOpenXml.Style;
 using Quartz.Impl;
 using Quartz.Spi;
 using Quartz;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
 using SelfPortalAPi.Model;
 using SelfPortalAPi.Models;
 using SelfPortalAPi.NewModel;
@@ -26,27 +23,18 @@ using Exception = System.Exception;
 using static SelfPortalAPi.BackgroundJobs;
 using System.Net;
 using Microsoft.Extensions.Options;
+using ClosedXML.Excel;
 
 
 namespace SelfPortalAPi
 {
     public class AllFunction
     {
-        public AllFunction()
-        {
-
-        }
-
-        private readonly IOptions<ConnectionStrings> _serviceSettings;
-        public AllFunction(IOptions<ConnectionStrings> serviceSettings)
-        {
-            _serviceSettings = serviceSettings;
-        }
         public void ConfigureServices(WebApplicationBuilder builder)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             var services = builder.Services;
-            QuestPDF.Settings.License = LicenseType.Community;
+           // QuestPDF.Settings.License = LicenseType.Community;
 
             string? conn = builder.Configuration.GetConnectionString("SelfServiceConnect");
             string? connII = builder.Configuration.GetConnectionString("EirsContext");
@@ -214,13 +202,9 @@ namespace SelfPortalAPi
 
             public void ReturnJob(IJob job) { }
         }
-        public string GetToken()
+        public string GetToken(string url,string user,string password)
         {
-
-
-            string URI = _serviceSettings.Value.ErasBaseUrl + "Account/Login";
-            string user = _serviceSettings.Value.eirsusername;
-            string password = _serviceSettings.Value.eirspassword;
+            string URI = url + "Account/Login";
             string myParameters =  "UserName=" + user + "&Password=" + password + "&grant_type=password";
             string BearerToken = "";
             using (WebClient wc = new WebClient())
@@ -354,7 +338,40 @@ namespace SelfPortalAPi
             }
             return hexString;
         }
+        public byte[] ExportListToExcel<T>(List<T> data, string sheetName = "Sheet1")
+        {
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add(sheetName);
 
+                // Get the properties of the object type T
+                var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+                // Add header row dynamically from the property names
+                for (int i = 0; i < properties.Length; i++)
+                {
+                    worksheet.Cell(1, i + 1).Value = properties[i].Name;
+                }
+
+                // Insert data into the worksheet
+                for (int i = 0; i < data.Count; i++)
+                {
+                    var item = data[i];
+                    for (int j = 0; j < properties.Length; j++)
+                    {
+                        var value = properties[j].GetValue(item)?.ToString() ?? "";
+                        worksheet.Cell(i + 2, j + 1).Value = value;
+                    }
+                }
+
+                // Save to a memory stream
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    return stream.ToArray();
+                }
+            }
+        }
         public async Task<string> CallAPi(string baseUrl, string st, string httpMethod, string? jsonData)
         {
             string token = null;
@@ -693,13 +710,6 @@ namespace SelfPortalAPi
                     FileDownloadName = fileName
                 };
             }
-        }
-
-
-        public static byte[] GeneratePdfFromHtml(string htmlContent)
-        {
-            var pdfBytes = IronPdf.HtmlToPdf.StaticRenderHtmlAsPdf(htmlContent).BinaryData;
-            return pdfBytes;
         }
 
         public static string GenerateTableRows(List<Schedulepdf> schedule)

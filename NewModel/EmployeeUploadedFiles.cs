@@ -34,7 +34,8 @@
     public class MarkH3Inactive
     {
         public string? BusinessRin { get; set; }
-        public string? CompanyRin { get; set; }
+        public string? CompanyRin { get; set; } 
+        
     }
     public class MarkEmpInactive1
     {
@@ -125,9 +126,9 @@
     }
     public class EmpSchedule1
     {
-        public string? BusinessRin { get; set; }
+        public string? BusinessId { get; set; }
 
-        public string? CompanyRin { get; set; }
+        public string? CompanyId { get; set; }
         public int Year { get; set; }
 
         public string? Month { get; set; }

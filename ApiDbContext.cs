@@ -537,7 +537,7 @@ namespace SelfPortalAPi
                    .SetBasePath(Directory.GetCurrentDirectory())
                    .AddJsonFile("appsettings.json")
                    .Build();
-                var connectionString = configuration.GetConnectionString("DefaultConnection");
+                var connectionString = configuration.GetConnectionString("EirsContext");
                 optionsBuilder.UseSqlServer(connectionString);
             }
         }

@@ -28,11 +28,11 @@ namespace SelfPortalAPi.UnitOfWork
         private readonly ApiDbContext _db;
         private readonly SelfServiceConnect _con;
         private readonly IConfiguration _conFig;
-        public IndividualRepository(ApiDbContext db, SelfServiceConnect con,IConfiguration conFig)
+        public IndividualRepository(ApiDbContext db, SelfServiceConnect con, IConfiguration conFig)
         {
             _db = db;
             _con = con;
-           // _context = context;
+            // _context = context;
             _conFig = conFig;
         }
 
@@ -134,7 +134,7 @@ namespace SelfPortalAPi.UnitOfWork
                             if (!string.IsNullOrEmpty(token))
                             {
                                 mObjFuncResponse.data = new
-                                { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.AdminUserId, comanyRin = ret.Username, name = ret.ContactName, email = ret.Email, TaxpayerTypeId = ret.AdminUserTypeName };
+                                { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.AdminUserId, comanyRin = ret.Username, name = ret.ContactName, email = ret.Email, phoneNumber = ret.Phone, TaxpayerTypeId = ret.AdminUserTypeName, isAdminUser = true };
                             }
                             else
                             {
@@ -191,8 +191,9 @@ namespace SelfPortalAPi.UnitOfWork
 
                                     if (!string.IsNullOrEmpty(token))
                                     {
+                                        var bussRins = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerRinnumber == ret.CompanyRin).Select(o => new {id=o.AssetId,  name = o.AssetName, rin = o.AssetRin }).ToList();
                                         mObjFuncResponse.data = new
-                                        { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.Id, comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email, TaxpayerTypeId = ret.TaxpayerTypeId };
+                                        { token = token, expiryAt = DateTime.Now.AddDays(1), phoneNumber = ret.PhoneNumber, companyId = ret.Id, comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email, TaxpayerTypeId = ret.TaxpayerTypeId, businessRins = bussRins };
                                     }
                                     else
                                     {

@@ -82,8 +82,8 @@
     }
     public class BusSchFm
     {
-        public string? BusinessRin { get; set; }
-        public string? CompanyRin { get; set; }
+        public string? BusinessID { get; set; }
+        public string? CompanyID { get; set; }
         public string? TaxMonth { get; set; }
         public int? TaxYear { get; set; }
     }

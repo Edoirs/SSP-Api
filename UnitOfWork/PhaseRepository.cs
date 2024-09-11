@@ -11,7 +11,6 @@ using EmployeesMonthlySchedule = SelfPortalAPi.Models.EmployeesMonthlySchedule;
 using SelfPortalAPi.Model;
 using SelfPortalAPi.Vm;
 using System.Runtime.Intrinsics.Arm;
-using Bogus;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -25,6 +24,7 @@ namespace SelfPortalAPi.UnitOfWork
     public interface IPhaseIIRepo
     {
         Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize);
+        Task<Dictionary<string, object>> GetAllBusinessesAsync();
         Task<Dictionary<string, object>> GetAllBusinessesAsync(string businName);
         Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(int pageNumber, int pageSize);
         Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(string businessName);
@@ -46,18 +46,14 @@ namespace SelfPortalAPi.UnitOfWork
 
     public class PhaseIIRepo : IPhaseIIRepo
     {
-        private readonly IMapper _mapper;
         private readonly SelfServiceConnect _dbContext;
+        private readonly SelfServiceConnect _repo;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
-        //  private readonly IHttpClientFactory _httpClientFactory;
-
-
-        public PhaseIIRepo(IMapper mapper, SelfServiceConnect dbContext, IOptions<ConnectionStrings> serviceSettings)
+        public PhaseIIRepo(SelfServiceConnect dbContext, IOptions<ConnectionStrings> serviceSettings, SelfServiceConnect repo)
         {
-            _mapper = mapper;
             _dbContext = dbContext;
-            // _httpClientFactory = httpClientFactory;
             _serviceSettings = serviceSettings;
+            _repo = repo;
         }
         public async Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize)
         {
@@ -86,6 +82,27 @@ namespace SelfPortalAPi.UnitOfWork
         {
             var query = _dbContext.AssetTaxPayerDetailsApis
                 .Where(o => o.AssetName.ToLower().Trim() == busName.ToLower().Trim())
+                .Select(o => new BusinessVm
+                {
+                    BusinessRin = o.AssetRin,
+                    BusinessName = o.AssetName,
+                    CompanyRin = o.TaxPayerRinnumber,
+                    LgaName = o.AssetAddress,
+                });
+
+            int totalCount = await query.CountAsync();
+            var pageRes = await query
+                .ToListAsync();
+
+            return new Dictionary<string, object>
+    {
+        { "Businesses", pageRes },
+        { "TotalCount", totalCount }
+    };
+        }
+  public async Task<Dictionary<string, object>> GetAllBusinessesAsync()
+        {
+            var query = _dbContext.AssetTaxPayerDetailsApis
                 .Select(o => new BusinessVm
                 {
                     BusinessRin = o.AssetRin,
@@ -607,12 +624,11 @@ namespace SelfPortalAPi.UnitOfWork
             var r = new ReturnObject();
             try
             {
+                var userExist = _repo.AdminUsers.FirstOrDefault(o => o.Email == adminSign.UserName);
+
                 string url = _serviceSettings.Value.ErasBaseUrl;
                 url = url + $"User/TaxOfficer?EmailAddress={adminSign.UserName}";
-
                 AllFunction al = new AllFunction();
-
-                //var client = //_httpClientFactory.CreateClient();
                 var response = await al.CallAPi(url, "", "Get", "");
                 var apiRecords = JsonConvert.DeserializeObject<TaxOfficerLoginDetail>(response);
                 if (apiRecords.Result == null)
@@ -623,8 +639,7 @@ namespace SelfPortalAPi.UnitOfWork
                         message = "User Not Found From Eras"
                     };
                 }
-                //
-                var userExist = _dbContext.AdminUsers.FirstOrDefault(o => o.TaxOfficeId == apiRecords.Result.TaxOfficeID);
+
                 if (userExist == null)
                 {
                     var user = new Models.AdminUser

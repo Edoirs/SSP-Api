@@ -32,4 +32,9 @@ public partial class EmployerMonthlyAssessmentHistory
     public string? CreatedBy { get; set; }
 
     public DateTime CreatedDate { get; set; }
+     public int? ProfileId { get; set; }
+    public int? AssessmentItemId { get; set; }
+    public long? AssessmentRuleID { get; set; }
+    public string? Comment { get; set; }
+
 }

@@ -32,6 +32,11 @@
     {
         public IEnumerable<BusinessVm> Businesses { get; set; } 
         public int TotalCount { get; set; }
+    } 
+    public class PageRecords
+    {
+        public dynamic records { get; set; } 
+        public int TotalCount { get; set; }
     }
     public class CombinedResult2
     {

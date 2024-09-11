@@ -2,15 +2,15 @@
 {
     public partial class EmployeeAssessmentHistory
     {
-        public int EmployerID { get; set; } // FK references EmployeeMonthlySchedule table
-        public int BusinessID { get; set; } // FK references EmployeeMonthlySchedule table
-        public int EmployeeRIN { get; set; } // FK references EmployeeMonthlySchedule table
+        public string? EmployerID { get; set; } // FK references EmployeeMonthlySchedule table
+        public string? BusinessID { get; set; } // FK references EmployeeMonthlySchedule table
+        public string? EmployeeRIN { get; set; } // FK references EmployeeMonthlySchedule table
         public int? TaxYear { get; set; }
-        public int TaxMonth { get; set; }
+        public string TaxMonth { get; set; }
         public decimal? TotalAmount { get; set; }
         public decimal? TotalAssessed { get; set; }
         public string? AssessmentRefNo { get; set; }
-        public string? AssessmentRefID { get; set; }
+        public int? AssessmentRefID { get; set; }
         public string? AssCreatedBy { get; set; }
         public DateTime? AssCreatedDate { get; set; }
         public string? CreatedBy { get; set; }
