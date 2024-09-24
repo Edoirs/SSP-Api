@@ -1,4 +1,6 @@
 ﻿
+using Newtonsoft.Json;
+
 namespace SelfPortalAPi.Vm
 {
     public class AssessmentRDMRes
@@ -19,12 +21,49 @@ namespace SelfPortalAPi.Vm
         public int? AssessmentItemID { get; set; }
         public decimal? TaxBaseAmount { get; set; } // Ensure this property matches your data source
     }
+public class MainApiResponse
+{
+    [JsonProperty("Success")]
+    public bool Success { get; set; }
+
+    [JsonProperty("Message")]
+    public string Message { get; set; }
 
     
-    public class ApiResponse
+}
+public class TccResp: MainApiResponse
+{
+[JsonProperty("Result")]
+    public List<TaxPayerInfo> Result { get; set; }
+}
+public class TaxPayerInfo
+{
+    [JsonProperty("TaxPayerID")]
+    public int TaxPayerID { get; set; }
+    [JsonProperty("TaxOfficeId")]
+    public int TaxOfficeId { get; set; }
+
+    [JsonProperty("TaxPayerTypeID")]
+    public int TaxPayerTypeID { get; set; }
+
+    [JsonProperty("TaxPayerRIN")]
+    public string TaxPayerRIN { get; set; }
+
+    [JsonProperty("RequestRefNo")]
+    public string RequestRefNo { get; set; }
+
+    [JsonProperty("TaxYear")]
+    public string TaxYear { get; set; }
+
+    [JsonProperty("RequestDate")]
+    public string RequestDate { get; set; }  // You might want to use DateTime instead if the date format is consistent
+
+    [JsonProperty("RequestStatus")]
+    public string RequestStatus { get; set; }
+}
+    
+    public class ApiResponse:MainApiResponse
     {
-        public bool Success { get; set; }
-        public string Message { get; set; }
         public string Result { get; set; }
     }
 
@@ -53,6 +92,10 @@ namespace SelfPortalAPi.Vm
         public string? CompanyRin { get; set; }
         public string? TaxMonth { get; set; }
         public int TaxYear { get; set; }
+    }  public class EmpMtAssForPdf
+    {
+        public string? BusinessRin { get; set; }
+        public string? CompanyRin { get; set; }
     }
     public class AllAssessmentRess
     {

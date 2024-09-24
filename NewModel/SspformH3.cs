@@ -55,7 +55,7 @@ public partial class ReturnSspformH3 : NewBaseEntity
 
     public string? TaxPayerId { get; set; }
 
-    public string? IndividalId { get; set; }
+    public string? IndividualId { get; set; }
     [NotMapped]
     public string? Startmonth { get; set; }
 

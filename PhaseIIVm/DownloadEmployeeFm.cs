@@ -8,6 +8,22 @@
         public string? TaxMonth { get; set; }
     }
 
+    public class TccSent{
+        public List<int> EmployeeIds{get;set;}
+        public string busId{get;set;}
+    }
+    public class TccSentToEras{
+        public int TaxPayerID{get;set;}
+        public int TaxYear{get;set;}
+    }
+   
+public class EmployeeStatus
+{
+    public string EmployeeId { get; set; }
+    public string EmployeeRIN { get; set; }
+    public string EmployeeName { get; set; }
+    public string TCCStatus { get; set; }
+}
     public class DownloadEmployeeResponse
     {
         public string? EmployeeRin { get; set; }

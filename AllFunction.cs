@@ -43,19 +43,7 @@ namespace SelfPortalAPi
             services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
 
             string? TaxOfficeJobTime = builder.Configuration.GetConnectionString("TaxOfficeJob");
-            // Add Quartz services
-            //services.AddSingleton<IJobFactory, SingletonJobFactory>();
-            //services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
-
-            //// Add our job
-            //services.AddSingleton<AllJob>();
-
-            //// Create the job and trigger
-            //services.AddSingleton(new JobSchedule(
-            //    jobType: typeof(AllJob),
-            //    cronExpression: "0 0 6 * * ?")); // Cron expression for 6 AM daily
-
-            //services.AddHostedService<QuartzHostedService>();
+            
             services.AddAutoMapper(typeof(Program));
             services.AddEndpointsApiExplorer();
             services.AddAuthentication(opt =>
@@ -265,6 +253,12 @@ namespace SelfPortalAPi
             Approved,
             DisApproved
         }
+        // public enum TccStatusEnum : int
+        // {
+        //     Requested = 15,
+        //     Approved,
+        //     DisApproved
+        // }
         public enum FillingStatusEnum : int
         {
             Filled = 1,
@@ -296,6 +290,30 @@ namespace SelfPortalAPi
         public class Token
         {
             public string access_token { get; set; }
+        }
+        public bool SendSMS(string pStrToNumber, string pStrBody, string para1, string para2)
+        {
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://app.multitexter.com/v2/app/sms");
+            httpWebRequest.ContentType = "application/json"; httpWebRequest.Method = "POST";
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+            {
+                string email = para1;
+                string password = para2;
+                string message = pStrBody;
+                string sender_name = "PAYE";
+                string recipients = pStrToNumber;
+                string forcednd = "1";
+                string json = "{\"email\":\"" + email + "\",\"password\":\"" + password + "\",\"message\":\"" + message + "\",\"sender_name\":\"" + sender_name + "\",\"recipients\":\"" + recipients + "\",\"forcednd\":\"" + forcednd + "\"}";
+                streamWriter.Write(json); streamWriter.Flush(); streamWriter.Close();
+            }
+            var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            {
+                var result = streamReader.ReadToEnd(); Console.WriteLine(result);
+            }
+
+            return true;
         }
         public async Task<bool> SendTiloSMS(string pStrToNumber, string body)
         {

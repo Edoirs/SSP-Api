@@ -18,6 +18,7 @@ using SelfPortalAPi.NewModel.ResModel;
 using SelfPortalAPi.UnitOfWork;
 using Swashbuckle.AspNetCore.Annotations;
 using static SelfPortalAPi.AllFunction;
+using Individual = SelfPortalAPi.Models.Individual;
 using Token = SelfPortalAPi.AllFunction.Token;
 
 namespace SelfPortalAPi.Controllers
@@ -57,6 +58,7 @@ namespace SelfPortalAPi.Controllers
         [Route("getallformh1bycompanyId/{companyId}")]
         public async Task<IActionResult> getallformh1([FromRoute] string companyId)
         {
+            bool eget = false;
             try
             {
                 var getRin = _con.UserManagements.FirstOrDefault(o =>
@@ -86,9 +88,12 @@ namespace SelfPortalAPi.Controllers
                             : "0";
                     m.NoOfEmployees = empCount.Count() > 0 ? empCount.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
+                    eget = true;
                 }
                 ReturnObject rd = new();
-                rd.data = finalBusinessReturnModel;
+                rd.message = eget ? "Record Found Successfully" : "No Record Found";
+                rd.data = eget ? finalBusinessReturnModel : null;
+                rd.status = eget ? true : false;
                 return Ok(rd);
             }
             catch (System.Exception ex)
@@ -149,6 +154,8 @@ namespace SelfPortalAPi.Controllers
                     }
                     rd.data = finalBusinessReturnModel;
                 }
+                rd.message = "Record Found succesfully";
+                rd.status = true;
                 return Ok(rd);
             }
             catch (System.Exception ex)
@@ -168,6 +175,7 @@ namespace SelfPortalAPi.Controllers
         [Route("getallformh1WithcompanyId/{companyId}")]
         public async Task<IActionResult> getformh1([FromRoute] string companyId)
         {
+            bool eget = false;
             try
             {
                 var getRin = _con.UserManagements.FirstOrDefault(o =>
@@ -197,9 +205,13 @@ namespace SelfPortalAPi.Controllers
                             : "0";
                     m.NoOfEmployees = empCount.Count() > 0 ? empCount.Count().ToString() : "0";
                     finalBusinessReturnModel.Add(m);
+
+                    eget = true;
                 }
                 ReturnObject rd = new();
-                rd.data = finalBusinessReturnModel;
+                rd.message = eget ? "Record Found Successfully" : "No Record Found";
+                rd.data = eget ? finalBusinessReturnModel : null;
+                rd.status = eget ? true : false;
                 return Ok(rd);
             }
             catch (System.Exception ex)
@@ -260,14 +272,14 @@ namespace SelfPortalAPi.Controllers
                             .SetProperty(b => b.Basic, Convert.ToDecimal(obj.Basic))
                     );
                 _ = _con
-                    .Sspindividual.Where(o => o.IndividalId == all.IndividalId)
+                    .Individuals.Where(o => o.Id == Convert.ToInt32(all.IndividalId))
                     .ExecuteUpdate(setters =>
                         setters
                             .SetProperty(b => b.Firstname, obj.FIRSTNAME)
                             .SetProperty(b => b.Othername, obj.OTHERNAME)
                             .SetProperty(b => b.Surname, obj.SURNAME)
                             .SetProperty(b => b.Phonenumber, obj.PHONENUMBER)
-                            .SetProperty(b => b.Rin, obj.RIN)
+                            .SetProperty(b => b.EmployeeRin, obj.RIN)
                             .SetProperty(b => b.Jtbtin, obj.JTBTIN)
                             .SetProperty(b => b.Nin, obj.NIN)
                             .SetProperty(b => b.Designation, obj.Designation)
@@ -348,7 +360,7 @@ namespace SelfPortalAPi.Controllers
             {
                 using var _context = new SelfServiceConnect();
                 string query =
-                    $"SELECT s.[Id],s.[BusinessId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[CompanyId],(s.[Rent] + s.[Basic] +s.[OTHERINCOME]+s.[TRANSPORT]) as Total,s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName FROM [SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual I on s.IndividalId = I.IndividalId where s.CompanyId = '{companyId}' and s.BusinessId = '{businessId}'";
+                    $"SELECT s.[IndividalId],s.[BusinessId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[CompanyId],(s.[Rent] + s.[Basic] +s.[OTHERINCOME]+s.[TRANSPORT]) as Total,s.[TaxPayerId],s.[Id],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName as BusinessName,A.TaxPayerName as CompanyName FROM [SSPFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join Individual I on s.IndividalId = I.EmployeeId \r\n\r\n               where s.CompanyId = '{companyId}' and s.BusinessId = '{businessId}'";
                 var user = _context.ReturnSspformH1.FromSqlRaw(query).ToList();
                 return Ok(user);
             }
@@ -374,7 +386,7 @@ namespace SelfPortalAPi.Controllers
             {
                 using var _context = new SelfServiceConnect();
                 var query =
-                    $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
+                    $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join Individual B on s.IndividalId = B.EmployeeId  where  s.CompanyId='{companyId}'";
                 var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
                 r.status = true;
@@ -414,7 +426,7 @@ namespace SelfPortalAPi.Controllers
                 var kkkk = new List<SspfiledFormH1ForSP>();
                 using var _context = new SelfServiceConnect();
                 var query1 =
-                    $"SELECT top(1) S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where  s.CompanyId='{companyId}'";
+                    $"SELECT top(1) S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join Individual B on s.IndividalId = B.EmployeeId where  s.CompanyId='{companyId}'";
                 var user1 = _context.SspfiledFormH1ForSPs.FromSqlRaw(query1).ToList();
                 var query =
                     $"select distinct (TaxYear)FROM [SSPFiledFormH1s] where CompanyId='{companyId}'";
@@ -463,7 +475,7 @@ namespace SelfPortalAPi.Controllers
             {
                 using var _context = new SelfServiceConnect();
                 var query =
-                    $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  CASE WHEN B.OTHERNAME IS NOT NULL THEN  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME   ELSE B.FirstName + ' ' + B.SURNAME     END AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join SSPIndividual B on s.IndividalId = B.IndividalId  where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
+                    $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  CASE WHEN B.OTHERNAME IS NOT NULL THEN  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME   ELSE B.FirstName + ' ' + B.SURNAME     END AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join Individual B on s.IndividalId = B.EmployeeId    where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
                 var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
                 r.data = user;
                 r.status = true;
@@ -496,7 +508,7 @@ namespace SelfPortalAPi.Controllers
             JavaScriptSerializer js = new();
             var resp = "";
             List<SspformH1> lstFormH1 = new();
-            List<Sspindividual> lstIndividual = new();
+            List<Individual> lstIndividual = new();
             Receiver rootobjectVm = new();
             AllFunction af = new AllFunction();
             try
@@ -640,10 +652,9 @@ namespace SelfPortalAPi.Controllers
                                             {
                                                 if (rootobjectVm.Result.Count > 0)
                                                 {
-                                                    var sp = new Sspindividual
+                                                    var sp = new Individual
                                                     {
-                                                        IndividalId = rootobjectVm
-                                                            .Result.FirstOrDefault()
+                                                        EmployeeId = rootobjectVm.Result.FirstOrDefault()
                                                             .TaxPayerID.ToString(),
                                                         Firstname = fm.FIRSTNAME,
                                                         Surname = fm.SURNAME,
@@ -651,7 +662,7 @@ namespace SelfPortalAPi.Controllers
                                                         Phonenumber = rootobjectVm
                                                             .Result.FirstOrDefault()
                                                             .TaxPayerMobileNumber.ToString(),
-                                                        Rin = rootobjectVm
+                                                        EmployeeRin = rootobjectVm
                                                             .Result.FirstOrDefault()
                                                             .TaxPayerRIN.ToString(),
                                                         Jtbtin = fm.JTBTIN,
@@ -745,23 +756,23 @@ namespace SelfPortalAPi.Controllers
                                 {
                                     if (rootobjectVm.Success == true)
                                     {
-                                        var res = _con.Sspindividual.FirstOrDefault(o =>
-                                            o.IndividalId
+                                        var res = _con.Individuals.FirstOrDefault(o =>
+                                            o.EmployeeId
                                                 == rootobjectVm
                                                     .Result.FirstOrDefault()
                                                     .TaxPayerID.ToString()
-                                            && o.Rin
+                                            && o.EmployeeRin
                                                 == rootobjectVm
                                                     .Result.FirstOrDefault()
                                                     .TaxPayerRIN.ToString()
                                         );
                                         if (res != null)
                                         {
-                                            _con.Sspindividual.Where(o =>
-                                                o.IndividalId
+                                            _con.Individuals.Where(o =>
+                                                o.Id
                                                 == rootobjectVm
                                                     .Result.FirstOrDefault()
-                                                    .TaxPayerID.ToString()
+                                                    .TaxPayerID
                                             )
                                                 .ExecuteUpdate(obj =>
                                                     obj.SetProperty(b => b.Firstname, fm.FIRSTNAME)
@@ -774,7 +785,7 @@ namespace SelfPortalAPi.Controllers
                                                                 .TaxPayerMobileNumber.ToString()
                                                         )
                                                         .SetProperty(
-                                                            b => b.Rin,
+                                                            b => b.EmployeeRin,
                                                             rootobjectVm
                                                                 .Result.FirstOrDefault()
                                                                 .TaxPayerRIN.ToString()
@@ -797,9 +808,9 @@ namespace SelfPortalAPi.Controllers
                                         }
                                         else
                                         {
-                                            var sp = new Sspindividual
+                                            var sp = new Individual
                                             {
-                                                IndividalId = rootobjectVm
+                                                EmployeeId = rootobjectVm
                                                     .Result.FirstOrDefault()
                                                     .TaxPayerID.ToString(),
                                                 Firstname = fm.FIRSTNAME,
@@ -808,7 +819,7 @@ namespace SelfPortalAPi.Controllers
                                                 Phonenumber = rootobjectVm
                                                     .Result.FirstOrDefault()
                                                     .TaxPayerMobileNumber.ToString(),
-                                                Rin = rootobjectVm
+                                                EmployeeRin = rootobjectVm
                                                     .Result.FirstOrDefault()
                                                     .TaxPayerRIN.ToString(),
                                                 Jtbtin = fm.JTBTIN,
@@ -1004,15 +1015,11 @@ namespace SelfPortalAPi.Controllers
                                 }
                                 mainBaseurl = "";
                             }
-                            _con.Sspindividual.AddRange(lstIndividual);
+                            _con.Individuals.AddRange(lstIndividual);
                             _con.SspformH1s.AddRange(lstFormH1);
                             _con.SaveChanges();
                         }
                     }
-                    //if (lstErrorRes.Count > 0)
-                    //{
-                    //    r.data = lstErrorRes;
-                    //}
                     return await Task.FromResult<IActionResult>(Ok(r));
                 }
                 else

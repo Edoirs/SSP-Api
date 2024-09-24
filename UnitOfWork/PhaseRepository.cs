@@ -23,11 +23,9 @@ namespace SelfPortalAPi.UnitOfWork
 {
     public interface IPhaseIIRepo
     {
-        Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize);
-        Task<Dictionary<string, object>> GetAllBusinessesAsync();
-        Task<Dictionary<string, object>> GetAllBusinessesAsync(string businName);
-        Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(int pageNumber, int pageSize);
-        Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(string businessName);
+        Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin);
+
+        Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin);
         Task<List<EmployeeIncomeVm>> GetEmployeeIncomeView(EmployeesViewFmModel emp);
         Task<List<EmployeesMonthlyIncome>> GetMonthlyIncomeAsync(EmpSchedule obj);
         Task<List<EmployeesMonthlyIncome>> GetEmployeeMonthlyIncomeAsync(EmpSchedule obj);
@@ -41,7 +39,7 @@ namespace SelfPortalAPi.UnitOfWork
         Task<List<Models.AssetTaxPayerDetailsApi>> GetBusinessDetails(string BusinessRin, string CompanyRin);
         Task<List<EmployeesMonthlySchedule>> GetAssessmentSchudeleDetails(EmpMtAss ass);
         Task<List<EmployeesMonthlySchedule>> GetAssessmentScheduleDetails2(EmpMtAss ass);
-        Task<List<EmployeesMonthlySchedule>> GetAssessmentSchudeleDetailsDownLoad(EmpMtAss ass);
+       Task<List<EmployeesMonthlySchedule>> GetAssessmentSchudeleDetailsDownLoad(EmpMtAssForPdf ass);
     }
 
     public class PhaseIIRepo : IPhaseIIRepo
@@ -55,22 +53,69 @@ namespace SelfPortalAPi.UnitOfWork
             _serviceSettings = serviceSettings;
             _repo = repo;
         }
-        public async Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize)
+        public async Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin)
         {
-            var query = _dbContext.AssetTaxPayerDetailsApis
-                .Select(o => new BusinessVm
-                {
-                    BusinessRin = o.AssetRin,
-                    BusinessName = o.AssetName,
-                    CompanyRin = o.TaxPayerRinnumber,
-                    LgaName = o.AssetAddress,
-                });
+            int totalCount = 0;
+            IQueryable<BusinessVm> query = null;
+            var pageRes = new List<BusinessVm>();
 
-            int totalCount = await query.CountAsync();
-            var pageRes = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            var bigQuery = (from a in _dbContext.AssetTaxPayerDetailsApis
+                            join b in _dbContext.CompanyListApis
+                            on a.TaxPayerRinnumber equals b.TaxPayerRin
+                            select new BusinessVm
+                            {
+                                CompanyName=a.TaxPayerName,
+                                BusinessRin = a.AssetRin,
+                                BusinessName = a.AssetName,
+                                CompanyRin = a.TaxPayerRinnumber,
+                                LgaName = a.AssetAddress,
+                                TaxOffice = b.TaxOffice
+                            });
+
+            if (!string.IsNullOrEmpty(busName))
+            {
+                switch (IsAdmin)
+                {
+                    case true:
+                        query = bigQuery.Where(o => o.TaxOffice.ToLower().Trim() == tx_cm.ToLower().Trim()
+                                                 && o.BusinessName.ToLower().Trim() == busName.ToLower().Trim());
+                        break;
+                    case false:
+                        query = bigQuery.Where(o => o.CompanyRin.ToLower().Trim() == tx_cm.ToLower().Trim()
+                                                 && o.BusinessName.ToLower().Trim() == busName.ToLower().Trim());
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                switch (IsAdmin)
+                {
+                    case true:
+                        query = bigQuery.Where(o => o.TaxOffice.ToLower().Trim() == tx_cm.ToLower().Trim());
+                        break;
+                    case false:
+                        query = bigQuery.Where(o => o.CompanyRin.ToLower().Trim() == tx_cm.ToLower().Trim());
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (query != null)
+            {
+                totalCount = await query.CountAsync();
+                if (pageNumber != 0 && pageSize != 0)
+                {
+                    pageRes = await query
+                        .Skip((pageNumber - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToListAsync();
+                }
+                else
+                    pageRes = await query.ToListAsync();
+            }
 
             return new Dictionary<string, object>
     {
@@ -78,93 +123,76 @@ namespace SelfPortalAPi.UnitOfWork
         { "TotalCount", totalCount }
     };
         }
-        public async Task<Dictionary<string, object>> GetAllBusinessesAsync(string busName)
+
+        public async Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin)
         {
-            var query = _dbContext.AssetTaxPayerDetailsApis
-                .Where(o => o.AssetName.ToLower().Trim() == busName.ToLower().Trim())
-                .Select(o => new BusinessVm
+            int totalCount = 0;
+            IQueryable<BusinessRinVm> query = null;
+            var pageRes = new List<BusinessRinVm>();
+            var bigQuery =
+                from asset in _dbContext.AssetTaxPayerDetailsApis
+                join employee in _dbContext.EmployeesMonthlyIncomes
+                on asset.AssetId.ToString() equals employee.BusinessId
+                join comp in _dbContext.CompanyListApis
+                on asset.TaxPayerRinnumber equals comp.TaxPayerRin
+                group asset by new { asset.AssetId,asset.AssetRin,asset.TaxPayerId,asset.TaxPayerName, asset.AssetName, asset.AssetAddress, asset.AssetLga, asset.TaxPayerRinnumber, comp.TaxOffice } into g
+                select new BusinessRinVm
                 {
-                    BusinessRin = o.AssetRin,
-                    BusinessName = o.AssetName,
-                    CompanyRin = o.TaxPayerRinnumber,
-                    LgaName = o.AssetAddress,
-                });
-
-            int totalCount = await query.CountAsync();
-            var pageRes = await query
-                .ToListAsync();
-
-            return new Dictionary<string, object>
-    {
-        { "Businesses", pageRes },
-        { "TotalCount", totalCount }
-    };
-        }
-  public async Task<Dictionary<string, object>> GetAllBusinessesAsync()
-        {
-            var query = _dbContext.AssetTaxPayerDetailsApis
-                .Select(o => new BusinessVm
+                    CompanyId =g.Key.TaxPayerId,
+                    businessId = g.Key.AssetId,
+                    CompanyName= g.Key.TaxPayerName,
+                    businessRin = g.Key.AssetRin,
+                    CompanyRin = g.Key.TaxPayerRinnumber,
+                    businessName = g.Key.AssetName,
+                    businessAddress = g.Key.AssetAddress,
+                    businessLga = g.Key.AssetLga,
+                    taxOffice = g.Key.TaxOffice,
+                    NoOfEmployees = g.Count()
+                };
+            if (!string.IsNullOrEmpty(busName))
+            {
+                switch (IsAdmin)
                 {
-                    BusinessRin = o.AssetRin,
-                    BusinessName = o.AssetName,
-                    CompanyRin = o.TaxPayerRinnumber,
-                    LgaName = o.AssetAddress,
-                });
+                    case true:
+                        query = bigQuery.Where(o => o.taxOffice.ToLower().Trim() == tx_cm.ToLower().Trim()
+                                                 && o.businessName.ToLower().Trim() == busName.ToLower().Trim());
+                        break;
+                    case false:
+                        query = bigQuery.Where(o => o.CompanyRin.ToLower().Trim() == tx_cm.ToLower().Trim()
+                                                 && o.businessName.ToLower().Trim() == busName.ToLower().Trim());
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                switch (IsAdmin)
+                {
+                    case true:
+                        query = bigQuery.Where(o => o.taxOffice.ToLower().Trim() == tx_cm.ToLower().Trim());
+                        break;
+                    case false:
+                        query = bigQuery.Where(o => o.CompanyRin.ToLower().Trim() == tx_cm.ToLower().Trim());
+                        break;
+                    default:
+                        break;
+                }
+            }
 
-            int totalCount = await query.CountAsync();
-            var pageRes = await query
-                .ToListAsync();
-
-            return new Dictionary<string, object>
-    {
-        { "Businesses", pageRes },
-        { "TotalCount", totalCount }
-    };
-        }
-
-        public async Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(int pageNumber, int pageSize)
-        {
-            var query = from asset in _dbContext.AssetTaxPayerDetailsApis
-                        join employee in _dbContext.EmployeesMonthlyIncomes
-                        on asset.AssetId.ToString() equals employee.BusinessId
-                        group asset by new { asset.AssetRin, asset.AssetName, asset.AssetAddress, asset.AssetLga, asset.TaxPayerRinnumber } into g
-                        select new BusinessRinVm
-                        {
-                            businessRin = g.Key.AssetRin,
-                            CompanyRin = g.Key.TaxPayerRinnumber,
-                            businessName = g.Key.AssetName,
-                            businessAddress = g.Key.AssetAddress,
-                            businessLga = g.Key.AssetLga,
-                            NoOfEmployees = g.Count()
-                        };
-            int totalCount = await query.CountAsync();
-            var pageRes = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-            return new Dictionary<List<BusinessRinVm>, int> {
-                {pageRes,totalCount }
-            };
-        }
-        public async Task<Dictionary<List<BusinessRinVm>, int>> getallEmployeesCount(string businessName)
-        {
-            var query = from asset in _dbContext.AssetTaxPayerDetailsApis
-                        join employee in _dbContext.EmployeesMonthlyIncomes
-                        on asset.AssetId.ToString() equals employee.BusinessId
-                        where asset.AssetName.ToLower().Trim() == businessName.ToLower().Trim()
-                        group asset by new { asset.AssetRin, asset.AssetName, asset.AssetAddress, asset.AssetLga, asset.TaxPayerRinnumber } into g
-                        select new BusinessRinVm
-                        {
-                            businessRin = g.Key.AssetRin,
-                            CompanyRin = g.Key.TaxPayerRinnumber,
-                            businessName = g.Key.AssetName,
-                            businessAddress = g.Key.AssetAddress,
-                            businessLga = g.Key.AssetLga,
-                            NoOfEmployees = g.Count()
-                        };
-            int totalCount = await query.CountAsync();
-            var pageRes = await query
-                .ToListAsync();
+            if (query != null)
+            {
+                totalCount = await query.CountAsync();
+                if (pageNumber != 0 && pageSize != 0)
+                {
+                    pageRes = await query
+                        .Skip((pageNumber - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToListAsync();
+                }
+                else
+                    pageRes = await query.ToListAsync();
+            }
             return new Dictionary<List<BusinessRinVm>, int> {
                 {pageRes,totalCount }
             };
@@ -355,9 +383,10 @@ namespace SelfPortalAPi.UnitOfWork
                         from i in ni.DefaultIfEmpty()
                         join a in _dbContext.AssetTaxPayerDetailsApis on new { s.BusinessId, s.EmployerId } equals new { BusinessId = a.AssetId.ToString(), EmployerId = a.TaxPayerId.ToString() } into sa
                         from a in sa.DefaultIfEmpty()
-                        group new { s, i, a } by new { a.AssetName, a.AssetRin, a.TaxPayerRinnumber } into g
+                        group new { s, i, a } by new { a.AssetName, a.AssetRin,a.TaxPayerName, a.TaxPayerRinnumber } into g
                         select new ScheduleGetAllRes
                         {
+                            CompanyName = g.Key.TaxPayerName,
                             BusinessRin = g.Key.AssetRin,
                             CompanyRin = g.Key.TaxPayerRinnumber,
                             BusinessName = g.Key.AssetName,
@@ -580,7 +609,7 @@ namespace SelfPortalAPi.UnitOfWork
             return buss;
         }
 
-        public async Task<List<EmployeesMonthlySchedule>> GetAssessmentSchudeleDetailsDownLoad(EmpMtAss ass)
+        public async Task<List<EmployeesMonthlySchedule>> GetAssessmentSchudeleDetailsDownLoad(EmpMtAssForPdf ass)
         {
             var getId = await _dbContext.AssetTaxPayerDetailsApis.
                         FirstOrDefaultAsync(x => x.AssetRin == ass.BusinessRin && x.TaxPayerRinnumber == ass.CompanyRin);
@@ -588,8 +617,6 @@ namespace SelfPortalAPi.UnitOfWork
             var buss = await _dbContext.EmployeesMonthlySchedules
                 .Where(e => e.BusinessId == getId.AssetId.ToString() &&
                             e.EmployerId == getId.TaxPayerId.ToString() &&
-                            e.TaxMonth == ass.TaxMonth &&
-                            e.TaxYear == ass.TaxYear &&
                             e.AssessementStatusId == 1)
                 .Select(e => new EmployeesMonthlySchedule
                 {

@@ -7,12 +7,11 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Threading.RateLimiting;
 using AutoMapper;
-//using BitMiracle.LibTiff.Classic;
-//using SelectPdf;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.InkML;
-//using Grpc.Core;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Humanizer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -40,23 +39,24 @@ using EmployeesMonthlyIncome = SelfPortalAPi.Models.EmployeesMonthlyIncome;
 using EmployeesMonthlySchedule = SelfPortalAPi.Models.EmployeesMonthlySchedule;
 using EmployerMonthlyAssessmentHistory = SelfPortalAPi.Models.EmployerMonthlyAssessmentHistory;
 using Individual = SelfPortalAPi.Models.Individual;
+using TccRequest = SelfPortalAPi.Models.TccRequest;
 
 namespace SelfPortalAPi.Controllers.PhaseIIController
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PhaseIIController : ControllerBase
     {
-        private readonly IMapper _mapper;
         private readonly IPhaseIIRepo _phaseIIRepo;
         private readonly SelfServiceConnect _repo;
         private readonly PhaseBenchMark _phaseBench;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IOptions<ConnectionStrings> _serviceSettings;
         private string errMsg = "Unable to process request, kindly try again";
+        string UserId = ""; string TO_RIN = ""; bool IsAdmin = false;
 
         public PhaseIIController(
-            IMapper mapper,
             SelfServiceConnect repo,
             IPhaseIIRepo repos,
             PhaseBenchMark phaseBench,
@@ -65,36 +65,21 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         )
         {
             _repo = repo;
-            _mapper = mapper;
             _phaseIIRepo = repos;
             _phaseBench = phaseBench;
             _httpContextAccessor = httpContextAccessor;
             _serviceSettings = serviceSettings;
-        }
 
-        [HttpGet]
-        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
-        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("GetAllTaxOffice")]
-        public async Task<IActionResult> GetAllTaxOffice()
-        {
-            var r = new ReturnObject();
-            r.status = true;
-            r.message = "Records Fetched Successfully";
-            try
+            var audience = _httpContextAccessor.HttpContext?.User.Claims.ToList();
+            if (audience.Any())
             {
-                r.data = _repo.TaxOffices1.AsNoTracking().ToList();
-                return Ok(r);
+                UserId = audience.First(i => i.Type == "UserId").Value;
+                TO_RIN = audience.First(i => i.Type == "TaxOffice").Value;
+                IsAdmin = audience.First(i => i.Type == "IsAdmin").Value == "yes" ? true : false;
             }
-            catch (System.Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new ReturnObject { status = false, message = ex.Message }
-                );
-            }
-        }
 
+        }
+        [AllowAnonymous]
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -113,7 +98,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                 AllFunction al = new AllFunction();
                 var response = await al.CallAPi(url, "", "Get", "");
                 var apiRecords = JsonConvert.DeserializeObject<TaxOfficerLoginDetail>(response);
-                if (apiRecords.Result == null)
+                if (apiRecords?.Result == null)
                 {
                     r.status = false;
                     r.message = "User Not Found From Eras";
@@ -129,7 +114,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                         Username = apiRecords.Result.UserName,
                         Email = apiRecords.Result.EmailAddress,
                         Phone = apiRecords.Result.ContactNumber,
-                        AdminUserId = apiRecords.Result.UserTypeID,
+                        //AdminUserId = apiRecords.Result.UserTypeID,
                         AdminUserTypeName = apiRecords.Result.UserTypeName,
                         ContactName = apiRecords.Result.ContactName
                     };
@@ -153,7 +138,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             catch (System.Exception ex)
             {
                 r.status = false;
-                r.message = "User Not Found From Eras";
+                r.message = $"{ex.Message}";
             }
             return Ok(r);
         }
@@ -169,27 +154,13 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         )
         {
             var r = new ReturnObject();
-            var BusinessList = new List<BusinessRinVm>();
-            var businesses = new BusinessRinVm();
             r.status = true;
             r.message = "Records Fetched Successfully";
             var ret = new Dictionary<string, object>();
             try
             {
-                if (string.IsNullOrEmpty(businessName))
-                {
-                    ret = await _phaseIIRepo.GetAllBusinessesAsync(pageNumber, pageSize);
-                }
-                else
-                {
-                    ret = await _phaseIIRepo.GetAllBusinessesAsync(businessName);
-                }
-                // no point doing two calls you can use dictionary,turple to get all the values
-
-                // var ret2 = await _repo.AssetTaxPayerDetailsApis.CountAsync();
-
+                ret = await _phaseIIRepo.GetAllBusinessesAsync(pageNumber, pageSize, businessName, TO_RIN, IsAdmin);
                 var result = new CombinedResult();
-
                 result.Businesses = ret.ContainsKey("Businesses")
                     ? ret["Businesses"] as List<BusinessVm>
                     : new List<BusinessVm>();
@@ -215,8 +186,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         {
             AllFunction af = new AllFunction();
             var ret = new Dictionary<string, object>();
-
-            ret = await _phaseIIRepo.GetAllBusinessesAsync();
+            ret = await _phaseIIRepo.GetAllBusinessesAsync(0, 0, "", TO_RIN, IsAdmin);
 
             var result = new CombinedResult();
             result.Businesses = ret.ContainsKey("Businesses")
@@ -232,6 +202,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             );
         }
 
+        [AllowAnonymous]
         [HttpPut]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -252,7 +223,9 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             else
             {
                 affectedRows = await _repo
-                    .AdminUsers.Where(b => b.Phone == model.CompanyRin_Phone)
+                    .AdminUsers.Where(b => b.Email.ToLower().Trim() == model.CompanyRin_Phone.ToLower().Trim()
+                    || b.Username.ToLower().Trim() == model.CompanyRin_Phone.ToLower().Trim()
+                    || b.Phone.ToLower().Trim() == model.CompanyRin_Phone.ToLower().Trim())
                     .ExecuteUpdateAsync(s => s.SetProperty(b => b.Password, newP));
             }
             if (affectedRows > 0)
@@ -269,6 +242,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             return Ok(r);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -292,16 +266,17 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             else
             {
                 var all = await _repo
-                    .AdminUsers.Where(b => b.Phone == model.PhoneNumber)
+                    .AdminUsers.Where(b => b.Email.ToLower().Trim() == model.CompanyRin.ToLower().Trim() || b.Username.ToLower().Trim() == model.CompanyRin.ToLower().Trim())
                     .ToListAsync();
                 affectedRows = all.Count();
             }
             // Check if the update was successful
             if (affectedRows > 0)
             {
-                var blnSMSSent = await allFunction.SendTiloSMS(
+                r.data = q;
+                var blnSMSSent = allFunction.SendSMS(
                     model.PhoneNumber,
-                    $"Dear User, Kindly Use {q} As OTP To Change Your Password"
+                    $"Dear User, Kindly Use {q} As OTP To Change Your Password", _serviceSettings.Value.username, _serviceSettings.Value.password
                 );
 
                 r.status = true;
@@ -327,18 +302,13 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         )
         {
             var r = new ReturnObject();
-            var BusinessList = new List<BusinessRinVm>();
-            var businesses = new BusinessRinVm();
             r.status = true;
             r.message = "Records Fetched Successfully";
             var ret = new Dictionary<List<BusinessRinVm>, int>();
             try
             {
-                if (string.IsNullOrEmpty(businessName))
-                    ret = await _phaseIIRepo.getallEmployeesCount(pageNumber, pageSize);
-                else
-                    ret = await _phaseIIRepo.getallEmployeesCount(businessName);
 
+                ret = await _phaseIIRepo.getallEmployeesCount(pageNumber, pageSize, businessName, TO_RIN, IsAdmin);
                 var result = new CombinedResult2();
 
                 result.Businesses = ret.Keys.FirstOrDefault() ?? new List<BusinessRinVm>();
@@ -386,28 +356,28 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("GetBussinessEmployeesByRin")]
         public async Task<IActionResult> GetBussinessEmployeesByRin(
-            [FromQuery][Required] string businessRin,
-            [FromQuery][Required] string companyRin
+            [FromQuery][Required] string businessId,
+            [FromQuery][Required] string companyId
         )
         {
             var r = new ReturnObject();
             r.status = true;
             r.message = "Record Fetched Successfully";
 
-            if (string.IsNullOrEmpty(businessRin) || string.IsNullOrEmpty(companyRin))
-            {
-                r.status = false;
-                r.message = "All Fields are Required and Cannot Be Null or Empty.";
-            }
+            // if (string.IsNullOrEmpty(businessRin) || string.IsNullOrEmpty(companyRin))
+            // {
+            //     r.status = false;
+            //     r.message = "All Fields are Required and Cannot Be Null or Empty.";
+            // }
 
             try
             {
-                var buss = GetBusinessCompanyId(businessRin, companyRin);
+                // var buss = GetBusinessCompanyId(businessRin, companyRin);
 
                 var emp = new EmployeesViewFmModel();
 
-                emp.BusinessId = buss.Result.BusinessId;
-                emp.CompanyId = buss.Result.Companyid;
+                emp.BusinessId = businessId;
+                emp.CompanyId = companyId;
 
                 var ret = await _phaseIIRepo.GetEmployeeIncomeView(emp);
                 r.data = ret;
@@ -750,8 +720,8 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                                             Status = true,
                                                             CreatedDate = DateTime.Now,
                                                             ModifiedDate = DateTime.Now,
-                                                            CreatedBy = username,
-                                                            ModifiedBy = username,
+                                                            CreatedBy = UserId,
+                                                            ModifiedBy = UserId,
                                                         }
                                                     );
                                                 }
@@ -959,8 +929,8 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                                             b => b.ModifiedDate,
                                                             DateTime.Now
                                                         )
-                                                        .SetProperty(b => b.CreatedBy, username)
-                                                        .SetProperty(b => b.ModifiedBy, username)
+                                                        .SetProperty(b => b.CreatedBy, UserId)
+                                                        .SetProperty(b => b.ModifiedBy, UserId)
                                                 );
                                         }
                                         else
@@ -1020,8 +990,8 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                                     Status = true,
                                                     CreatedDate = DateTime.Now,
                                                     ModifiedDate = DateTime.Now,
-                                                    CreatedBy = username,
-                                                    ModifiedBy = username,
+                                                    CreatedBy = UserId,
+                                                    ModifiedBy = UserId,
                                                 }
                                             );
                                         }
@@ -1257,8 +1227,8 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                                     Status = true,
                                                     CreatedDate = DateTime.Now,
                                                     ModifiedDate = DateTime.Now,
-                                                    CreatedBy = username,
-                                                    ModifiedBy = username,
+                                                    CreatedBy = UserId,
+                                                    ModifiedBy = UserId,
                                                 }
                                             );
                                         }
@@ -1423,8 +1393,8 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                                 .SetProperty(b => b.Status, true)
                                                 .SetProperty(b => b.CreatedDate, DateTime.Now)
                                                 .SetProperty(b => b.ModifiedDate, DateTime.Now)
-                                                .SetProperty(b => b.CreatedBy, username)
-                                                .SetProperty(b => b.ModifiedBy, username)
+                                                .SetProperty(b => b.CreatedBy, UserId)
+                                                .SetProperty(b => b.ModifiedBy, UserId)
                                         );
                                 }
                                 else
@@ -1452,8 +1422,8 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                             Status = true,
                                             CreatedDate = DateTime.Now,
                                             ModifiedDate = DateTime.Now,
-                                            CreatedBy = username,
-                                            ModifiedBy = username,
+                                            CreatedBy = UserId,
+                                            ModifiedBy = UserId,
                                         }
                                     );
                                 }
@@ -1724,27 +1694,28 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
             try
             {
                 List<ScheduleGetAllRes> lstSch = await _phaseIIRepo.GetAllSchedulesAsync();
-
-                if (lstSch != null && lstSch.Any())
-                {
-                    foreach (var res in lstSch)
-                    {
-                        var AddSchs = new ScheduleGetAllRes
-                        {
-                            BusinessName = res.BusinessName,
-                            CompanyRin = res.CompanyRin,
-                            BusinessRin = res.BusinessRin,
-                            TaxMonth = res.TaxMonth,
-                            TaxYear = res.TaxYear,
-                            EmployeeCount = res.EmployeeCount,
-                            TotalIncome = res.TotalIncome,
-                            MonthlyTax = res.MonthlyTax,
-                            DateForwarded = res.DateForwarded,
-                            AssessementStatus = res.AssessementStatus
-                        };
-                        lstSchs.Add(AddSchs);
-                    }
-                }
+                //dont know why amos is looping tru same list
+                //if (lstSch != null && lstSch.Any())
+                //{
+                //    foreach (var res in lstSch)
+                //    {
+                //        var AddSchs = new ScheduleGetAllRes
+                //        {
+                //            CompanyName = res.CompanyName,
+                //            BusinessName = res.BusinessName,
+                //            CompanyRin = res.CompanyRin,
+                //            BusinessRin = res.BusinessRin,
+                //            TaxMonth = res.TaxMonth,
+                //            TaxYear = res.TaxYear,
+                //            EmployeeCount = res.EmployeeCount,
+                //            TotalIncome = res.TotalIncome,
+                //            MonthlyTax = res.MonthlyTax,
+                //            DateForwarded = res.DateForwarded,
+                //            AssessementStatus = res.AssessementStatus
+                //        };
+                //        lstSchs.Add(AddSchs);
+                //    }
+                //}
 
                 var ret2 = lstSchs.Count();
 
@@ -1914,7 +1885,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                         AddMontAss.TotalAssessed = AddAssRDM.TaxBaseAmount;
                                         AddMontAss.AssessmentRefNo = responseObject.Result;
                                         AddMontAss.AssessmentRefId = (int)Ass.AssessmentId;
-                                        AddMontAss.CreatedBy = username ?? "Unknown";
+                                        AddMontAss.CreatedBy = UserId ?? "Unknown";
                                         AddMontAss.CreatedDate = DateTime.Now;
                                         lstEmpAss.Add(AddMontAss);
                                     }
@@ -1982,6 +1953,16 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                 if (diff != 0)
                 {
                     //call timothy api
+
+                    //Adjustment / CreateABAdjustment ? AssessmentID = 72210
+
+                    //{
+                    //                        "AAIID": 68089,
+                    //    "AdjustmentLine": "test",
+                    //    "AdjustmentTypeID": 1,
+                    //    "Amount": 500
+                    //}
+
                 }
                 else
                 {
@@ -2153,7 +2134,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
         [Route("DownLoadPDF")]
-        public async Task<IActionResult> DownLoadPDF([FromBody] EmpMtAss Obj)
+        public async Task<IActionResult> DownLoadPDF([FromBody] EmpMtAssForPdf Obj)
         {
             var r = new AssReturnObject { status = true, message = "Record Fetched Successfully" };
 
@@ -2169,111 +2150,109 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                 List<CompDetailsRes> lstCmp = new List<CompDetailsRes>();
                 List<BusDetailsRes> lstBus = new List<BusDetailsRes>();
 
-                if (Obj != null)
+                //why checking the result when u can await it
+                var GetBus = await _phaseIIRepo.GetAssessmentSchudeleDetailsDownLoad(Obj);
+                if (GetBus.Any())
                 {
-                    //why checking the result when u can await it
-                    var GetBus = await _phaseIIRepo.GetAssessmentSchudeleDetailsDownLoad(Obj);
-                    if (GetBus.Any())
+                    int serialNo = 1;
+                    foreach (var item in GetBus)
                     {
-                        int serialNo = 1;
-                        foreach (var item in GetBus)
+                        var Sch = await _repo
+                            .EmployeesMonthlySchedules.Where(x =>
+                                x.BusinessId == item.BusinessId
+                                && x.EmployerId == item.EmployerId
+                                && x.EmployeeRin == item.EmployeeRin
+                                && x.TaxMonth == item.TaxMonth
+                                && x.TaxYear == item.TaxYear
+                            )
+                            .ToListAsync();
+                        if (Sch is not null)
                         {
-                            var Sch = await _repo
-                                .EmployeesMonthlySchedules.Where(x =>
-                                    x.BusinessId == item.BusinessId
-                                    && x.EmployerId == item.EmployerId
-                                    && x.EmployeeRin == item.EmployeeRin
-                                    && x.TaxMonth == item.TaxMonth
-                                    && x.TaxYear == item.TaxYear
-                                )
-                                .ToListAsync();
-                            if (Sch is not null)
+                            foreach (var itemSch in Sch)
                             {
-                                foreach (var itemSch in Sch)
+                                var Ind = await _repo
+                                    .Individuals.Where(x =>
+                                        x.EmployeeRin == itemSch.EmployeeRin
+                                    )
+                                    .ToListAsync();
+                                if (Ind is not null)
                                 {
-                                    var Ind = await _repo
-                                        .Individuals.Where(x =>
-                                            x.EmployeeRin == itemSch.EmployeeRin
-                                        )
-                                        .ToListAsync();
-                                    if (Ind is not null)
+                                    foreach (var itemInd in Ind)
                                     {
-                                        foreach (var itemInd in Ind)
-                                        {
-                                            decimal? Ti =
-                                                itemSch.Basic
-                                                + itemSch.Rent
-                                                + itemSch.Transport
-                                                + itemSch.OtherIncome
-                                                + itemSch.Nhf
-                                                + itemSch.Nhis
-                                                + itemSch.Pension
-                                                + itemSch.LifeAssurance;
-                                            decimal? Ni =
-                                                itemSch.Nhf
-                                                + itemSch.Nhis
-                                                + itemSch.Pension
-                                                + itemSch.LifeAssurance;
-                                            decimal? SumGross = Ti - Ni;
+                                        decimal? Ti =
+                                            itemSch.Basic
+                                            + itemSch.Rent
+                                            + itemSch.Transport
+                                            + itemSch.OtherIncome
+                                            + itemSch.Nhf
+                                            + itemSch.Nhis
+                                            + itemSch.Pension
+                                            + itemSch.LifeAssurance;
+                                        decimal? Ni =
+                                            itemSch.Nhf
+                                            + itemSch.Nhis
+                                            + itemSch.Pension
+                                            + itemSch.LifeAssurance;
+                                        decimal? SumGross = Ti - Ni;
 
-                                            var AddMontSch = new Schedulepdf
-                                            {
-                                                SerialNo = serialNo++,
-                                                Rin = item.EmployeeRin,
-                                                Name =
-                                                    $"{itemInd.Firstname} {itemInd.Othername} {itemInd.Surname}",
-                                                TaxMonth = itemSch.TaxMonth,
-                                                TaxYear = itemSch.TaxYear,
-                                                Gross = SumGross,
-                                                Cra = itemSch.Cra,
-                                                Pension = itemSch.Pension,
-                                                Nhf = itemSch.Nhf,
-                                                Nhis = itemSch.Nhis,
-                                                Tfp = itemSch.Tfp,
-                                                Ci = itemSch.Ci,
-                                                Tax = itemSch.Tax,
-                                            };
-                                            lstSch.Add(AddMontSch);
-                                        }
+                                        var AddMontSch = new Schedulepdf
+                                        {
+                                            SerialNo = serialNo++,
+                                            Rin = item.EmployeeRin,
+                                            Name =
+                                                $"{itemInd.Firstname} {itemInd.Othername} {itemInd.Surname}",
+                                            TaxMonth = itemSch.TaxMonth,
+                                            TaxYear = itemSch.TaxYear,
+                                            Gross = SumGross,
+                                            Cra = itemSch.Cra,
+                                            Pension = itemSch.Pension,
+                                            Nhf = itemSch.Nhf,
+                                            Nhis = itemSch.Nhis,
+                                            Tfp = itemSch.Tfp,
+                                            Ci = itemSch.Ci,
+                                            Tax = itemSch.Tax,
+                                        };
+                                        lstSch.Add(AddMontSch);
                                     }
+                                }
 
-                                    var BusCmp = await _repo
-                                        .AssetTaxPayerDetailsApis.Where(x =>
-                                            x.TaxPayerRinnumber == Obj.CompanyRin
-                                            && x.AssetRin == Obj.BusinessRin
-                                        )
-                                        .ToListAsync();
-                                    if (BusCmp is not null)
+                                var BusCmp = await _repo
+                                    .AssetTaxPayerDetailsApis.Where(x =>
+                                        x.TaxPayerRinnumber == Obj.CompanyRin
+                                        && x.AssetRin == Obj.BusinessRin
+                                    )
+                                    .ToListAsync();
+                                if (BusCmp is not null)
+                                {
+                                    foreach (var itemCmp in BusCmp)
                                     {
-                                        foreach (var itemCmp in BusCmp)
+                                        var AddCmpDet = new CompDetailsRes
                                         {
-                                            var AddCmpDet = new CompDetailsRes
-                                            {
-                                                TaxpayerName = itemCmp.TaxPayerName,
-                                                BusinessName = itemCmp.AssetName,
-                                                BusinessAddress = itemCmp.AssetAddress,
-                                            };
-                                            lstCmp.Add(AddCmpDet);
+                                            TaxpayerName = itemCmp.TaxPayerName,
+                                            BusinessName = itemCmp.AssetName,
+                                            BusinessAddress = itemCmp.AssetAddress,
+                                        };
+                                        lstCmp.Add(AddCmpDet);
 
-                                            var AddBus = new BusDetailsRes
-                                            {
-                                                BusinessRin = itemCmp.AssetRin,
-                                                TaxpayerRin = itemCmp.TaxPayerRinnumber,
-                                                BusinessPhone = itemCmp.TaxPayerMobileNumber
-                                            };
-                                            lstBus.Add(AddBus);
-                                        }
+                                        var AddBus = new BusDetailsRes
+                                        {
+                                            BusinessRin = itemCmp.AssetRin,
+                                            TaxpayerRin = itemCmp.TaxPayerRinnumber,
+                                            BusinessPhone = itemCmp.TaxPayerMobileNumber
+                                        };
+                                        lstBus.Add(AddBus);
                                     }
                                 }
                             }
                         }
                     }
-                    else
-                    {
-                        Response.Headers.Add("X-Status", "false");
-                        Response.Headers.Add("X-Message", "Employer Not Found Or Not Approved");
-                    }
                 }
+                else
+                {
+                    Response.Headers.Add("X-Status", "false");
+                    Response.Headers.Add("X-Message", "Employer Not Found Or Not Approved");
+                }
+
                 if (!System.IO.File.Exists(filePath))
                 {
                     throw new FileNotFoundException(
@@ -2318,7 +2297,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                         "@@BusinessPhone",
                         lstBus.FirstOrDefault()?.BusinessPhone ?? string.Empty
                     )
-                    .Replace("@@CurrentYear", Obj.TaxYear.ToString())
+                    .Replace("@@CurrentYear", DateTime.Now.Year.ToString())
                     .Replace("@@Rows", generatedRows)
                     .Replace("@@TotalGross", TotalGross)
                     .Replace("@@TotalTax", TotalTax);
@@ -2825,8 +2804,8 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                 Status = true,
                                 UniqueId = Guid.NewGuid().ToString(),
                                 IsDeleted = false,
-                                CreatedBy = 1,
-                                ModifiedBy = 1,
+                                CreatedBy = UserId,
+                                ModifiedBy = UserId,
                                 ModifiedAt = DateTime.Now,
                             };
                             lstH3.Add(AddPro);
@@ -2871,66 +2850,40 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("GetTccApplication")]
-        public async Task<IActionResult> GetTccApplication(
+        [Route("GetTccApplicationToBeSubmitted")]
+        public async Task<IActionResult> GetTccApplicationToBeSubmitted(
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? busId = ""
         )
         {
             var r = new ReturnObject { status = true, message = "Record Fetched Successfully" };
-
-            List<FileFormH3Vm> lstH3 = new();
+            EmployeeStatus em = new EmployeeStatus();
             try
             {
-                var Allbus = await _repo
-                    .AssetTaxPayerDetailsApis.Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                if (Allbus.Any())
-                {
-                    foreach (var bus in Allbus)
-                    {
-                        var Income = await _repo
-                            .FormH1employeeUploads.Where(x =>
-                                x.BusinessId == bus.AssetId.ToString()
-                                && x.CompanyId == bus.TaxPayerId.ToString()
-                            )
-                            .ToListAsync();
-                        if (Income.Any())
-                        {
-                            foreach (var inc in Income)
-                            {
-                                FileFormH3Vm AddH3 = new FileFormH3Vm
-                                {
-                                    BusinessRin = bus.AssetRin,
-                                    BusinessName = bus.AssetName,
-                                    TotalIncome =
-                                        inc.Basic
-                                        + inc.Rent
-                                        + inc.Transport
-                                        + inc.OtherIncome
-                                        + inc.Nhis
-                                        + inc.Nhf
-                                        + inc.Pension
-                                        + inc.Lifeassurance,
-                                    NonTaxibleIncome =
-                                        inc.Nhis + inc.Nhf + inc.Pension + inc.Lifeassurance
-                                };
-                                lstH3.Add(AddH3);
-                            }
-                        }
-                    }
-                }
-                else
+                var presYear = DateTime.Now.Year - 1;
+                var result = from i in _repo.Individuals
+                             join s in _repo.SspfiledFormH1s
+                             on i.EmployeeId equals s.IndividalId into sGroup
+                             from s in sGroup.DefaultIfEmpty()
+                             join t in _repo.TccRequests
+                             on s.IndividalId equals t.EmployeeId into tGroup
+                             from t in tGroup.Where(x => x.TccRequestYear == presYear).DefaultIfEmpty()
+                             select new EmployeeStatus
+                             {
+                                 EmployeeName = $"{i.Firstname} {i.Surname}",
+                                 EmployeeId = i.EmployeeId,
+                                 EmployeeRIN = i.EmployeeRin,
+                                 TCCStatus = t == null ? "noaction" : "submitted"
+                             };
+                if (!result.Any())
                 {
                     r.status = false;
-                    r.message = "Taxpayer Not Found";
+                    r.message = "TCC  Not Found";
                     return Ok(r);
                 }
 
-                r.data = lstH3;
-                //r.totalCount = await _repo.AssetTaxPayerDetailsApis.CountAsync();
+                r.data = result;
                 return Ok(r);
             }
             catch (System.Exception ex)
@@ -2941,74 +2894,115 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                 );
             }
         }
+
+        [HttpPost]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("SendTcc")]
+        public async Task<IActionResult> SendTcc(
+            [FromBody] TccSent rec
+        )
+        {
+            var allTcc = new List<TccRequest>();
+            AllFunction af = new AllFunction();
+            var presYear = DateTime.Now.Year - 1;
+            var r = new ReturnObject { status = true, message = "Record Fetched Successfully" };
+            EmployeeStatus em = new EmployeeStatus();
+            var recList = new List<TccSentToEras>();
+            try
+            {
+
+                foreach (var i in rec.EmployeeIds)
+                {
+                    recList.Add(new TccSentToEras
+                    {
+                        TaxYear = presYear,
+                        TaxPayerID = i
+                    });
+                }
+
+                var jsonContent = JsonConvert.SerializeObject(recList);
+                var baseUrl = _serviceSettings.Value.ErasBaseUrl;
+                string url = $"{baseUrl}CaptureIndividual/AddTCCRequestBatch";
+                var recApi = await af.CallAPi(url, "", "post", jsonContent);
+                var allres = JsonConvert.DeserializeObject<TccResp>(recApi);
+                var maxId = _repo.TccRequests.Max(t => t.TCCRequestID);
+                if (allres.Result.Any())
+                {
+                    foreach (var item in allres.Result)
+                    {
+
+                        TccRequest tcc = new TccRequest();
+                        tcc.EmployeeId = item.TaxPayerID.ToString();
+                        tcc.BusinessId = rec.busId;
+                        tcc.TaxPayerTypeID = item.TaxPayerTypeID;
+                        tcc.DateRequested = DateTime.Now;
+                        tcc.ModifiedBy = UserId;
+                        tcc.RequestedById = UserId;
+                        tcc.TCCRequestID = maxId + 1;
+                        tcc.TccRequestRefNo = item.RequestRefNo;
+                        tcc.FormH2pathName = "";
+                        tcc.TccRequestYear = presYear;
+                        tcc.TccStatus = 15;
+                        tcc.ModifiedDate = DateTime.Now;
+                        tcc.TaxOfficeId = item.TaxOfficeId;
+                        allTcc.Add(tcc);
+                        maxId++;
+                    }
+                    _repo.TccRequests.AddRange(allTcc);
+                    _repo.SaveChanges();
+                }
+                else
+                {
+                    r.message = allres.Message;
+                    r.status = false;
+                }
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new ReturnObject { status = false, message = ex.Message }
+                );
+            }
+        }
+
 
         [HttpGet]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
         [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
-        [Route("GetTccApplicationView")]
-        public async Task<IActionResult> GetTccApplicationView([FromQuery] TccH1 Obj)
+        [Route("GetSubmitedTccApplication")]
+        public async Task<IActionResult> GetSubmitedTccApplication(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? busId = ""
+        )
         {
-            var r = new ReturnObject
-            {
-                status = true,
-                message = "Record Successfully Sent To Projection"
-            };
+            var r = new ReturnObject { status = true, message = "Record Fetched Successfully" };
 
-            List<FormH1ScheduleViewModel> formH1Schedules = new();
             try
             {
-                var Allbus = await _repo
-                    .AssetTaxPayerDetailsApis.Where(x =>
-                        x.AssetRin == Obj.BusinessRin && x.TaxPayerRinnumber == Obj.CompanyRin
-                    )
-                    .FirstOrDefaultAsync();
+                var result = await _repo.AssetTaxPayerDetailsApis
+   .Where(o => o.TaxPayerRinnumber == TO_RIN && o.AssetId == Convert.ToInt32(busId))
+   .Select(asset => new
+   {
+       tccCount = _repo.TccRequests.Count(tcc => tcc.BusinessId == busId && tcc.EmployeeId != "0"),
+       BusinessName = asset.AssetName,
+       BusinessRIN = asset.AssetRin,
+       BusinessId = busId,
+       BusinessAddress = asset.AssetAddress
+   })
+   .FirstOrDefaultAsync();
 
-                if (Allbus?.AssetId != null)
-                {
-                    var Fh3 = await _repo
-                        .FormH1employeeUploads.Where(o =>
-                            o.BusinessId == Allbus.AssetId.ToString()
-                            && o.CompanyId == Allbus.TaxPayerId.ToString()
-                        )
-                        .ToListAsync();
-
-                    if (Fh3.Any())
-                    {
-                        foreach (var item in Fh3)
-                        {
-                            var Ind = await _repo
-                                .Individuals.Where(x => x.EmployeeId == item.IndividalId)
-                                .ToListAsync();
-                            if (Ind.Any())
-                            {
-                                foreach (var ss in Ind)
-                                {
-                                    formH1Schedules.Add(
-                                        new FormH1ScheduleViewModel
-                                        {
-                                            EmployeeRin = ss.EmployeeRin,
-                                            EmployeeName =
-                                                $"{ss.Firstname} {ss.Othername} {ss.Surname}",
-                                            TccStatus =
-                                                item.TccStatus != "Issued"
-                                                    ? "Applied"
-                                                    : "No Action",
-                                            IsSelected = false
-                                        }
-                                    );
-                                }
-                            }
-                        }
-                    }
-
-                    r.data = formH1Schedules;
-                }
-                else
+                if (result == null)
                 {
                     r.status = false;
-                    r.message = "Taxpayer Not Found";
+                    r.message = "TCC  Not Found";
+                    return Ok(r);
                 }
 
+                r.data = result;
                 return Ok(r);
             }
             catch (System.Exception ex)
@@ -3019,6 +3013,203 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                 );
             }
         }
+        [HttpGet]
+        [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        [Route("GetSubmitedTccApplicationView")]
+        public async Task<IActionResult> GetSubmitedTccApplicationView(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? busId = ""
+        )
+        {
+            var r = new ReturnObject { status = true, message = "Record Fetched Successfully" };
+
+            try
+            {
+                var result = await (from tcc in _repo.TccRequests
+                                    where tcc.BusinessId == busId
+                                    join individual in _repo.Individuals
+                                        on tcc.EmployeeId equals individual.EmployeeId
+                                    select new
+                                    {
+                                        EmployeeName = $"{individual.Surname} {individual.Firstname}",
+                                        EmployeeRin = individual.EmployeeRin,
+                                        TccStatus = tcc.TccStatus == 15 ? "Requested" : "Non Action",
+                                        TccRequest = tcc.TccRequestRefNo
+                                    }).ToListAsync();
+
+
+                if (!result.Any())
+                {
+                    r.status = false;
+                    r.message = "TCC  Not Found";
+                    return Ok(r);
+                }
+
+                r.data = result;
+                return Ok(r);
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new ReturnObject { status = false, message = ex.Message }
+                );
+            }
+        }
+        // dnt understand what is happening here have to paraphrase but the front as called the url already so i cant change.
+        //[HttpGet]
+        //[SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        //[SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        //[Route("GetTccApplication")]
+        //public async Task<IActionResult> GetTccApplication(
+        //    [FromQuery] int pageNumber = 1,
+        //    [FromQuery] int pageSize = 10
+        //)
+        //{
+        //    var r = new ReturnObject { status = true, message = "Record Fetched Successfully" };
+
+        //    List<FileFormH3Vm> lstH3 = new();
+        //    try
+        //    {
+        //        var Allbus = await _repo
+        //            .AssetTaxPayerDetailsApis.Skip((pageNumber - 1) * pageSize)
+        //            .Take(pageSize)
+        //            .ToListAsync();
+
+        //        if (Allbus.Any())
+        //        {
+        //            foreach (var bus in Allbus)
+        //            {
+        //                var Income = await _repo
+        //                    .FormH1employeeUploads.Where(x =>
+        //                        x.BusinessId == bus.AssetId.ToString()
+        //                        && x.CompanyId == bus.TaxPayerId.ToString()
+        //                    )
+        //                    .ToListAsync();
+        //                if (Income.Any())
+        //                {
+        //                    foreach (var inc in Income)
+        //                    {
+        //                        FileFormH3Vm AddH3 = new FileFormH3Vm
+        //                        {
+        //                            BusinessRin = bus.AssetRin,
+        //                            BusinessName = bus.AssetName,
+        //                            TotalIncome =
+        //                                inc.Basic
+        //                                + inc.Rent
+        //                                + inc.Transport
+        //                                + inc.OtherIncome
+        //                                + inc.Nhis
+        //                                + inc.Nhf
+        //                                + inc.Pension
+        //                                + inc.Lifeassurance,
+        //                            NonTaxibleIncome =
+        //                                inc.Nhis + inc.Nhf + inc.Pension + inc.Lifeassurance
+        //                        };
+        //                        lstH3.Add(AddH3);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        else
+        //        {
+        //            r.status = false;
+        //            r.message = "Taxpayer Not Found";
+        //            return Ok(r);
+        //        }
+
+        //        r.data = lstH3;
+        //        //r.totalCount = await _repo.AssetTaxPayerDetailsApis.CountAsync();
+        //        return Ok(r);
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        return StatusCode(
+        //            StatusCodes.Status500InternalServerError,
+        //            new ReturnObject { status = false, message = ex.Message }
+        //        );
+        //    }
+        //}
+
+        //[HttpGet]
+        //[SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+        //[SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+        //[Route("GetTccApplicationView")]
+        //public async Task<IActionResult> GetTccApplicationView([FromQuery] TccH1 Obj)
+        //{
+        //    var r = new ReturnObject
+        //    {
+        //        status = true,
+        //        message = "Record Successfully Sent To Projection"
+        //    };
+
+        //    List<FormH1ScheduleViewModel> formH1Schedules = new();
+        //    try
+        //    {
+        //        var Allbus = await _repo
+        //            .AssetTaxPayerDetailsApis.Where(x =>
+        //                x.AssetRin == Obj.BusinessRin && x.TaxPayerRinnumber == Obj.CompanyRin
+        //            )
+        //            .FirstOrDefaultAsync();
+
+        //        if (Allbus?.AssetId != null)
+        //        {
+        //            var Fh3 = await _repo
+        //                .FormH1employeeUploads.Where(o =>
+        //                    o.BusinessId == Allbus.AssetId.ToString()
+        //                    && o.CompanyId == Allbus.TaxPayerId.ToString()
+        //                )
+        //                .ToListAsync();
+
+        //            if (Fh3.Any())
+        //            {
+        //                foreach (var item in Fh3)
+        //                {
+        //                    var Ind = await _repo
+        //                        .Individuals.Where(x => x.EmployeeId == item.IndividalId)
+        //                        .ToListAsync();
+        //                    if (Ind.Any())
+        //                    {
+        //                        foreach (var ss in Ind)
+        //                        {
+        //                            formH1Schedules.Add(
+        //                                new FormH1ScheduleViewModel
+        //                                {
+        //                                    EmployeeRin = ss.EmployeeRin,
+        //                                    EmployeeName =
+        //                                        $"{ss.Firstname} {ss.Othername} {ss.Surname}",
+        //                                    TccStatus =
+        //                                        item.TccStatus != "Issued"
+        //                                            ? "Applied"
+        //                                            : "No Action",
+        //                                    IsSelected = false
+        //                                }
+        //                            );
+        //                        }
+        //                    }
+        //                }
+        //            }
+
+        //            r.data = formH1Schedules;
+        //        }
+        //        else
+        //        {
+        //            r.status = false;
+        //            r.message = "Taxpayer Not Found";
+        //        }
+
+        //        return Ok(r);
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        return StatusCode(
+        //            StatusCodes.Status500InternalServerError,
+        //            new ReturnObject { status = false, message = ex.Message }
+        //        );
+        //    }
+        //}
 
         private async Task<List<DownloadEmployeeResponse>> GetEmployeeDetailsAsync(
             DownloadEmployeeFm Obj
@@ -3150,6 +3341,16 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                     Month = Obj.Month,
                     Year = Obj.Year
                 };
+                var exists = _repo.EmployeesMonthlySchedules.Any(
+     o => o.TaxMonth.ToLower() == Obj.Month.ToLower() &&
+          o.TaxYear == Obj.Year &&
+          o.BusinessId == Obj.BusinessId &&
+          o.EmployerId == Obj.CompanyId);
+
+                if (exists)
+                {
+                    return r;
+                }
 
                 var EmpIncome = await _phaseIIRepo.GetMonthlyIncomeAsync(ObjBus);
                 if (EmpIncome.Any(o => o.Status == true))
@@ -3188,7 +3389,7 @@ namespace SelfPortalAPi.Controllers.PhaseIIController
                                             Ci = ItemCal.Ci,
                                             Tax = ItemCal.Tax,
                                             AssessementStatusId = 2,
-                                            CreatedBy = username,
+                                            CreatedBy = UserId,
                                             CreatedDate = DateTime.Now
                                         };
 

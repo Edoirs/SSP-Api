@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+//
 using SelfPortalAPi.NewModel;
 
 namespace SelfPortalAPi.Models;
@@ -328,7 +329,7 @@ public partial class SelfServiceConnect : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.IsActive).HasDefaultValue((byte)1);
-          
+
             entity.Property(e => e.ModifiedBy).HasMaxLength(255);
             entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
             entity.Property(e => e.Password)
@@ -2190,22 +2191,29 @@ public partial class SelfServiceConnect : DbContext
                 .HasColumnName("tptype_status");
         });
 
-        modelBuilder.Entity<TccRequest>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToTable("TccRequest");
+        //modelBuilder.Entity<TccRequest>(entity =>
+        //{
+        //    entity.HasKey(e => e.TCCRequestID);
 
-            entity.Property(e => e.BusinessId).HasMaxLength(50);
-            entity.Property(e => e.DateRequested).HasColumnType("datetime");
-            entity.Property(e => e.EmployeeId).HasMaxLength(50);
-            entity.Property(e => e.EmployerId).HasMaxLength(50);
-            entity.Property(e => e.FormH2pathName)
-                .HasMaxLength(50)
-                .HasColumnName("FormH2PathName");
-            entity.Property(e => e.RequestedById).HasMaxLength(50);
-            entity.Property(e => e.TccRequestRefNo).ValueGeneratedOnAdd();
-        });
+        //    entity.Property(e => e.BusinessId).HasMaxLength(50);
+        //    entity.Property(e => e.DateRequested).HasColumnType("datetime");
+        //    entity.Property(e => e.EmployeeId).HasMaxLength(50);
+        //    entity.Property(e => e.EmployerId).HasMaxLength(50);
+        //    entity.Property(e => e.FormH2pathName)
+        //        .HasMaxLength(50)
+        //        .HasColumnName("FormH2PathName");
+        //    entity.Property(e => e.RequestedById).HasMaxLength(50);
+        //    entity.Property(e => e.TccRequestRefNo).ValueGeneratedOnAdd();
+
+        //    entity.Property(e => e.DateRequested)
+        //       .HasDefaultValueSql("(getdate())")
+        //       .HasColumnType("datetime")
+        //       .HasColumnName("DateRequested");
+        //    entity.Property(e => e.ModifiedDate)
+        //        .HasDefaultValueSql("(getdate())")
+        //        .HasColumnType("datetime")
+        //        .HasColumnName("ModifiedDate");
+        //});
 
         modelBuilder.Entity<Title>(entity =>
         {

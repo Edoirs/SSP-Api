@@ -102,7 +102,7 @@ namespace SelfPortalAPi.UnitOfWork
             {
                 if (pObjUser.UserType.ToLower() == "admin")
                 {
-                    var ret = _con.AdminUsers.FirstOrDefault(o => (o.Phone == pObjUser.PhoneNumber_RIN.ToString().Trim()));
+                    var ret = _con.AdminUsers.FirstOrDefault(o => (o.Username.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim()|| o.Email.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim()));
                     if (ret == null)
                     {
                         mObjFuncResponse.status = false;
@@ -116,7 +116,10 @@ namespace SelfPortalAPi.UnitOfWork
                         {
                             var newclaims = new[]
     {
-            new Claim("TaxpayerTypeId", $"{ret.ContactName}")
+            new Claim("TaxpayerTypeId", $"0"),
+            new Claim("TaxOffice", $"{ret.TaxOfficeName}"),
+            new Claim("UserId", $"Admin-{ret.AdminUserId}"),
+            new Claim("IsAdmin", $"yes")
         }; var aud = "https://your-service.com/api";
                             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -174,7 +177,10 @@ namespace SelfPortalAPi.UnitOfWork
                                 {
                                     var newclaims = new[]
             {
-            new Claim("TaxpayerTypeId", $"{ret.TaxpayerTypeId}")
+            new Claim("TaxpayerTypeId", $"{ret.TaxpayerTypeId}"),
+            new Claim("TaxOffice", $"{ret.CompanyRin}"),
+            new Claim("UserId", $"User-{ret.Id}"),
+            new Claim("IsAdmin", $"No")
         }; var aud = "https://your-service.com/api";
                                     System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -191,7 +197,7 @@ namespace SelfPortalAPi.UnitOfWork
 
                                     if (!string.IsNullOrEmpty(token))
                                     {
-                                        var bussRins = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerRinnumber == ret.CompanyRin).Select(o => new {id=o.AssetId,  name = o.AssetName, rin = o.AssetRin }).ToList();
+                                        var bussRins = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerRinnumber == ret.CompanyRin).Select(o => new { id = o.AssetId, name = o.AssetName, rin = o.AssetRin }).ToList();
                                         mObjFuncResponse.data = new
                                         { token = token, expiryAt = DateTime.Now.AddDays(1), phoneNumber = ret.PhoneNumber, companyId = ret.Id, comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email, TaxpayerTypeId = ret.TaxpayerTypeId, businessRins = bussRins };
                                     }

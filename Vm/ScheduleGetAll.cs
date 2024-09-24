@@ -4,6 +4,7 @@
     {
         public string? BusinessRin { get; set; }
         public string? CompanyRin { get; set; }
+        public string? CompanyName { get; set; }
         public string? BusinessName { get; set; }
         public string? TaxMonth { get; set; }
         public int? TaxYear { get; set; }
