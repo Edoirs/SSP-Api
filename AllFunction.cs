@@ -10,7 +10,6 @@ using Quartz.Spi;
 using Quartz;
 using SelfPortalAPi.Model;
 using SelfPortalAPi.Models;
-using SelfPortalAPi.NewModel;
 using SelfPortalAPi.UnitOfWork;
 using System.Data;
 using System.Drawing.Imaging;
@@ -24,6 +23,10 @@ using static SelfPortalAPi.BackgroundJobs;
 using System.Net;
 using Microsoft.Extensions.Options;
 using ClosedXML.Excel;
+using OfficeOpenXml.Table;
+using SelfPortalAPi.Models.ResModel;
+using SelfPortalAPi.Models.Vm;
+using RestSharp;
 
 
 namespace SelfPortalAPi
@@ -34,7 +37,7 @@ namespace SelfPortalAPi
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             var services = builder.Services;
-           // QuestPDF.Settings.License = LicenseType.Community;
+            // QuestPDF.Settings.License = LicenseType.Community;
 
             string? conn = builder.Configuration.GetConnectionString("SelfServiceConnect");
             string? connII = builder.Configuration.GetConnectionString("EirsContext");
@@ -43,7 +46,7 @@ namespace SelfPortalAPi
             services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
 
             string? TaxOfficeJobTime = builder.Configuration.GetConnectionString("TaxOfficeJob");
-            
+
             services.AddAutoMapper(typeof(Program));
             services.AddEndpointsApiExplorer();
             services.AddAuthentication(opt =>
@@ -63,17 +66,15 @@ namespace SelfPortalAPi
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("JWT:Secret").Value))
                 };
             });
-            //services.AddDbContext<ErasContext>(opt => opt.UseSqlServer(connIII));
-            services.AddDbContext<ApiDbContext>(opt => opt.UseSqlServer(connII));
-            services.AddDbContext<EirsContext>(opt => opt.UseSqlServer(connIII));
+
             services.AddDbContext<SelfServiceConnect>(opt => opt.UseSqlServer(conn));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped(typeof(ISelfRepository<>), typeof(SelfRepository<>));
             services.AddScoped<IValidator<TokenRequest>, TokenRequestValidator>();
             services.AddScoped<IIndividualRepository, IndividualRepository>();
-            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<IUtilityRepository, UtilityRepository>();
             services.AddScoped<IPhaseIIRepo, PhaseIIRepo>();
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddHealthChecks()
                 .AddSqlServer(connIII, name: "ErasContext")
                 .AddSqlServer(connII, name: "ApiDbContext")
@@ -190,10 +191,10 @@ namespace SelfPortalAPi
 
             public void ReturnJob(IJob job) { }
         }
-        public string GetToken(string url,string user,string password)
+        public string GetToken(string url, string user, string password)
         {
             string URI = url + "Account/Login";
-            string myParameters =  "UserName=" + user + "&Password=" + password + "&grant_type=password";
+            string myParameters = "UserName=" + user + "&Password=" + password + "&grant_type=password";
             string BearerToken = "";
             using (WebClient wc = new WebClient())
             {
@@ -291,30 +292,77 @@ namespace SelfPortalAPi
         {
             public string access_token { get; set; }
         }
+
+
         public bool SendSMS(string pStrToNumber, string pStrBody, string para1, string para2)
         {
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://app.multitexter.com/v2/app/sms");
-            httpWebRequest.ContentType = "application/json"; httpWebRequest.Method = "POST";
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
-            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
-            {
-                string email = para1;
-                string password = para2;
-                string message = pStrBody;
-                string sender_name = "PAYE";
-                string recipients = pStrToNumber;
-                string forcednd = "1";
-                string json = "{\"email\":\"" + email + "\",\"password\":\"" + password + "\",\"message\":\"" + message + "\",\"sender_name\":\"" + sender_name + "\",\"recipients\":\"" + recipients + "\",\"forcednd\":\"" + forcednd + "\"}";
-                streamWriter.Write(json); streamWriter.Flush(); streamWriter.Close();
-            }
-            var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                var result = streamReader.ReadToEnd(); Console.WriteLine(result);
-            }
+            // Create a new RestClient instance
+            var client = new RestClient("https://app.multitexter.com/v2/app/sms");
 
-            return true;
+            // Create a new RestRequest with POST method
+            var request = new RestRequest("POST");
+            request.AddHeader("Content-Type", "application/json");
+
+            // Prepare the parameters
+            string email = para1;
+            string password = para2;
+            string message = pStrBody;
+            string sender_name = "PAYE";
+            string recipients = pStrToNumber;
+            string forcednd = "1";
+
+            // Create the JSON body for the request
+            var jsonBody = new
+            {
+                email = email,
+                password = password,
+                message = message,
+                sender_name = sender_name,
+                recipients = recipients,
+                forcednd = forcednd
+            };
+
+            // Add the JSON body to the request
+            request.AddJsonBody(jsonBody);
+
+            // Execute the request and get the response
+            var response = client.Execute(request);
+
+            // Check for a successful response
+            if (response.IsSuccessful)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
+
+        //public bool SendSMS(string pStrToNumber, string pStrBody, string para1, string para2)
+        //    {
+        //        var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://app.multitexter.com/v2/app/sms");
+        //        httpWebRequest.ContentType = "application/json"; httpWebRequest.Method = "POST";
+        //        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+        //        using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+        //        {
+        //            string email = para1;
+        //            string password = para2;
+        //            string message = pStrBody;
+        //            string sender_name = "PAYE";
+        //            string recipients = pStrToNumber;
+        //            string forcednd = "1";
+        //            string json = "{\"email\":\"" + email + "\",\"password\":\"" + password + "\",\"message\":\"" + message + "\",\"sender_name\":\"" + sender_name + "\",\"recipients\":\"" + recipients + "\",\"forcednd\":\"" + forcednd + "\"}";
+        //            streamWriter.Write(json); streamWriter.Flush(); streamWriter.Close();
+        //        }
+        //        var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+        //        using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+        //        {
+        //            var result = streamReader.ReadToEnd(); Console.WriteLine(result);
+        //        }
+
+        //        return true;
+        //    }
         public async Task<bool> SendTiloSMS(string pStrToNumber, string body)
         {
             string recPnt = "";
@@ -390,55 +438,20 @@ namespace SelfPortalAPi
                 }
             }
         }
-        public async Task<string> CallAPi(string baseUrl, string st, string httpMethod, string? jsonData)
+        public async Task<string> CallAPi(string baseUrl, string token, string httpMethod, string? jsonData = null)
         {
-            string token = null;
-            string res = "";
-            HttpRequestMessage request = new();
-            HttpResponseMessage response = new();
-            var client = new HttpClient();
-            switch (httpMethod.ToLower().Trim())
-            {
-                case "get":
-                    if (!string.IsNullOrEmpty(st))
-                    {
-                        request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
-                        request.Headers.Add("Authorization", $"Bearer {st}");
-                        response = await client.SendAsync(request);
-                        res = await response.Content.ReadAsStringAsync();
-                    }
-                    else
-                    {
-                        request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}");
-                        response = await client.SendAsync(request);
-                        res = await response.Content.ReadAsStringAsync();
-                    }
-                    break;
-                case "post":
-                    if (!string.IsNullOrEmpty(st))
-                    {
-                        request = new HttpRequestMessage(HttpMethod.Post, baseUrl);
-                        request.Headers.Add("Authorization", $"Bearer {st}");
-                        var content = new StringContent(jsonData, null, "application/json");
-                        request.Content = content;
-                        response = await client.SendAsync(request);
-                        res = await response.Content.ReadAsStringAsync();
-                    }
-                    else
-                    {
-                        request = new HttpRequestMessage(HttpMethod.Post, baseUrl);
-                        var content = new StringContent(jsonData, null, "application/json");
-                        request.Content = content;
-                        response = await client.SendAsync(request);
-                        res = await response.Content.ReadAsStringAsync();
-                    }
-                    break;
-                default:
-                    break;
-            }
-            return res;
-        }
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+            var request = new HttpRequestMessage(new HttpMethod(httpMethod), baseUrl);
 
+            if (!string.IsNullOrEmpty(token))
+                request.Headers.Add("Authorization", $"Bearer {token}");
+
+            if (httpMethod.Equals("post", StringComparison.OrdinalIgnoreCase) && jsonData != null)
+                request.Content = new StringContent(jsonData, Encoding.UTF8, "application/json");
+
+            var response = await client.SendAsync(request);
+            return await response.Content.ReadAsStringAsync();
+        }
         public static string RootPath()
         {
             return (string)AppDomain.CurrentDomain.GetData("ContentRootPath") ?? string.Empty;
@@ -470,13 +483,13 @@ namespace SelfPortalAPi
                 }
 
                 using StreamWriter sw = File.AppendText(filepath);
-                var date = DateTime.Now.ToString();
+                var date = DateTime.UtcNow.ToString();
                 sw.WriteLine($"--------------------------------*Start @ {date}*------------------------------------------");
-                string error = "Log Written Date:" + " " + DateTime.Now.ToString(CultureInfo.InvariantCulture) + line +
+                string error = "Log Written Date:" + " " + DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) + line +
                                "Error Line No :" + " " + ErrorlineNo + line + "Error Message:" + " " + Errormsg + line +
                                "Exception Type:" + " " + extype + line + "Error Location :" + " " + ErrorLocation +
                                line + " Error Page Url:" + " " + exurl + line + "User Host IP:" + " " + hostIp + line;
-                sw.WriteLine("-----------Exception Details on " + " " + DateTime.Now.ToString(CultureInfo.InvariantCulture) + "-----------------");
+                sw.WriteLine("-----------Exception Details on " + " " + DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) + "-----------------");
                 sw.WriteLine("-------------------------------------------------------------------------------------");
                 sw.WriteLine(line);
                 sw.WriteLine(error);
@@ -565,6 +578,52 @@ namespace SelfPortalAPi
                 }
             }
             return obj;
+        }
+
+        public static List<PersonInfo> ReadFromExcel(IFormFile file)
+        {
+            var people = new List<PersonInfo>();
+
+            // Load the Excel file from the IFormFile stream
+            using (var stream = new MemoryStream())
+            {
+                file.CopyTo(stream);
+                using (var package = new ExcelPackage(stream))
+                {
+                    var worksheet = package.Workbook.Worksheets[0]; // Assuming the data is in the first worksheet
+                    int rowCount = worksheet.Dimension.Rows;
+
+                    for (int row = 2; row <= rowCount; row++) // Assuming row 1 is the header
+                    {
+                        var person = new PersonInfo
+                        {
+                            SerialNumber = int.Parse(worksheet.Cells[row, 1].Text),
+                            FirstName = worksheet.Cells[row, 2].Text,
+                            Surname = worksheet.Cells[row, 3].Text,
+                            OtherName = worksheet.Cells[row, 4].Text,
+                            PhoneNumber = worksheet.Cells[row, 5].Text,
+                            RIN = worksheet.Cells[row, 6].Text,
+                            JTBTin = worksheet.Cells[row, 7].Text,
+                            NIN = worksheet.Cells[row, 8].Text,
+                            Nationality = worksheet.Cells[row, 9].Text,
+                            EmailAddress = worksheet.Cells[row, 10].Text,
+                            HomeAddress = worksheet.Cells[row, 11].Text,
+                            Basic = worksheet.Cells[row, 12].Text,
+                            Rent = worksheet.Cells[row, 13].Text,
+                            Transport = worksheet.Cells[row, 14].Text,
+                            OtherIncome = worksheet.Cells[row, 15].Text,
+                            Pension = worksheet.Cells[row, 16].Text,
+                            NHF = worksheet.Cells[row, 17].Text,
+                            NHIS = worksheet.Cells[row, 18].Text,
+                            LifeInsurance = worksheet.Cells[row, 19].Text
+                        };
+
+                        people.Add(person);
+                    }
+                }
+            }
+
+            return people;
         }
         public static DataTable ConvertExcelToDatatable(IFormFile file)
         {
@@ -656,6 +715,19 @@ namespace SelfPortalAPi
 
             return resultList;
         }
+        public static byte[] ConvertListToExcel<T>(List<T> list)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Sheet1");
+
+                // Load the list into the worksheet, starting from cell A1
+                worksheet.Cells["A1"].LoadFromCollection(list, true, TableStyles.Medium9);
+
+                // Return the Excel file as a byte array
+                return package.GetAsByteArray();
+            }
+        }
         public static void WriteFormModel(string payload, string location)
         {
             var line = Environment.NewLine + Environment.NewLine;
@@ -674,7 +746,7 @@ namespace SelfPortalAPi
                 }
 
                 using StreamWriter sw = File.AppendText(filepath);
-                var date = DateTime.Now.ToString();
+                var date = DateTime.UtcNow.ToString();
                 sw.WriteLine($"--------------------------------*Start @ {date}*------------------------------------------");
                 sw.WriteLine(payload);
                 sw.WriteLine("--------------------------------*End*------------------------------------------");
@@ -735,20 +807,26 @@ namespace SelfPortalAPi
             var rows = new StringBuilder();
             foreach (var item in schedule)
             {
+                string gross = item.Gross.HasValue ? $"₦{item.Gross.Value:N2}" : "₦0.00";
+                string cra = item.Cra.HasValue ? $"₦{item.Cra.Value:N2}" : "₦0.00";
+                string pension = item.Pension.HasValue ? $"₦{item.Pension.Value:N2}" : "₦0.00";
+                string nhf = item.Nhf.HasValue ? $"₦{item.Nhf.Value:N2}" : "₦0.00";
+                string nhis = item.Nhis.HasValue ? $"₦{item.Nhis.Value:N2}" : "₦0.00";
+                string tfp = item.Tfp.HasValue ? $"₦{item.Tfp.Value:N2}" : "₦0.00";
+                string ci = item.Ci.HasValue ? $"₦{item.Ci.Value:N2}" : "₦0.00";
+                string tax = item.Tax.HasValue ? $"₦{item.Tax.Value:N2}" : "₦0.00";
                 rows.Append("<tr>")
-                    .Append($"<td>{item.SerialNo}</td>")
+                    .Append($"<td>{item.SerialNo + 1}</td>")
                     .Append($"<td>{item.Rin}</td>")
                     .Append($"<td>{item.Name}</td>")
-                    .Append($"<td>{item.TaxMonth}</td>")
-                    .Append($"<td>{item.TaxYear}</td>")
-                    .Append($"<td>{item.Gross}</td>")
-                    .Append($"<td>{item.Cra}</td>")
-                    .Append($"<td>{item.Pension}</td>")
-                    .Append($"<td>{item.Nhf}</td>")
-                    .Append($"<td>{item.Nhis}</td>")
-                    .Append($"<td>{item.Tfp}</td>")
-                    .Append($"<td>{item.Ci}</td>")
-                    .Append($"<td>{item.Tax}</td>")
+                    .Append($"<td>{gross}</td>")
+                    .Append($"<td>{cra}</td>")
+                    .Append($"<td>{pension}</td>")
+                    .Append($"<td>{nhf}</td>")
+                    .Append($"<td>{nhis}</td>")
+                    .Append($"<td>{tfp}</td>")
+                    .Append($"<td>{ci}</td>")
+                    .Append($"<td>{tax}</td>")
                     .Append("</tr>");
             }
             return rows.ToString();

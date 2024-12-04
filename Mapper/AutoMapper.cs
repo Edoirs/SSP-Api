@@ -1,7 +1,4 @@
-﻿using AutoMapper;
-using SelfPortalAPi.FormModel;
-using SelfPortalAPi.NewModel;
-using Profile = AutoMapper.Profile;
+﻿using Profile = AutoMapper.Profile;
 
 namespace SelfPortalAPi.Mapper
 {
@@ -9,13 +6,13 @@ namespace SelfPortalAPi.Mapper
     {
         public AutoMapper()
         {
-            CreateMap<AddEmployee, employee>();
+            CreateMap<AddEmployee, Employee>();
             CreateMap<AddEmployeesInd, Individual>();
             CreateMap<AnnualReturnFm, AnnualReturn>();
-            CreateMap<BusinessViewModel,Business >();
-            CreateMap<Business,BusinessFormModel>();
+           // CreateMap<BusinessViewModel,Bus >();
+            //CreateMap<Business,BusinessFormModel>();
            
-            CreateMap<employee,EmployeeVm>();
+            CreateMap<Employee,EmployeeVm>();
             CreateMap<SspfiledFormH1, SspformH1>();
             CreateMap<SspformH3, SspfiledFormH3>();
             CreateMap<SspfiledFormH3, SspformH3>();

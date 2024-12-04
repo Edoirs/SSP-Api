@@ -7,6 +7,17 @@ namespace SelfPortalAPi
         public dynamic data { get; set; }
         public bool status { get; set; }
         public string message { get; set; }
+    }  
+    public class ReturnObjectB
+    {
+        public int id { get; set; }
+        public dynamic data { get; set; }
+        public bool status { get; set; }
+        public dynamic message { get; set; }
+    }  public class ReturnObjectC
+    {
+        public int id { get; set; }
+        public dynamic data { get; set; }
     }
     public class ReturnAPIObject
     {

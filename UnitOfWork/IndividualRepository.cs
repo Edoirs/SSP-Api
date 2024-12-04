@@ -1,93 +1,29 @@
 ﻿
 
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using SelfPortalAPi.Model;
-using SelfPortalAPi.Models;
-using SelfPortalAPi.NewModel;
-using static SelfPortalAPi.AllFunction;
-using Exception = System.Exception;
-using Individual = SelfPortalAPi.Model.Individual;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 namespace SelfPortalAPi.UnitOfWork
 {
     public interface IIndividualRepository
     {
-        ReturnObject AddAsycn(IndividualViewModel pObjIndividualModel, int userId);
         ReturnObject Login(TokenRequest pObjUser);
     }
     public class IndividualRepository : IIndividualRepository
     {
-        private readonly ApiDbContext _db;
+        //private readonly ApiDbContext _db;
         private readonly SelfServiceConnect _con;
         private readonly IConfiguration _conFig;
-        public IndividualRepository(ApiDbContext db, SelfServiceConnect con, IConfiguration conFig)
+        public IndividualRepository(SelfServiceConnect con, IConfiguration conFig)
         {
-            _db = db;
+            //_db = db;
             _con = con;
             // _context = context;
             _conFig = conFig;
         }
 
-        public ReturnObject AddAsycn(IndividualViewModel pObjIndividualModel, int userId)
-        {
 
-            ReturnObject ret = new();
-            try
-            {
-                if (userId == 0)
-                {
-                    return new ReturnObject { message = "invalid token", status = false };
-                }
-                Individual mObjIndividual = new Individual()
-                {
-                    GenderId = pObjIndividualModel.GenderID,
-                    TitleId = pObjIndividualModel.TitleID,
-                    FirstName = pObjIndividualModel.FirstName.Trim(),
-                    LastName = pObjIndividualModel.LastName.Trim(),
-                    MiddleName = pObjIndividualModel.MiddleName,
-                    Dob = pObjIndividualModel.DOB,
-                    Tin = pObjIndividualModel.TIN,
-                    Nin = pObjIndividualModel.NIN,
-                    MobileNumber1 = pObjIndividualModel.MobileNumber1,
-                    MobileNumber2 = pObjIndividualModel.MobileNumber2,
-                    EmailAddress1 = pObjIndividualModel.EmailAddress1,
-                    EmailAddress2 = pObjIndividualModel.EmailAddress2,
-                    BiometricDetails = pObjIndividualModel.BiometricDetails,
-                    TaxOfficeId = pObjIndividualModel.TaxOfficeID,
-                    MaritalStatusId = pObjIndividualModel.MaritalStatusID,
-                    NationalityId = pObjIndividualModel.NationalityID,
-                    TaxPayerTypeId = (int)TaxPayerTypeEnum.Individual,
-                    EconomicActivitiesId = pObjIndividualModel.EconomicActivitiesID,
-                    NotificationMethodId = pObjIndividualModel.NotificationMethodID,
-                    ContactAddress = pObjIndividualModel.ContactAddress,
-                    Active = true,
-                    CreatedBy = userId,
-                    CreatedDate = DateTime.UtcNow
-                };
-                _db.Individuals.Add(mObjIndividual);
-                int rety = _db.SaveChanges();
-                if (rety <= 0)
-                {
-                    return new ReturnObject { message = "an error occur saving individual", status = false };
-                }
-                return new ReturnObject { status = true, message = "individual added successfully" };
-            }
-            catch (System.Exception ex)
-            {
-                AllFunction.SendErrorToText(ex);
-                ret.status = false;
-                ret.message = ex.Message;
-                return new ReturnObject { message = "an error occur saving individual", status = false };
-            }
-        }
 
         public ReturnObject Login(TokenRequest pObjUser)
         {
@@ -102,8 +38,13 @@ namespace SelfPortalAPi.UnitOfWork
             {
                 if (pObjUser.UserType.ToLower() == "admin")
                 {
-                    var ret = _con.AdminUsers.FirstOrDefault(o => (o.Username.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim()|| o.Email.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim()));
+                    var ret = _con.AdminUsers.FirstOrDefault(o => (o.Username.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim() || o.Email.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim()));
                     if (ret == null)
+                    {
+                        mObjFuncResponse.status = false;
+                        mObjFuncResponse.message = "Incorrect Login Credentials";
+                    }
+                    if (ret.RoleId != 1)
                     {
                         mObjFuncResponse.status = false;
                         mObjFuncResponse.message = "Incorrect Login Credentials";
@@ -119,7 +60,8 @@ namespace SelfPortalAPi.UnitOfWork
             new Claim("TaxpayerTypeId", $"0"),
             new Claim("TaxOffice", $"{ret.TaxOfficeName}"),
             new Claim("UserId", $"Admin-{ret.AdminUserId}"),
-            new Claim("IsAdmin", $"yes")
+            new Claim("IsAdmin", $"yes"),
+            new Claim("SuperAdmin", $"{ret.RoleId}")
         }; var aud = "https://your-service.com/api";
                             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -130,14 +72,73 @@ namespace SelfPortalAPi.UnitOfWork
                             var tokeOptions = new JwtSecurityToken(issuer: str,
                            audience: aud,
                              claims: newclaims,
-                              expires: DateTime.Now.AddDays(2),
+                              expires: DateTime.UtcNow.AddDays(2),
                               signingCredentials: signinCredentials);
                             var token = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
 
                             if (!string.IsNullOrEmpty(token))
                             {
                                 mObjFuncResponse.data = new
-                                { token = token, expiryAt = DateTime.Now.AddDays(1), companyId = ret.AdminUserId, comanyRin = ret.Username, name = ret.ContactName, email = ret.Email, phoneNumber = ret.Phone, TaxpayerTypeId = ret.AdminUserTypeName, isAdminUser = true };
+                                { token = token, expiryAt = DateTime.UtcNow.AddDays(1), companyId = ret.AdminUserId, comanyRin = ret.Username, name = ret.ContactName, email = ret.Email, phoneNumber = ret.Phone, TaxpayerTypeId = ret.AdminUserTypeName, isAdminUser = true };
+                            }
+                            else
+                            {
+                                var response = new ReturnObject { status = false, message = "An Error Occured Generating Token" };
+                                return response;
+                            }
+                        }
+                        else
+                        {
+                            mObjFuncResponse.status = false;
+                            mObjFuncResponse.message = "Incorrect Login Credentials";
+                        }
+
+                    }
+                }
+                else if (pObjUser.UserType.ToLower() == "super admin")
+                {
+                    var ret = _con.AdminUsers.FirstOrDefault(o => (o.Username.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim() || o.Email.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim()));
+                    if (ret == null)
+                    {
+                        mObjFuncResponse.status = false;
+                        mObjFuncResponse.message = "Incorrect Login Credentials";
+                    }
+                    if(ret.RoleId != 2)
+                    {
+                        mObjFuncResponse.status = false;
+                        mObjFuncResponse.message = "Incorrect Login Credentials";
+                    }
+                    else
+                    {
+                        var str = JsonConvert.SerializeObject(ret);
+
+                        if (BCrypt.Net.BCrypt.Verify(pObjUser.Password, ret.Password))
+                        {
+                            var newclaims = new[]
+    {
+            new Claim("TaxpayerTypeId", $"0"),
+            new Claim("TaxOffice", $"{ret.TaxOfficeName}"),
+            new Claim("UserId", $"Admin-{ret.AdminUserId}"),
+            new Claim("IsAdmin", $"yes"),
+            new Claim("SuperAdmin", $"{ret.RoleId}")
+        }; var aud = "https://your-service.com/api";
+                            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+
+                            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                                _conFig.GetSection("JWT:Secret").Value));
+                            var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+                            var tokeOptions = new JwtSecurityToken(issuer: str,
+                           audience: aud,
+                             claims: newclaims,
+                              expires: DateTime.UtcNow.AddDays(2),
+                              signingCredentials: signinCredentials);
+                            var token = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
+
+                            if (!string.IsNullOrEmpty(token))
+                            {
+                                mObjFuncResponse.data = new
+                                { token = token, expiryAt = DateTime.UtcNow.AddDays(1), companyId = ret.AdminUserId, comanyRin = ret.Username, name = ret.ContactName, email = ret.Email, phoneNumber = ret.Phone, TaxpayerTypeId = ret.AdminUserTypeName, isAdminUser = true };
                             }
                             else
                             {
@@ -179,8 +180,10 @@ namespace SelfPortalAPi.UnitOfWork
             {
             new Claim("TaxpayerTypeId", $"{ret.TaxpayerTypeId}"),
             new Claim("TaxOffice", $"{ret.CompanyRin}"),
+            new Claim("CompanyId", $"{ret.CompanyId}"),
             new Claim("UserId", $"User-{ret.Id}"),
-            new Claim("IsAdmin", $"No")
+            new Claim("IsAdmin", $"No"),
+            new Claim("SuperAdmin", $"No")
         }; var aud = "https://your-service.com/api";
                                     System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -191,7 +194,7 @@ namespace SelfPortalAPi.UnitOfWork
                                     var tokeOptions = new JwtSecurityToken(issuer: str,
                                    audience: aud,
                                      claims: newclaims,
-                                      expires: DateTime.Now.AddDays(2),
+                                      expires: DateTime.UtcNow.AddDays(2),
                                       signingCredentials: signinCredentials);
                                     var token = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
 
@@ -199,7 +202,7 @@ namespace SelfPortalAPi.UnitOfWork
                                     {
                                         var bussRins = _con.AssetTaxPayerDetailsApis.Where(o => o.TaxPayerRinnumber == ret.CompanyRin).Select(o => new { id = o.AssetId, name = o.AssetName, rin = o.AssetRin }).ToList();
                                         mObjFuncResponse.data = new
-                                        { token = token, expiryAt = DateTime.Now.AddDays(1), phoneNumber = ret.PhoneNumber, companyId = ret.Id, comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email, TaxpayerTypeId = ret.TaxpayerTypeId, businessRins = bussRins };
+                                        { token = token, expiryAt = DateTime.UtcNow.AddDays(1), phoneNumber = ret.PhoneNumber, companyId = ret.CompanyId, comanyRin = ret.CompanyRin, name = ret.CompanyName, email = ret.Email, TaxpayerTypeId = ret.TaxpayerTypeId, businessRins = bussRins };
                                     }
                                     else
                                     {

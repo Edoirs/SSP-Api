@@ -27,10 +27,10 @@ namespace SelfPortalAPi
     }
     public class FileFormH1 : FormH1FormModel
     {
-  
+
         public int TaxYear { get; set; }
     }
-    public class TaxPayers: FormH1FM
+    public class TaxPayers : FormH1FM
     {
 
         [Required(ErrorMessage = "BusinessId is required")]
@@ -114,6 +114,33 @@ namespace SelfPortalAPi
         public string NHF { get; set; }
         public string NHIS { get; set; }
         public string LIFEASSURANCE { get; set; }
+
+    }
+
+    public class PersonInfo
+    {
+
+        //	TRANSPORT	OTHER INCOME	PENSION	NHF	NHIS	LIFE INSURANCE
+
+        public int SerialNumber { get; set; }
+        public string FirstName { get; set; }
+        public string Surname { get; set; }
+        public string OtherName { get; set; }
+        public string PhoneNumber { get; set; }
+        public string RIN { get; set; }
+        public string JTBTin { get; set; }
+        public string NIN { get; set; }
+        public string Nationality { get; set; }
+        public string EmailAddress { get; set; }
+        public string HomeAddress { get; set; }
+        public string Basic { get; set; }
+        public string Rent { get; set; }
+        public string Transport { get; set; }
+        public string OtherIncome { get; set; }
+        public string Pension { get; set; }
+        public string NHF { get; set; }
+        public string NHIS { get; set; }
+        public string LifeInsurance { get; set; }
 
     }
     public class ProjectionFm
@@ -261,9 +288,21 @@ namespace SelfPortalAPi
     }
     public class AdminSignUp
     {
-        public string PhoneNumber { get; set; }
+        public string UserRole { get; set; }
         public string UserName { get; set; }
     }
+    public class UpdateUserResponse
+    {
+        public int UserId { get; set; }
+        public string UserType { get; set; }
+        public bool Status { get; set; }
+    }
+    public class UpdateUserResponseRole
+    {
+        public int UserId { get; set; }
+        public string UserRole { get; set; }
+    }
+
 
     public class JobSchedule
     {
@@ -282,7 +321,7 @@ namespace SelfPortalAPi
         public string PhoneNumber_RIN { get; set; }
         public string Password { get; set; }
         public string UserType { get; set; }
-    }   
+    }
     //public class ChangePassword
     //{
     //    public string CompanyRin { get; set; }

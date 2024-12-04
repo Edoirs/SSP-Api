@@ -1,5 +1,35 @@
 
 global using Microsoft.EntityFrameworkCore;
-global using SelfPortalAPi.Vm;
 global using FluentValidation;
 global using System.ComponentModel.DataAnnotations;
+global using SelfPortalAPi.Models;
+global using System.Data;
+global using System.Globalization;
+global using Newtonsoft.Json;
+global using Microsoft.Extensions.Options;
+global using SelfPortalAPi.Models.ResModel;
+global using SelfPortalAPi.Models.Vm;
+global using DocumentFormat.OpenXml;
+global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Mvc;
+global using Nancy.Json;
+global using SelectPdf;
+global using SelfPortalAPi.FormModel;
+global using SelfPortalAPi.UnitOfWork;
+global using Swashbuckle.AspNetCore.Annotations;
+global using static SelfPortalAPi.AllFunction;
+global using AutoMapper;
+//global using Individual = SelfPortalAPi.Models.Individual;
+global using Microsoft.EntityFrameworkCore.Metadata.Internal;
+global using OperationType = SelfPortalAPi.Model.OperationType;
+global using System.ComponentModel.DataAnnotations.Schema;
+global using System.Security.Claims;
+global using HealthChecks.UI.Client;
+global //using SelfPortalAPi.ErasModel;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+global //using SelfPortalAPi.ErasModel;
+
+using SelfPortalAPi;
+global //using SelfPortalAPi.NewModel;
+using System.Text.RegularExpressions;
+global using System.Net;

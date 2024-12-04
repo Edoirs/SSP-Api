@@ -1,6 +1,5 @@
 ﻿
 using SelfPortalAPi.Models;
-using SelfPortalAPi.NewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;

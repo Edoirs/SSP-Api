@@ -1,17 +1,4 @@
 
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using SelfPortalAPi.NewModel;
-using SelfPortalAPi;
-using SelfPortalAPi.UnitOfWork;
-//using SelfPortalAPi.ErasModel;
-using SelfPortalAPi.Model;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Text;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using HealthChecks.UI.Client;
-
 var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 //string? conn = builder.Configuration.GetConnectionString("DefaultConnection");

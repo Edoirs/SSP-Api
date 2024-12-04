@@ -1,6 +1,5 @@
 ﻿
 using SelfPortalAPi.Models;
-using SelfPortalAPi.NewModel;
 
 namespace SelfPortalAPi.UnitOfWork
 {

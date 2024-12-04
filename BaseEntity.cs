@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace SelfPortalAPi
 {
@@ -40,10 +34,16 @@ namespace SelfPortalAPi
         public string Message { get; set; }
 
         public List<TaxPayerClassResult> Result { get; set; }
-
+    }
+    public class ReceiverError
+    {
+        public int Id { get; set; }
+        public List<Receiver> Error { get; set; }
     }
     public class AddTaxPayer
     {
+        public int PresentTaxOfficeID { get; set; }
+        public int NewTaxOfficeID { get; set; }
         public int TaxPayerTypeId { get; set; }
         public int GenderID { get; set; }
         public int TitleID { get; set; }

@@ -29,6 +29,13 @@ namespace SelfPortalAPi.FormModel
         [Display(Name = "Company Phone Number")]
         public string PhoneNumber { get; set; }
     }
+    public class CompanyStep1w
+    {
+        public bool IsAdmin { get; set; }
+        [Required(ErrorMessage = "Please enter Company Rin")]
+        [Display(Name = "Company Rin")]
+        public string CompanyRin { get; set; }
+    }
     public class CompanyStep2
     {
         [Required(ErrorMessage = "Please enter Company Rin")]
