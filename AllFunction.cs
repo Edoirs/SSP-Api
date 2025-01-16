@@ -1,32 +1,17 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Mvc;
+﻿using ClosedXML.Excel;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using Quartz.Impl;
-using Quartz.Spi;
+using OfficeOpenXml.Table;
 using Quartz;
-using SelfPortalAPi.Model;
-using SelfPortalAPi.Models;
-using SelfPortalAPi.UnitOfWork;
-using System.Data;
-using System.Drawing.Imaging;
-using System.Drawing.Printing;
-using System.Globalization;
+using Quartz.Spi;
+using RestSharp;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 using Exception = System.Exception;
-using static SelfPortalAPi.BackgroundJobs;
-using System.Net;
-using Microsoft.Extensions.Options;
-using ClosedXML.Excel;
-using OfficeOpenXml.Table;
-using SelfPortalAPi.Models.ResModel;
-using SelfPortalAPi.Models.Vm;
-using RestSharp;
 
 
 namespace SelfPortalAPi
@@ -66,7 +51,12 @@ namespace SelfPortalAPi
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("JWT:Secret").Value))
                 };
             });
-
+            services.AddScoped<SelfServiceConnect>(provider =>
+            {
+                var configuration = provider.GetRequiredService<IConfiguration>();
+                var options = provider.GetRequiredService<DbContextOptions<SelfServiceConnect>>();
+                return new SelfServiceConnect(configuration); // Pass the necessary dependencies explicitly
+            });
             services.AddDbContext<SelfServiceConnect>(opt => opt.UseSqlServer(conn));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped(typeof(ISelfRepository<>), typeof(SelfRepository<>));
@@ -438,6 +428,154 @@ namespace SelfPortalAPi
                 }
             }
         }
+
+        public static double[] calculatetax(double annualIncome, double basic, double rent, double trans, double pension, double pensiondeclared, double nhf, double nhfdeclared, double nhis, double nhisdeclared, int no_of_months)
+        {
+            double finalcra = 0;
+            double finalpension = 0;
+            double finalnhf = 0;
+            double finalnhis = 0;
+
+            if (pension != 1)
+            {
+                finalpension = pensiondeclared;
+            }
+            else
+            {
+                if (pensiondeclared != 0)
+                {
+                    finalpension = computeformula(basic, rent, trans, "PENSION");
+                }
+            }
+
+            if (nhf != 1.0)
+            {
+                finalnhf = nhfdeclared;
+            }
+            else
+            {
+                if (nhfdeclared != 0)
+                {
+                    finalnhf = computeformula(basic, rent, trans, "NHF");
+                }
+            }
+
+            if (nhis != 1.0)
+            {
+                finalnhis = nhisdeclared;
+            }
+            else
+            {
+                if (nhisdeclared != 0)
+                {
+                    finalnhis = computeformula(basic, rent, trans, "NHIS");
+                }
+            }
+
+            double tax_exempt = finalpension + finalnhf + finalnhis;
+
+            double gross = annualIncome - tax_exempt;
+            double cra1 = ((gross * (20)) / 100) + 200000;
+            double cra2 = ((gross * (20)) / 100) + ((gross * (1)) / 100);
+
+            if (gross > 20000000)
+            {
+                finalcra = cra2;
+            }
+            else
+            {
+                finalcra = cra1;
+            }
+
+            double tax_free_pay = finalcra + tax_exempt;
+            double chargableincome = annualIncome - tax_free_pay;
+
+            double annualtax = calculate_tax(chargableincome, gross);
+            // double monthlytax = annualtax / 12;
+            //annualtax = monthlytax * no_of_months; // use months to get the correct tax
+
+
+            double[] charges = new double[8];
+            charges[0] = Math.Round(finalcra, 2);
+            charges[1] = Math.Round(finalpension, 2);
+            charges[2] = Math.Round(finalnhf, 2);
+            charges[3] = Math.Round(finalnhis, 2);
+            charges[4] = Math.Round(tax_free_pay, 2);
+            charges[5] = Math.Round(chargableincome, 2);
+            charges[6] = Math.Round(annualtax, 2);
+            // charges[7] = Math.Round(monthlytax, 2);
+
+            return charges;
+        }
+
+        private static double calculate_tax(double ch_income, double gross)
+        {
+            double calc_tax = 0;
+            double min_tax = (gross * 1) / 100;
+            double final_tax = 0;
+
+            switch (ch_income)
+            {
+                case <= 0:
+                    calc_tax = (gross * 1) / 100;
+                    break;
+
+                case <= 300000:
+                    calc_tax = (ch_income * 7) / 100;
+                    break;
+
+                case <= 600000:
+                    calc_tax = (((ch_income - 300000) * 11) / 100) + 21000;
+                    break;
+
+                case <= 1100000:
+                    calc_tax = (((ch_income - 600000) * 15) / 100) + 54000;
+                    break;
+
+                case <= 1600000:
+                    calc_tax = (((ch_income - 1100000) * 19) / 100) + 129000;
+                    break;
+
+                case <= 3200000:
+                    calc_tax = (((ch_income - 1600000) * 21) / 100) + 224000;
+                    break;
+
+                default:
+                    calc_tax = (((ch_income - 3200000) * 24) / 100) + 560000;
+                    break;
+            }
+
+            final_tax = calc_tax < min_tax ? min_tax : calc_tax;
+
+            return final_tax;
+        }
+
+        private static double computeformula(double basic, double rent, double trans, string type)
+        {
+            double output = 0;
+
+            switch (type)
+            {
+                case "NHF":
+                    output = ((2.5 * basic) / 100);
+                    break;
+
+                case "NHIS":
+                    output = ((5 * basic) / 100);
+                    break;
+
+                case "PENSION":
+                    output = ((8 * (basic + rent + trans)) / 100);
+                    break;
+
+                default:
+                    output = 0;
+                    break;
+            }
+
+            return output;
+        }
+
         public async Task<string> CallAPi(string baseUrl, string token, string httpMethod, string? jsonData = null)
         {
             using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };

@@ -1,9 +1,4 @@
-﻿using Azure.Core;
-using SelfPortalAPi.Model;
-using System.Text.Json;
-using static SelfPortalAPi.Model.DTO;
-
-namespace SelfPortalAPi.UnitOfWork
+﻿namespace SelfPortalAPi.UnitOfWork
 {
     public interface IUtilityRepository
     {
@@ -26,7 +21,7 @@ namespace SelfPortalAPi.UnitOfWork
         Task<ReturnObject> GetBusinessCategory();
 
         Task<ReturnObject> GetBusinessSector();
-  
+
         Task<ReturnObject> GetBusinessSubSector();
 
         Task<ReturnObject> GetBusinessStructure();
@@ -39,10 +34,12 @@ namespace SelfPortalAPi.UnitOfWork
         private readonly SelfServiceConnect _db;
         //private readonly EirsContext _context;
 
-        public UtilityRepository(SelfServiceConnect db)
+        private readonly IOptions<ConnectionStrings> _serviceSettings;
+        public UtilityRepository(SelfServiceConnect db, IOptions<ConnectionStrings> serviceSettings)
         {
             _db = db;
-          //  _context = context;
+            _serviceSettings = serviceSettings;
+            //  _context = context;
         }
         public async Task<ReturnObject> GetBusinessCategory()
         {
@@ -96,7 +93,7 @@ namespace SelfPortalAPi.UnitOfWork
             //                       b.BusinessSectorName,
             //                       d.BusinessCategoryId,
             //                       d.BusinessCategoryName
-                                  
+
             //                   }).ToListAsync();
             return resp;
         }
@@ -179,15 +176,25 @@ namespace SelfPortalAPi.UnitOfWork
         }
         public async Task<ReturnObject> GetLGA()
         {
+
+            AllFunction al = new();
+            JavaScriptSerializer js = new();
             var resp = new ReturnObject();
             resp.status = true;
             resp.message = "record pulled successfully";
-            //resp.data = await (from b in _db.Lgas
-            //                   select new
-            //                   {
-            //                       b.Lgaid,
-            //                       b.Lganame
-            //                   }).ToListAsync();
+
+            string baseUrl = _serviceSettings.Value.ErasBaseUrl;
+
+            var token = al.GetToken(_serviceSettings.Value.ErasBaseUrl, _serviceSettings.Value.eirsusername, _serviceSettings.Value.eirspassword);
+            if (token != null)
+            {
+                baseUrl = baseUrl + "User/LGAs";
+                var respApi = await al.CallAPi(baseUrl, token, "get", "");
+                var rootobjectVm = js.Deserialize<RootobjectAPI>(respApi);
+                resp.data = rootobjectVm.Result;
+                resp.status = rootobjectVm.Success;
+                resp.message = rootobjectVm.Message;
+            }
             return resp;
         }
         public async Task<ReturnObject> GetNationality()

@@ -1,5 +1,4 @@
-﻿
-namespace SelfPortalAPi.Controllers;
+﻿namespace SelfPortalAPi.Controllers;
 
 [Route("api/SSP/[controller]")]
 [ApiController]
@@ -12,7 +11,10 @@ public class FormH1Controller : ControllerBase
     private readonly IPhaseIIRepo _repo;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    private string UserId = ""; private string TO_RIN = ""; private bool IsAdmin = false;
+    private string UserId = ""; private string TO_RIN = "";
+    private bool IsAdmin = false;
+    private bool IsSuperAdmin = false;
+    private bool IsAssessmentOfficer = false;
 
     public FormH1Controller(
         IOptions<ConnectionStrings> serviceSettings,
@@ -33,6 +35,8 @@ public class FormH1Controller : ControllerBase
             UserId = audience.First(i => i.Type == "UserId").Value;
             TO_RIN = audience.First(i => i.Type == "TaxOffice").Value;
             IsAdmin = audience.First(i => i.Type == "IsAdmin").Value == "yes" ? true : false;
+            IsSuperAdmin = audience.First(i => i.Type == "SuperAdmin").Value == "2" ? true : false;
+            IsAssessmentOfficer = audience.First(i => i.Type == "SuperAdmin").Value == "3" ? true : false;
         }
     }
 
@@ -40,68 +44,105 @@ public class FormH1Controller : ControllerBase
     [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
     [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
     [Route("getallformh1bycompanyId/{companyId}")]
-    public async Task<IActionResult> getallformh1([FromRoute] string companyId, [FromQuery] int pageNumber = 1,
-    [FromQuery] int pageSize = 100, [FromQuery] string busRin = null)
+    public async Task<IActionResult> getallformh1(
+    [FromRoute]
+        string companyId, [FromQuery] Formh1SuperAdmin formh1)
     {
-        //IQueryable<Models.AssetTaxPayerDetailsApi> res;
-        List<Models.AssetTaxPayerDetailsApi> res;
+        List<AssetTaxPayerDetailsApiResponse> res;
         var finalBusinessReturnModel = new List<BusinessReturnModel>();
         bool eget = false;
+        int pageNumber = formh1.pageNumber;
+        int pageSize = formh1.pageSize;
         try
         {
-            IDictionary<IQueryable<Models.AssetTaxPayerDetailsApi>, int> resData;
-            if (IsAdmin)
-                resData = await _repo.GetCompanyTiedToAdminUser(TO_RIN, true, pageNumber, pageSize);
-            else
-                resData = await _repo.GetCompanyTiedToAdminUser(companyId, false, pageNumber, pageSize);
+            IDictionary<List<AssetTaxPayerDetailsApiResponse>, int> resData;
 
-            res = resData.Keys.FirstOrDefault().ToList();
-           
-            if (!string.IsNullOrEmpty(busRin))
+
+            if (IsAssessmentOfficer || IsSuperAdmin)
             {
-                if (res != null)
-                    res = res.Where(o => string.Equals(o.AssetRin, busRin, StringComparison.OrdinalIgnoreCase)).ToList();
+                var existingRec = _con.SspformH1s
+                .Select(o => o.CompanyId)
+                .ToList();
+
+                List<long> longList = existingRec
+     .Where(id => long.TryParse(id, out _))
+     .Select(long.Parse)
+     .ToList();
+                resData = await _repo.GetCompanyTiedToSuperAdminUser(formh1, longList);
             }
-            res = res.Skip((pageNumber - 1) * pageSize)
-               .Take(pageSize)
-               .ToList();
+            else
+            {
+                if (IsAdmin)
+                    resData = await _repo.GetCompanyTiedToAdminUser(TO_RIN, true, pageNumber, pageSize);
+                else
+                    resData = await _repo.GetCompanyTiedToAdminUser(companyId, false, pageNumber, pageSize);
+            }
+
+            res = resData.Keys.FirstOrDefault()?.ToList() ?? new();
+
+            if (!string.IsNullOrEmpty(formh1.busRin))
+            {
+                res = res.Where(o => string.Equals(o.AssetRin, formh1.busRin, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            // Pre-fetch related data in batches
+            var businessIds = res.Select(r => r.AssetId.ToString()).ToList();
+            var empCounts = _con.SspformH1s
+                .Where(o => businessIds.Contains(o.BusinessId))
+                .GroupBy(o => o.BusinessId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var empCountDets = _con.SspfiledFormH1s
+                .Where(o => businessIds.Contains(o.BusinessId))
+                .GroupBy(o => o.BusinessId)
+                .ToDictionary(g => g.Key, g => g.FirstOrDefault()?.TaxYear.ToString());
+
+            // Process the data
             foreach (var r in res)
             {
-                var empCount = _con.SspformH1s.Where(o =>
-                    o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
-                );
+                var businessId = r.AssetId.ToString();
 
-                var empCountDet = _con.SspfiledFormH1s.Where(o =>
-                    o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
-                );
-                BusinessReturnModel m = new();
-                m.CompanyID = r.TaxPayerId.ToString();
-                m.CompanyName = r.TaxPayerName;
-                m.BusinessRIN = r.AssetRin;
-                m.BusinessAddress = r.AssetAddress;
-                m.BusinessName = r.AssetName;
-                m.BusinessID = r.AssetId.ToString();
-                m.ProjectionYear =empCountDet.Count() > 0
-                        ? empCountDet.FirstOrDefault().TaxYear.ToString()
-                        : "0";
-                m.NoOfEmployees = empCount.Count() > 0 ? empCount.Count().ToString() : "0";
+                var m = new BusinessReturnModel
+                {
+                    CompanyID = r.TaxPayerId.ToString(),
+                    TaxOffice = r.TaxOffice,
+                    CompanyRIN = r.TaxPayerRinnumber,
+                    CompanyName = r.TaxPayerName,
+                    BusinessRIN = r.AssetRin,
+                    BusinessAddress = r.AssetAddress,
+                    BusinessName = r.AssetName,
+                    BusinessID = businessId,
+                    ProjectionYear = empCountDets.ContainsKey(businessId) ? empCountDets[businessId] : "0",
+                    NoOfEmployees = empCounts.ContainsKey(businessId) ? empCounts[businessId].ToString() : "0"
+                };
+
                 finalBusinessReturnModel.Add(m);
                 eget = true;
             }
-            ReturnObject rd = new();
-            rd.message = eget ? "Record Found Successfully" : "No Record Found";
-            rd.data = eget ? new { result = finalBusinessReturnModel, totalCount = resData.Values.FirstOrDefault() } : null;
-            rd.status = eget ? true : false;
+
+            int totalCount = resData.Values.FirstOrDefault();
+
+            finalBusinessReturnModel = finalBusinessReturnModel
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var rd = new ReturnObject
+            {
+                message = eget ? "Record Found Successfully" : "No Record Found",
+                data = eget ? new { result = finalBusinessReturnModel, totalCount } : null,
+                status = eget
+            };
+
             return Ok(rd);
         }
         catch (System.Exception ex)
         {
-            return (
-                StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new ReturnObject { status = false, message = ex.Message }
-                )
-            );
+            return StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+            {
+                status = false,
+                message = ex.Message
+            });
         }
     }
 
@@ -157,57 +198,97 @@ public class FormH1Controller : ControllerBase
     [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
     [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
     [Route("newgetallformh1bycompanyId/{companyId}")]
-    public async Task<IActionResult> newgetallformh1([FromRoute] string companyId, [FromQuery] int pageNumber = 1,
-    [FromQuery] int pageSize = 100)
+    public async Task<IActionResult> newgetallformh1([FromRoute] string companyId, [FromQuery] Formh1SuperAdmin formh1)
     {
-        IQueryable<Models.AssetTaxPayerDetailsApi> res;
+        List<AssetTaxPayerDetailsApiResponse> res;
         var finalBusinessReturnModel = new List<NewBusinessReturnModel>();
         bool eget = false;
         try
         {
-            IDictionary<IQueryable<Models.AssetTaxPayerDetailsApi>, int> resData;
-            if (IsAdmin)
-                resData = await _repo.GetCompanyTiedToAdminUser(TO_RIN, true, pageNumber, pageSize);
+            IDictionary<List<AssetTaxPayerDetailsApiResponse>, int> resData;
+            if (IsAssessmentOfficer || IsSuperAdmin)
+            {
+                var empCountDetloaded = _con
+                   .SspfiledFormH1s
+                   .Select(o => o.CompanyId)
+                   .Distinct()
+                   .ToList();
+                List<long> longList = empCountDetloaded
+    .Where(id => long.TryParse(id, out _))
+    .Select(long.Parse)
+    .ToList();
+                resData = await _repo.GetCompanyTiedToSuperAdminUser(formh1, longList);
+            }
             else
-                resData = await _repo.GetCompanyTiedToAdminUser(companyId, false, pageNumber, pageSize);
+            {
+                if (IsAdmin)
+                    resData = await _repo.GetCompanyTiedToAdminUser(TO_RIN, true, formh1.pageNumber, formh1.pageSize);
+                else
+                    resData = await _repo.GetCompanyTiedToAdminUser(companyId, false, formh1.pageNumber, formh1.pageSize);
+            }
             ReturnObject rd = new();
 
             res = resData.Keys.FirstOrDefault();
 
+            int totalCount = resData.Values.FirstOrDefault();
             foreach (var r in res)
             {
                 var empCountDet = _con
                     .SspfiledFormH1s.Where(o =>
-                        o.BusinessId == r.AssetId.ToString() && o.CompanyId == companyId
+                        o.BusinessId == r.AssetId.ToString()
                     )
                     .GroupBy(o => o.TaxYear)
                     .ToList();
-
-                foreach (var r2 in empCountDet)
+                if (empCountDet.Any())
                 {
-                    var jan31st = new DateTime(r2.Key.Value, 1, 31);
+                    foreach (var r2 in empCountDet)
+                    {
+                        var jan31st = new DateTime(r2.Key.Value, 1, 31);
+                        var m = new NewBusinessReturnModel
+                        {
+
+                            TaxOffice = r.TaxOffice,
+                            BusinessRIN = r.AssetRin,
+                            CompanyRin = r.TaxPayerRinnumber,
+                            CompanyId = r.TaxPayerId.ToString(),
+                            CompanyName = r.TaxPayerName,
+                            BusinessName = r.AssetName,
+                            BusinessID = r.AssetId.ToString(),
+                            TaxYear = r2.Key.ToString(),
+                            DueDate = r2.FirstOrDefault().DueDate,
+                            NoOfEmployees = r2.Count().ToString(),
+                            DateForwarded = r2.FirstOrDefault().Datetcreated.ToString(),
+                            AnnualReturnStatus =
+                                r2.FirstOrDefault().Datetcreated > jan31st
+                                    ? "Defaulter"
+                                    : "Complied",
+                        };
+
+                        finalBusinessReturnModel.Add(m);
+                    }
+                }
+                else
+                {
                     var m = new NewBusinessReturnModel
                     {
+                        TaxOffice = r.TaxOffice,
                         BusinessRIN = r.AssetRin,
                         CompanyRin = r.TaxPayerRinnumber,
                         CompanyId = r.TaxPayerId.ToString(),
                         CompanyName = r.TaxPayerName,
                         BusinessName = r.AssetName,
                         BusinessID = r.AssetId.ToString(),
-                        TaxYear = r2.Key.ToString(),
-                        DueDate = r2.FirstOrDefault().DueDate,
-                        NoOfEmployees = r2.Count().ToString(),
-                        DateForwarded = r2.FirstOrDefault().Datetcreated.ToString(),
-                        AnnualReturnStatus =
-                            r2.FirstOrDefault().Datetcreated > jan31st
-                                ? "Defaulter"
-                                : "Complied",
+                        TaxYear = "",
+                        DueDate = "",
+                        NoOfEmployees = "",
+                        DateForwarded = "",
+                        AnnualReturnStatus = "",
                     };
 
                     finalBusinessReturnModel.Add(m);
                 }
             }
-            rd.data = new { result = finalBusinessReturnModel, totalCount = resData.Values.FirstOrDefault() };
+            rd.data = new { result = finalBusinessReturnModel, totalCount = totalCount };
             rd.message = "Record Found succesfully";
             rd.status = true;
             return Ok(rd);
@@ -412,10 +493,10 @@ public class FormH1Controller : ControllerBase
     {
         try
         {
-            using var _context = new SelfServiceConnect();
+            //  //using var _context = new SelfServiceConnect();
             string query =
                 $"SELECT s.[IndividalId], s.[BusinessId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[CompanyId],(s.[Rent] + s.[Basic] +s.[OTHERINCOME]+s.[TRANSPORT]) as Total,\r\ns.[TaxPayerId],s.[Id],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby], A.AssetName as BusinessName ,A.TaxPayerName as CompanyName FROM [SSPFormH1s] s left join AssetTaxPayerDetails_API A on  s.BusinessId  =  A.AssetID and s.CompanyId = a.TaxPayerID left join Individual I on s.IndividalId = I.EmployeeId  where s.CompanyId = '{companyId}' and s.BusinessId = '{businessId}'";
-            var user = _context.ReturnSspformH1.FromSqlRaw(query).ToList();
+            var user = _con.ReturnSspformH1.FromSqlRaw(query).ToList();
             return Ok(user);
         }
         catch (System.Exception ex)
@@ -438,10 +519,10 @@ public class FormH1Controller : ControllerBase
         var r = new ReturnObject();
         try
         {
-            using var _context = new SelfServiceConnect();
+            //using var _context = new SelfServiceConnect();
             var query =
                 $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join Individual B on s.IndividalId = B.EmployeeId  where  s.CompanyId='{companyId}'";
-            var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
+            var user = _con.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
             r.data = user;
             r.status = true;
             r.message = "Record Fetched Successfully";
@@ -478,13 +559,13 @@ public class FormH1Controller : ControllerBase
                 o.TaxPayerRinnumber == getRin.CompanyRin
             );
             var kkkk = new List<SspfiledFormH1ForSP>();
-            using var _context = new SelfServiceConnect();
+            //using var _context = new SelfServiceConnect();
             var query1 =
                 $"SELECT top(1) S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[CONSOLIDATEDRELIEFALLOWANCECRA],[ANNUALTAXPAID],[TOTALMONTHSPAID],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join Individual B on s.IndividalId = B.EmployeeId where  s.CompanyId='{companyId}'";
-            var user1 = _context.SspfiledFormH1ForSPs.FromSqlRaw(query1).ToList();
+            var user1 = _con.SspfiledFormH1ForSPs.FromSqlRaw(query1).ToList();
             var query =
                 $"select distinct (TaxYear)FROM [SSPFiledFormH1s] where CompanyId='{companyId}'";
-            var user = _context.SspfiledFormH1ListOfYears.FromSqlRaw(query).ToList();
+            var user = _con.SspfiledFormH1ListOfYears.FromSqlRaw(query).ToList();
             foreach (var it in user)
             {
                 var empCountDet = _con.SspformH1s.Where(o => o.CompanyId == companyId);
@@ -527,10 +608,10 @@ public class FormH1Controller : ControllerBase
         var r = new ReturnObject();
         try
         {
-            using var _context = new SelfServiceConnect();
+            //using var _context = new SelfServiceConnect();
             var query =
                 $"SELECT  S.[Id],[BusinessId],[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],B.FirstName + ' ' + B.SURNAME AS FullName,([Rent]+ [Transport]+ [Basic]+[OtherIncome]) as totalIncome,\r\n([NHF] + [NHIS] + [LIFEASSURANCE] +[CONSOLIDATEDRELIEFALLOWANCECRA]) as TaxFreePay, [ANNUALTAXPAID], CASE WHEN [TOTALMONTHSPAID] = 0 THEN 12 ELSE [TOTALMONTHSPAID] END as Totalmonthspaid , [FiledStatus],[TaxYear],[DueDate],[ComplianceStatus] ,s.createdby, s.datemodified,s.datetcreated, s.modifiedby  FROM [SSPFiledFormH1s] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID \r\nleft join Individual B on s.IndividalId = B.EmployeeId     where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
-            var user = _context.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
+            var user = _con.SspfiledFormH1ForSPs.FromSqlRaw(query).ToList();
             r.data = user;
             r.status = true;
             r.message = "Record Fetched Successfully";
@@ -1120,10 +1201,10 @@ public class FormH1Controller : ControllerBase
             }
             var presDate = DateTime.UtcNow.Date;
             var lastDueDate = new DateTime(DateTime.UtcNow.Year, 1, 31);
-            using var _context = new SelfServiceConnect();
+            //using var _context = new SelfServiceConnect();
             string query =
                 $"SELECT s.Id, s.[BusinessId],s.[CompanyId],s.[TaxPayerId],s.[IndividalId],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby],A.AssetName,A.TaxPayerName  FROM SSPFormH1s s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID where CompanyId = '{obj.CompanyId}' and BusinessId = '{obj.BusinessId}'";
-            var user = _context.SspformH1s.FromSqlRaw(query).ToList();
+            var user = _con.SspformH1s.FromSqlRaw(query).ToList();
             foreach (var sr in user)
             {
                 var empSr = _mapper.Map<SspfiledFormH1>(sr);

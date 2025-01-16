@@ -18,6 +18,28 @@ public class LoginController : ControllerBase
         _validator = validator;
     }
 
+    [HttpGet]
+    [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+    [Route("Tester")]
+    public async Task<IActionResult> Tester()
+    {
+        var r = new ReturnObject();
+
+        try
+        {
+            var ret = _con.PayeUserTypes.ToList();
+            return Ok(ret);
+        }
+        catch (System.Exception ex)
+        {
+            return await Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ReturnObject
+            {
+                status = false,
+                message = ex.Message
+            }));
+        }
+    }
     [HttpPost]
     [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
     [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
@@ -146,7 +168,7 @@ public class LoginController : ControllerBase
         var ret = _con.UserManagements.FirstOrDefault(o => o.CompanyRin.ToLower().Trim() == model.CompanyRin.ToLower().Trim());
         if (ret != null)
         {
-            var getAddres = _con.CompanyListApis.FirstOrDefault(o=>o.TaxPayerRin.ToLower().Trim() == model.CompanyRin.ToLower().Trim());
+            var getAddres = _con.CompanyListApis.FirstOrDefault(o => o.TaxPayerRin.ToLower().Trim() == model.CompanyRin.ToLower().Trim());
             r.status = false;
             if (!string.IsNullOrEmpty(ret.PhoneNumber) && !string.IsNullOrEmpty(ret.Password))
             {
@@ -156,7 +178,7 @@ public class LoginController : ControllerBase
             else
             {
                 r.message = $"User: {ret.CompanyName} and Mobile Number: {ret.PhoneNumber} is already registered";
-                r.data = new { CompanyName = ret.CompanyName, phoneNumber = ret.PhoneNumber,CompanyAddress= getAddres?.ContactAddress, companyRin = ret.CompanyRin, screenDet = "OTP" };
+                r.data = new { CompanyName = ret.CompanyName, phoneNumber = ret.PhoneNumber, CompanyAddress = getAddres?.ContactAddress, companyRin = ret.CompanyRin, screenDet = "OTP" };
             }
         }
         else

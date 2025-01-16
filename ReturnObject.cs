@@ -7,14 +7,31 @@ namespace SelfPortalAPi
         public dynamic data { get; set; }
         public bool status { get; set; }
         public string message { get; set; }
-    }  
+    }
+
+
+
+    public class RootobjectAPI
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public ResultAPI[] Result { get; set; }
+    }
+
+    public class ResultAPI
+    {
+        public int LGAID { get; set; }
+        public string LGAName { get; set; }
+    }
+
     public class ReturnObjectB
     {
         public int id { get; set; }
         public dynamic data { get; set; }
         public bool status { get; set; }
         public dynamic message { get; set; }
-    }  public class ReturnObjectC
+    }
+    public class ReturnObjectC
     {
         public int id { get; set; }
         public dynamic data { get; set; }
@@ -43,7 +60,7 @@ namespace SelfPortalAPi
     }
 
 
-   
+
 
     public class Result
     {
@@ -59,7 +76,7 @@ namespace SelfPortalAPi
         public string ActiveText { get; set; }
         public object IsTOManager { get; set; }
         public string IsTOManagerText { get; set; }
-        public int TaxOfficeID { get; set; }
+        public string? TaxOfficeID { get; set; }
         public string TaxOfficeName { get; set; }
         public object TOManagerID { get; set; }
         public object TOManagerName { get; set; }

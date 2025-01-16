@@ -1,8 +1,4 @@
-﻿using FluentValidation;
-using Newtonsoft.Json;
-using System.ComponentModel.DataAnnotations;
-
-namespace SelfPortalAPi
+﻿namespace SelfPortalAPi
 {
     public class FM
     {
@@ -16,6 +12,12 @@ namespace SelfPortalAPi
     {
         public string BusinessId { get; set; }
         public string CompanyId { get; set; }
+    }
+    public class FormH1FormModelForReassess
+    {
+        public long BusinessId { get; set; }
+        public long CompanyId { get; set; }
+        public int TaxYear { get; set; }
     }
     public class AddFormH : FormH1FormModel
     {
@@ -296,6 +298,18 @@ namespace SelfPortalAPi
         public int UserId { get; set; }
         public string UserType { get; set; }
         public bool Status { get; set; }
+    }
+    public class Formh1SuperAdminForFilter
+    {
+        public string? busRin { get; set; }
+        public string? companyName { get; set; }
+        public string? companyRin { get; set; }
+        public string? businessName { get; set; }
+    }
+    public class Formh1SuperAdmin : Formh1SuperAdminForFilter
+    {
+        public int pageNumber { get; set; }
+        public int pageSize { get; set; }
     }
     public class UpdateUserResponseRole
     {

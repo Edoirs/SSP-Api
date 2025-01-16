@@ -103,7 +103,7 @@ namespace SelfPortalAPi.UnitOfWork
                         mObjFuncResponse.status = false;
                         mObjFuncResponse.message = "Incorrect Login Credentials";
                     }
-                    if(ret.RoleId != 2)
+                    if (ret.RoleId != 2)
                     {
                         mObjFuncResponse.status = false;
                         mObjFuncResponse.message = "Incorrect Login Credentials";
@@ -154,6 +154,66 @@ namespace SelfPortalAPi.UnitOfWork
 
                     }
                 }
+                else if (pObjUser.UserType.ToLower() == "assessment officer")
+                {
+                    var ret = _con.AdminUsers.FirstOrDefault(o => (o.Username.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim() || o.Email.ToLower().Trim() == pObjUser.PhoneNumber_RIN.ToLower().Trim()));
+                    if (ret == null)
+                    {
+                        mObjFuncResponse.status = false;
+                        mObjFuncResponse.message = "Incorrect Login Credentials";
+                    }
+                    if (ret.RoleId != 3)
+                    {
+                        mObjFuncResponse.status = false;
+                        mObjFuncResponse.message = "Incorrect Login Credentials";
+                    }
+                    else
+                    {
+                        var str = JsonConvert.SerializeObject(ret);
+
+                        if (BCrypt.Net.BCrypt.Verify(pObjUser.Password, ret.Password))
+                        {
+                            var newclaims = new[]
+    {
+            new Claim("TaxpayerTypeId", $"0"),
+            new Claim("TaxOffice", $"{ret.TaxOfficeName}"),
+            new Claim("UserId", $"Admin-{ret.AdminUserId}"),
+            new Claim("IsAdmin", $"yes"),
+            new Claim("SuperAdmin", $"{ret.RoleId}")
+        }; var aud = "https://your-service.com/api";
+                            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+
+                            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                                _conFig.GetSection("JWT:Secret").Value));
+                            var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+                            var tokeOptions = new JwtSecurityToken(issuer: str,
+                           audience: aud,
+                             claims: newclaims,
+                              expires: DateTime.UtcNow.AddDays(2),
+                              signingCredentials: signinCredentials);
+                            var token = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
+
+                            if (!string.IsNullOrEmpty(token))
+                            {
+                                mObjFuncResponse.data = new
+                                { token = token, expiryAt = DateTime.UtcNow.AddDays(1), companyId = ret.AdminUserId, comanyRin = ret.Username, name = ret.ContactName, email = ret.Email, phoneNumber = ret.Phone, TaxpayerTypeId = ret.AdminUserTypeName, isAdminUser = true };
+                            }
+                            else
+                            {
+                                var response = new ReturnObject { status = false, message = "An Error Occured Generating Token" };
+                                return response;
+                            }
+                        }
+                        else
+                        {
+                            mObjFuncResponse.status = false;
+                            mObjFuncResponse.message = "Incorrect Login Credentials";
+                        }
+
+                    }
+                }
+
                 else
                 {
                     var ret = _con.UserManagements.FirstOrDefault(o => (o.CompanyRin == pObjUser.PhoneNumber_RIN.ToString().Trim()) || (o.PhoneNumber == pObjUser.PhoneNumber_RIN.ToString().Trim()));

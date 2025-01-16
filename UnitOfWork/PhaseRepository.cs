@@ -1,34 +1,23 @@
-﻿
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Drawing;
-using DocumentFormat.OpenXml.Wordprocessing;
-using EFCore.BulkExtensions;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.IdentityModel.Tokens;
-using SelfPortalAPi.Model;
-
-//using SelfPortalAPi.Model;
-using SelfPortalAPi.Models;
-using SelfPortalAPi.Models.Vm;
-
+﻿//using SelfPortalAPi.Model;
 namespace SelfPortalAPi.UnitOfWork;
 public interface IPhaseIIRepo
 {
+    Task<Dictionary<List<AssetTaxPayerDetailsApiResponse>, int>> GetCompanyTiedToSuperAdminUser(Formh1SuperAdmin formh1, List<long>? ids);
     Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin);
+    Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize, string busName, Formh1SuperAdmin formh1);
     Task<ReturnObject> SyncAssetAsync();
     Task<ReturnObject> AllUsers(int pageNumber, int pageSize, string? searchTerm, string? username);
     Task<ReturnObject> UpdateAdmin(int userTypeId, int userId, bool status, int roleId);
     Task<ReturnObject> SycnCooperate();
     Task<ReturnObject> SycnAssessmentItems();
     Task<ReturnObject> SycnAssessmentRules();
-    Task<Dictionary<List<ReturnEmployeeMon>, int>> getallEmployeesCount(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin);
+    Task<Dictionary<List<ReturnEmployeeMon>, int>> getallEmployeesCount(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin, bool IsAssessmentOfficer, Formh1SuperAdmin formh1);
     Task<List<EmployeeIncomeVm>> GetEmployeeIncomeView(EmployeesViewFmModel emp);
     Task<List<EmployeesMonthlyIncome>> GetMonthlyIncomeAsync(EmpSchedule obj);
     Task<List<EmployeesMonthlyIncome>> GetEmployeeMonthlyIncomeAsync(EmpSchedule obj);
     Task<List<EmpScheduleDetails>> CalculateMonthScheduleAsync(EmpSchedule empSch);
     Task<ReturnObject> Login(AdminSignUp adminSign);
-    Task<Dictionary<IQueryable<Models.AssetTaxPayerDetailsApi>, int>> GetCompanyTiedToAdminUser(string tx_cm, bool det, int pgNo, int pgSize);
+    Task<Dictionary<List<AssetTaxPayerDetailsApiResponse>, int>> GetCompanyTiedToAdminUser(string tx_cm, bool det, int pgNo, int pgSize);
     int CalculateMonthsLeft(string monthName);
     decimal CalculateTax(decimal ch_income, decimal gross);
     Task<List<ScheduleGetViewRes>> GetSchedulesViewAsync(EmpSchFm empSch);
@@ -37,6 +26,7 @@ public interface IPhaseIIRepo
     Task<List<EmployeesMonthlySchedule>> GetAssessmentSchudeleDetails(EmpMtAss ass);
     Task<List<EmployeesMonthlySchedule>> GetAssessmentScheduleDetails2(EmpMtAssNew ass);
     Task<List<EmployeesMonthlySchedule>> GetAssessmentSchudeleDetailsDownLoad(EmpMtAssForPdf ass);
+    Task<ReturnObject> ReAssessFormH1(FormH1FormModelForReassess ass);
 }
 
 public class PhaseIIRepo : IPhaseIIRepo
@@ -49,6 +39,70 @@ public class PhaseIIRepo : IPhaseIIRepo
         _dbContext = dbContext;
         _serviceSettings = serviceSettings;
         _repo = repo;
+    }
+    public async Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize, string busName, Formh1SuperAdmin formh1)
+    {
+        int totalCount = 0;
+        IQueryable<BusinessVm> query = null;
+        var pageRes = new List<BusinessVm>();
+
+        var bigQuery = (from a in _dbContext.AssetTaxPayerDetailsApis
+                        join b in _dbContext.CompanyListApis
+                        on a.TaxPayerRinnumber equals b.TaxPayerRin
+                        select new BusinessVm
+                        {
+                            CompanyName = a.TaxPayerName,
+                            BusinessRin = a.AssetRin,
+                            BusinessName = a.AssetName,
+                            CompanyRin = a.TaxPayerRinnumber,
+                            LgaName = a.AssetAddress,
+                            TaxOffice = b.TaxOffice
+                        });
+        totalCount = await bigQuery.CountAsync();
+        if (string.IsNullOrEmpty(formh1.busRin) &&
+         string.IsNullOrEmpty(formh1.companyRin) &&
+         string.IsNullOrEmpty(formh1.companyName) &&
+         string.IsNullOrEmpty(formh1.businessName) &&
+         string.IsNullOrEmpty(busName))
+        {
+            pageRes = await bigQuery
+              .Skip((formh1.pageNumber - 1) * formh1.pageSize)
+              .Take(formh1.pageSize)
+              .ToListAsync();
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(busName))
+            {
+                bigQuery = bigQuery.Where(o =>
+    o.BusinessName.ToLower().Trim().Contains(busName.ToLower().Trim()) ||
+    o.CompanyRin.ToLower().Trim().Contains(busName.ToLower().Trim()) ||
+    o.CompanyName.ToLower().Trim().Contains(busName.ToLower().Trim())
+    );
+                pageRes = await bigQuery
+              .Skip((formh1.pageNumber - 1) * formh1.pageSize)
+              .Take(formh1.pageSize)
+              .ToListAsync();
+            }
+            else
+            {
+                bigQuery = bigQuery.Where(o =>
+    o.BusinessName.ToLower().Trim().Contains(formh1.businessName) ||
+    o.CompanyRin.ToLower().Trim().Contains(formh1.companyRin) ||
+    o.CompanyName.ToLower().Trim().Contains(formh1.companyName)
+    );
+                pageRes = await bigQuery
+              .Skip((formh1.pageNumber - 1) * formh1.pageSize)
+              .Take(formh1.pageSize)
+              .ToListAsync();
+            }
+
+        }
+        return new Dictionary<string, object>
+{
+    { "Businesses", pageRes },
+    { "TotalCount", totalCount }
+};
     }
     public async Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin)
     {
@@ -74,13 +128,24 @@ public class PhaseIIRepo : IPhaseIIRepo
             switch (IsAdmin)
             {
                 case true:
-                    query = bigQuery.Where(o => o.TaxOffice.ToLower().Trim() == tx_cm.ToLower().Trim()
-                                             && o.BusinessName.ToLower().Trim() == busName.ToLower().Trim());
+                    query = bigQuery.Where(o =>
+    o.TaxOffice.ToLower().Trim() == tx_cm.ToLower().Trim() &&
+    (
+        o.BusinessName.ToLower().Trim().Contains(busName.ToLower().Trim()) ||
+        o.CompanyRin.ToLower().Trim().Contains(busName.ToLower().Trim()) ||
+        o.CompanyName.ToLower().Trim().Contains(busName.ToLower().Trim())
+    )
+);
                     break;
                 case false:
-                    query = bigQuery.Where(o => o.CompanyRin.ToLower().Trim() == tx_cm.ToLower().Trim()
-                                             && o.BusinessName.ToLower().Trim() == busName.ToLower().Trim());
-                    break;
+                    query = bigQuery.Where(
+                        o =>
+    o.CompanyRin.ToLower().Trim() == tx_cm.ToLower().Trim() &&
+    (
+        o.BusinessName.ToLower().Trim().Contains(busName.ToLower().Trim()) ||
+        o.CompanyRin.ToLower().Trim().Contains(busName.ToLower().Trim()) ||
+        o.CompanyName.ToLower().Trim().Contains(busName.ToLower().Trim())
+    )); break;
                 default:
                     break;
             }
@@ -104,7 +169,7 @@ public class PhaseIIRepo : IPhaseIIRepo
         {
             pageRes = await query.ToListAsync();
 
-            pageRes = pageRes.DistinctBy(o => o.BusinessName).ToList();
+            //pageRes = pageRes.DistinctBy(o => o.BusinessName).ToList();
             totalCount = query.Count();
             if (pageNumber != 0 && pageSize != 0)
             {
@@ -123,122 +188,114 @@ public class PhaseIIRepo : IPhaseIIRepo
     { "TotalCount", totalCount }
 };
     }
-    public async Task<Dictionary<List<ReturnEmployeeMon>, int>> getallEmployeesCount(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin)
+    public async Task<Dictionary<List<ReturnEmployeeMon>, int>> getallEmployeesCount(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin, bool IsAssessmentOfficer, Formh1SuperAdmin formh1)
     {
-        IDictionary<IQueryable<Models.AssetTaxPayerDetailsApi>, int> busDetail;
+        IDictionary<List<AssetTaxPayerDetailsApiResponse>, int> busDetail;
+        if (string.IsNullOrEmpty(busName))
+            busName = formh1.companyName;
+        if (string.IsNullOrEmpty(busName))
+            busName = formh1.companyRin;
+        if (string.IsNullOrEmpty(busName))
+            busName = formh1.businessName;
+        if (string.IsNullOrEmpty(busName))
+            busName = formh1.busRin;
+
         string query = "";
+        int totalCount = 0;
         IQueryable<string>? list;
         if (string.IsNullOrEmpty(busName))
         {
-            if (IsAdmin)
+            if (IsAssessmentOfficer)
             {
-                busDetail = await GetCompanyTiedToAdminUser(tx_cm, true, pageNumber, pageSize);
-                query = @$"
-            SELECT 
-                c.TaxPayerID as CompanyId,
-                a.assetid as businessid,
-                c.TaxPayerName as CompanyName,
-                COUNT(e.EmployeeId) AS NoOfEmployees,
-                c.TaxPayerRIN as CompanyRin,
-                a.AssetName as businessName,
-                a.AssetRIN as businessRin,
-                a.AssetAddress as businessAddress,
-                a.AssetLGA as businessLga,
-                c.TaxOffice
-            FROM 
-                AssetTaxPayerDetails_API a
-            LEFT JOIN 
-                EmployeesMonthlyIncome e ON a.AssetID = e.BusinessId AND e.CompanyId = a.TaxPayerID
-            LEFT JOIN 
-                CompanyList_API c ON a.TaxPayerRINNumber = c.TaxPayerRIN
-            WHERE 
-                a.TaxPayerRINNumber IN ({string.Join(", ", busDetail.Select(r => $"'{r.Key.FirstOrDefault().TaxPayerRinnumber}'"))})
-            GROUP BY 
-                c.TaxPayerID, a.AssetID, c.TaxPayerName, c.TaxPayerRIN, a.AssetName, a.AssetRIN, a.AssetAddress, a.AssetLGA, c.TaxOffice";
+                query =
+                @$"
+         select a.taxpayerid companyID, a.taxpayername companyName, a.assetid businessId, a.taxpayerrinnumber companyRIN, a.assetname businessName, a.assetrin businessRIN, a.AssetLGA businesslga, a.AssetAddress businessAddress, count(e.employeeid) noOfEmployees, c.taxoffice taxOffice
+from AssetTaxPayerDetails_API a 
+left join EmployeesMonthlyIncome e on a.TaxPayerID = e.CompanyId and a.AssetID = e.BusinessId 
+left join CompanyList_API c on a.TaxPayerRINNumber = c.TaxPayerRIN
+group by a.taxpayerid, a.TaxPayerName, a.assetid, a.TaxPayerRINNumber, a.AssetName, a.AssetRIN, a.AssetLGA, a.AssetAddress, c.TaxOffice";
+
+
             }
             else
             {
-                // For non-admin users
-                string cm = "";
-                busDetail = await GetCompanyTiedToAdminUser(tx_cm, false, pageNumber, pageSize);
-                cm = busDetail.FirstOrDefault().Key.FirstOrDefault().TaxPayerRinnumber;
-                query = @$"
-            SELECT 
-                c.TaxPayerID as CompanyId,
-                a.assetid as businessid,
-                c.TaxPayerName as CompanyName,
-                COUNT(e.EmployeeId) AS NoOfEmployees,
-                c.TaxPayerRIN as CompanyRin,
-                a.AssetName as businessName,
-                a.AssetRIN as businessRin,
-                a.AssetAddress as businessAddress,
-                a.AssetLGA as businessLga,
-                c.TaxOffice
-            FROM 
-                AssetTaxPayerDetails_API a
-            LEFT JOIN 
-                EmployeesMonthlyIncome e ON a.AssetID = e.BusinessId AND e.CompanyId = a.TaxPayerID
-            LEFT JOIN 
-                CompanyList_API c ON a.TaxPayerRINNumber = c.TaxPayerRIN
+                if (IsAdmin)
+                {
+                    busDetail = await GetCompanyTiedToAdminUser(tx_cm, true, pageNumber, pageSize);
+                    string taxPayerRinString = string.Join(", ", busDetail
+        .SelectMany(b => b.Key)
+        .Select(k => $"\'{k.TaxPayerRinnumber}\'")
+        .Where(rin => !string.IsNullOrEmpty(rin)));
+                    query = @$"
+             select a.taxpayerid companyID, a.taxpayername companyName, a.assetid businessId, a.taxpayerrinnumber companyRIN, a.assetname businessName, a.assetrin businessRIN, a.AssetLGA businesslga, a.AssetAddress businessAddress, count(e.employeeid) noOfEmployees, c.taxoffice taxOffice
+from AssetTaxPayerDetails_API a 
+left join EmployeesMonthlyIncome e on a.TaxPayerID = e.CompanyId and a.AssetID = e.BusinessId 
+left join CompanyList_API c on a.TaxPayerRINNumber = c.TaxPayerRIN
             WHERE 
+                a.TaxPayerRINNumber IN ({taxPayerRinString})
+            group by a.taxpayerid, a.TaxPayerName, a.assetid, a.TaxPayerRINNumber, a.AssetName, a.AssetRIN, a.AssetLGA, a.AssetAddress, c.TaxOffice";
+
+                }
+                else
+                {
+                    // For non-admin users
+                    string cm = "";
+                    busDetail = await GetCompanyTiedToAdminUser(tx_cm, false, pageNumber, pageSize);
+                    cm = busDetail.FirstOrDefault().Key.FirstOrDefault().TaxPayerRinnumber;
+                    query = @$"
+                     select a.taxpayerid companyID, a.taxpayername companyName, a.assetid businessId, a.taxpayerrinnumber companyRIN, a.assetname businessName, a.assetrin businessRIN, a.AssetLGA businesslga, a.AssetAddress businessAddress, count(e.employeeid) noOfEmployees, c.taxoffice taxOffice
+from AssetTaxPayerDetails_API a 
+left join EmployeesMonthlyIncome e on a.TaxPayerID = e.CompanyId and a.AssetID = e.BusinessId 
+left join CompanyList_API c on a.TaxPayerRINNumber = c.TaxPayerRIN
+WHERE 
                 a.TaxPayerRINNumber = '{cm}'
-            GROUP BY 
-                c.TaxPayerID, a.AssetID, c.TaxPayerName, c.TaxPayerRIN, a.AssetName, a.AssetRIN, a.AssetAddress, a.AssetLGA, c.TaxOffice";
+            
+               group by a.taxpayerid, a.TaxPayerName, a.assetid, a.TaxPayerRINNumber, a.AssetName, a.AssetRIN, a.AssetLGA, a.AssetAddress, c.TaxOffice";
+
+                }
             }
         }
         else
         {
+
             busDetail = await GetCompanyTiedToAdminUser(tx_cm, false, pageNumber, pageSize);
             query = @$"
-            SELECT 
-                c.TaxPayerID as CompanyId,
-                a.assetid as businessid,
-                c.TaxPayerName as CompanyName,
-                COUNT(e.EmployeeId) AS NoOfEmployees,
-                c.TaxPayerRIN as CompanyRin,
-                a.AssetName as businessName,
-                a.AssetRIN as businessRin,
-                a.AssetAddress as businessAddress,
-                a.AssetLGA as businessLga,
-                c.TaxOffice
-            FROM 
-                AssetTaxPayerDetails_API a
-            LEFT JOIN 
-                EmployeesMonthlyIncome e ON a.AssetID = e.BusinessId AND e.CompanyId = a.TaxPayerID
-            LEFT JOIN 
-                CompanyList_API c ON a.TaxPayerRINNumber = c.TaxPayerRIN
-            WHERE 
-                a.TaxPayerName = '{busName}' or a.AssetName = '{busName}'
-            GROUP BY 
-                c.TaxPayerID, a.AssetID, c.TaxPayerName, c.TaxPayerRIN, a.AssetName, a.AssetRIN, a.AssetAddress, a.AssetLGA, c.TaxOffice";
+                 select a.taxpayerid companyID, a.taxpayername companyName, a.assetid businessId, a.taxpayerrinnumber companyRIN, a.assetname businessName, a.assetrin businessRIN, a.AssetLGA businesslga, a.AssetAddress businessAddress, count(e.employeeid) noOfEmployees, c.taxoffice taxOffice
+from AssetTaxPayerDetails_API a 
+left join EmployeesMonthlyIncome e on a.TaxPayerID = e.CompanyId and a.AssetID = e.BusinessId 
+left join CompanyList_API c on a.TaxPayerRINNumber = c.TaxPayerRIN
+WHERE 
+    a.TaxPayerName LIKE '%{busName}%'
+    OR a.AssetName LIKE '%{busName}%'
+    OR a.TaxPayerRINNumber LIKE '%{busName}%'
+    OR a.AssetRIN LIKE '%{busName}%'
+group by a.taxpayerid, a.TaxPayerName, a.assetid, a.TaxPayerRINNumber, a.AssetName, a.AssetRIN, a.AssetLGA, a.AssetAddress, c.TaxOffice";
 
         }
+
         var pageRes = await _dbContext.Set<ReturnEmployeeMon>()
-            .FromSqlRaw(query) 
+            .FromSqlRaw(query)
             .ToListAsync();
 
-        int totalCount = busDetail.FirstOrDefault().Value;
+        totalCount = pageRes.Count();
 
         // If no results found, return a default empty result
         if (!pageRes.Any())
         {
-            var bDetail = busDetail.FirstOrDefault().Key.FirstOrDefault();
+            // var bDetail = busDetail.FirstOrDefault().Key.FirstOrDefault();
             ReturnEmployeeMon bvnm = new ReturnEmployeeMon
             {
-                NoOfEmployees = 0,
-                businessAddress = bDetail?.AssetAddress,
-                businessLga = bDetail?.AssetLga,
-                businessName = bDetail?.AssetName,
-                businessRin = bDetail?.AssetRin,
-                CompanyId = bDetail?.TaxPayerId,
-                businessId = bDetail?.AssetId,
-                CompanyName = bDetail?.TaxPayerName,
-                CompanyRin = bDetail?.TaxPayerRinnumber
             };
             pageRes.Add(bvnm);
             totalCount = 1;
         }
-
+        if (pageNumber != 0 && pageSize != 0)
+        {
+            pageRes = pageRes
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
         return new Dictionary<List<ReturnEmployeeMon>, int> {
     { pageRes, totalCount }
 };
@@ -531,8 +588,8 @@ public class PhaseIIRepo : IPhaseIIRepo
                 .Distinct()
                 .ToListAsync();
 
-            var assessmentItemsQuery = from ai in _dbContext.AssessmentItemApis
-                                       where ai.AssessmentRuleName.Contains(obj.TaxMonth)
+            var assessmentItemsQuery = from ai in _dbContext.AssessmentItems
+                                       where ai.AssessmentItemName.Contains(obj.TaxMonth)
                                        select new
                                        {
                                            AssessmentItemID = ai.AssessmentItemId,
@@ -644,14 +701,14 @@ public class PhaseIIRepo : IPhaseIIRepo
 
         return buss;
     }
-    private async Task<AssessmentResponse> StartApiHitsAssessmentItem(int pageNumber, int pageSize, int apiId)
+    private async Task<RootobjectItem> StartApiHitsAssessmentItem(int pageNumber, int pageSize, int apiId)
     {
         JavaScriptSerializer js = new();
         string url = apiId switch
         {
-            1 => $"{_serviceSettings.Value.ErasBaseUrl}SupplierData/PAYE_Collection_Multiple_Employees_BS_A_F_AssessmentItem?pageNumber={pageNumber}&pageSize={pageSize}",
-            2 => $"{_serviceSettings.Value.ErasBaseUrl}SupplierData/PAYE_Collection_Multiple_Employees_BS_G_AssessmentItem?pageNumber={pageNumber}&pageSize={pageSize}",
-            3 => $"{_serviceSettings.Value.ErasBaseUrl}SupplierData/PAYE_Collection_Multiple_Employees_BS_H_Z_AssessmentItem?pageNumber={pageNumber}&pageSize=10000",
+            1 => $"{_serviceSettings.Value.ErasBaseUrl}User/GetAssessentItems?pageNumber={pageNumber}&pageSize={pageSize}&RevId=8",
+            2 => $"{_serviceSettings.Value.ErasBaseUrl}User/GetAssessentItems?pageNumber={pageNumber}&pageSize={pageSize}&RevId=8",
+            3 => $"{_serviceSettings.Value.ErasBaseUrl}User/GetAssessentItems?pageNumber={pageNumber}&pageSize=10000&RevId=8",
             _ => ""
         };
 
@@ -663,7 +720,7 @@ public class PhaseIIRepo : IPhaseIIRepo
         );
 
         string response = await al.CallAPi(url, token, "get", "");
-        AssessmentResponse? rootObjectVm = js.Deserialize<AssessmentResponse>(response);
+        RootobjectItem? rootObjectVm = js.Deserialize<RootobjectItem>(response);
 
         return rootObjectVm;
     }
@@ -685,7 +742,7 @@ public class PhaseIIRepo : IPhaseIIRepo
 
         return rootObjectVm;
     }
-   
+
     private async Task<CorporateResponse> StartApiHitsCooperate(int pageNumber, int pageSize, int apiId)
     {
         JavaScriptSerializer js = new();
@@ -741,23 +798,24 @@ public class PhaseIIRepo : IPhaseIIRepo
             List<AsseRuleResult> assetList = new();
             int pageNumber = 1;
             int pageSize = 1000;
-            int maxId = 0;
-            for (int i = 1; i < 4; i++)
-            {
-                AssessmentRuleResponse response = await StartApiHitsAssessmentRule(pageNumber, pageSize, i);
-                while (response.Result.Count == pageSize)
-                {
-                    assetList.AddRange(response.Result);
-                    pageNumber++;
-                    response = await StartApiHitsAssessmentRule(pageNumber, pageSize, i);
-                }
-                assetList.AddRange(response.Result);
-            }
+            int ii = 1;
 
+            AssessmentRuleResponse response = await StartApiHitsAssessmentRule(pageNumber, pageSize, ii);
+            while (response.Result.Data.Count() == pageSize)
+            {
+                assetList.AddRange(response.Result.Data);
+                pageNumber++;
+                response = await StartApiHitsAssessmentRule(pageNumber, pageSize, ii++);
+            }
+            assetList.AddRange(response.Result.Data);
+
+            int myId = 0;
             foreach (var i in assetList)
             {
+                myId++;
                 ass.Add(new AssessmentRule1
                 {
+                    Id = myId,
                     AssessmentRuleId = i.AssessmentRuleID,
                     AssessmentRuleCode = i.AssessmentRuleCode,
                     ProfileId = i.ProfileID,
@@ -766,9 +824,9 @@ public class PhaseIIRepo : IPhaseIIRepo
                     PaymentFrequencyId = i.PaymentFrequencyID,
                     AssessmentAmount = i.AssessmentAmount,
                     TaxYear = i.TaxYear,
-                    TaxMonth = i.TaxMonth,
+                    TaxMonth = GetMonthNumberFromSentence(i.AssessmentRuleName),
                     PaymentOptionId = i.PaymentOptionID,
-                    Active=i.Active
+                    Active = i.Active
                 });
             }
             await _dbContext.Database.ExecuteSqlRawAsync($"TRUNCATE TABLE AssessmentRules");
@@ -785,76 +843,54 @@ public class PhaseIIRepo : IPhaseIIRepo
             };
         }
     }
-    
+
     public async Task<ReturnObject> SycnAssessmentItems()
     {
         try
         {
-            List<AssessmentItemApi> ass = new();
-            List<AsseResult> assetList = new();
+            List<AssessmentItem> ass = new();
+            List<Datum> assetList = new();
             int pageNumber = 1;
             int pageSize = 1000;
-            int maxId = 0;
-            for (int i = 1; i < 4; i++)
+            int ii = 1;
+            // for (int i = 1; i < 4; i++)
+            //{
+            RootobjectItem response = await StartApiHitsAssessmentItem(pageNumber, pageSize, ii);
+            while (response.Result.Data.Count() == pageSize)
             {
-                AssessmentResponse response = await StartApiHitsAssessmentItem(pageNumber, pageSize, i);
-                while (response.Result.Count == pageSize)
-                {
-                    assetList.AddRange(response.Result);
-                    pageNumber++;
-                    response = await StartApiHitsAssessmentItem(pageNumber, pageSize, i);
-                }
-                assetList.AddRange(response.Result);
+                assetList.AddRange(response.Result.Data);
+                pageNumber++;
+                response = await StartApiHitsAssessmentItem(pageNumber, pageSize, ii++);
             }
+            assetList.AddRange(response.Result.Data);
 
-            int myId = 0;
+            //int myId = 0;
             foreach (var i in assetList)
             {
-                myId++;
-                ass.Add(new AssessmentItemApi
+                // myId++;
+                ass.Add(new AssessmentItem
                 {
-                    Id = myId.ToString(),
-                    TaxPayerId = Convert.ToInt32(i.TaxPayerID),
-                    TaxPayerTypeId = Convert.ToInt32(i.TaxPayerTypeID),
-                    AgencyId = Convert.ToInt32(i.AgencyID),
-                    TaxPayerRin = i.TaxPayerRIN,
-                    TaxPayerTypeName = i.TaxPayerTypeName,
-                    AssetId = Convert.ToInt32(i.AssetID),
-                    AssetTypeId = Convert.ToInt32(i.AssetTypeID),
-                    AssetTypeName = i.AssetTypeName,
-                    AssetRin = i.AssetRIN,
-                    ProfileDescription = i.ProfileDescription,
-                    ProfileId = Convert.ToInt32(i.ProfileID),
-                    ProfileReferenceNo = i.ProfileReferenceNo,
-                    AssessmentGroupId = Convert.ToInt32(i.AssessmentGroupID),
-                    AssessmentRuleId = i.AssessmentRuleID,
-                    AssessmentRuleCode = i.AssessmentRuleCode,
-                    AssessmentGroupName = i.AssessmentGroupName,
-                    AssessmentItemCategoryId = Convert.ToInt32(i.AssessmentItemCategoryID),
-                    AssessmentItemCategoryName = i.AssessmentItemCategoryName,
-                    AssessmentRuleName = i.AssessmentRuleName,
+                    // Id = myId.ToString(),
+                    AssessmentItemId = i.AssessmentItemID,
                     AssessmentItemReferenceNo = i.AssessmentItemReferenceNo,
                     AssessmentSubGroupId = Convert.ToInt32(i.AssessmentSubGroupID),
-                    AssessmentSubGroupName = i.AssessmentSubGroupName,
+                    AgencyId = Convert.ToInt32(i.AgencyID),
+                    AssetTypeId = Convert.ToInt32(i.AssetTypeID),
+                    AssessmentGroupId = Convert.ToInt32(i.AssessmentGroupID),
+                    AssessmentItemCategoryId = Convert.ToInt32(i.AssessmentItemCategoryID),
                     RevenueStreamId = Convert.ToInt32(i.RevenueStreamID),
-                    RevenueStreamName = i.RevenueStreamName,
                     RevenueSubStreamId = Convert.ToInt32(i.RevenueSubStreamID),
-                    RevenueSubStreamName = i.RevenueSubStreamName,
                     AssessmentItemSubCategoryId = Convert.ToInt32(i.AssessmentItemSubCategoryID),
                     AssessmentItemName = i.AssessmentItemName,
-                    AssessmentItemSubCategoryName = i.AssessmentItemSubCategoryName,
-                    AgencyName = i.AgencyName,
                     ComputationId = Convert.ToInt32(i.ComputationID),
-                    ComputationName = i.ComputationName,
-                    TaxAmount = i.TaxAmount,
-                    TaxBaseAmount = i.TaxBaseAmount,
-                    Percentage = i.Percentage,
-                    AssessmentItemId = Convert.ToInt32(i.AssessmentItemID)
-
+                    TaxAmount = Convert.ToDecimal(i.TaxAmount),
+                    TaxBaseAmount = Convert.ToDecimal(i.TaxBaseAmount),
+                    Active = i.Active,
+                    Percentage = Convert.ToDecimal(i.Percentage)
                 });
             }
-            await _dbContext.Database.ExecuteSqlRawAsync($"TRUNCATE TABLE Assessment_Item_API");
-            _dbContext.AssessmentItemApis.AddRange(ass);
+            await _dbContext.Database.ExecuteSqlRawAsync($"TRUNCATE TABLE Assessment_Items");
+            _dbContext.AssessmentItems.AddRange(ass);
             await _dbContext.SaveChangesAsync();
             return new ReturnObject { status = true, message = "Records Synced Successfully" };
         }
@@ -901,8 +937,23 @@ public class PhaseIIRepo : IPhaseIIRepo
                     {
                         UserId = item.AdminUserId.ToString(),
                         UserName = item.Username,
-                        UserTypeId = "1",
+                        UserTypeId = "2",
                         UserTypeName = "Super Admin",
+                        Status = item.IsActive == 1 ? "Active" : "InActive"
+                    });
+
+                totalRecords = await usersQuery.CountAsync();
+            }
+            else if (string.Equals(searchTerm, "assessment officer", StringComparison.OrdinalIgnoreCase))
+            {
+                usersQuery = _dbContext.AdminUsers
+                    .Where(o => o.RoleId == 3)
+                    .Select(item => new UserResponse
+                    {
+                        UserId = item.AdminUserId.ToString(),
+                        UserName = item.Username,
+                        UserTypeId = "3",
+                        UserTypeName = "Assessment Officer",
                         Status = item.IsActive == 1 ? "Active" : "InActive"
                     });
 
@@ -924,16 +975,22 @@ public class PhaseIIRepo : IPhaseIIRepo
             }
             else if (string.IsNullOrEmpty(searchTerm))
             {
+
                 var adminUsersQuery = _dbContext.AdminUsers
-                    .Where(o => o.RoleId == 1 || o.RoleId == 2)
-                    .Select(item => new UserResponse
-                    {
-                        UserId = item.AdminUserId.ToString(),
-                        UserName = item.Username,
-                        UserTypeId = "1",
-                        UserTypeName = item.RoleId == 1 ? "Admin" : "Super Admin",
-                        Status = item.IsActive == 1 ? "Active" : "InActive"
-                    });
+    .Where(o => o.RoleId == 1 || o.RoleId == 2 || o.RoleId == 3)
+    .Select(item => new UserResponse
+    {
+        UserId = item.AdminUserId.ToString(),
+        UserName = item.Username,
+        UserTypeId = "1",
+        UserTypeName = item.RoleId == 1
+            ? "Admin"
+            : item.RoleId == 2
+                ? "Super Admin"
+                : "Assessment Officer",
+        Status = item.IsActive == 1 ? "Active" : "InActive"
+    });
+
 
                 var companyUsersQuery = _dbContext.UserManagements
                     .Select(item => new UserResponse
@@ -960,7 +1017,7 @@ public class PhaseIIRepo : IPhaseIIRepo
             }
             if (!string.IsNullOrEmpty(username))
             {
-                usersList = usersQuery.Where(o => o.UserName.ToLower().Trim()== username.ToLower().Trim()).ToList();
+                usersList = usersQuery.Where(o => o.UserName.ToLower().Trim() == username.ToLower().Trim()).ToList();
                 usersList = usersList.OrderBy(u => u.UserId)
                     .Skip(skip)
                     .Take(pageSize)
@@ -974,7 +1031,7 @@ public class PhaseIIRepo : IPhaseIIRepo
                     .Take(pageSize)
                     .ToList();
             }
-           
+
             return new ReturnObject
             {
                 status = true,
@@ -1065,10 +1122,15 @@ public class PhaseIIRepo : IPhaseIIRepo
                     pageNumber++;
                     response = await StartApiHitsCooperate(pageNumber, pageSize, i);
                 }
+                pageNumber = 1;
                 assetList.AddRange(response.Result);
                 //i++;
             }
-            foreach (var i in assetList)
+            List<ResultCorporate> distinctCorporates = assetList
+            .GroupBy(c => c.TaxPayerRIN)
+            .Select(g => g.First())
+            .ToList();
+            foreach (var i in distinctCorporates)
             {
                 atpApi.Add(new CompanyListApi
                 {
@@ -1147,6 +1209,7 @@ public class PhaseIIRepo : IPhaseIIRepo
                 pageNumber++;
                 response = await StartApiHitsAssets(pageNumber, pageSize, i);
             }
+            pageNumber = 1;
             assetList.AddRange(response.Result);
         }
 
@@ -1247,6 +1310,46 @@ public class PhaseIIRepo : IPhaseIIRepo
 
         return buss;
     }
+
+    public int GetMonthNumberFromSentence(string sentence)
+    {
+        // Define a regex pattern to match month names (case insensitive)
+        string monthPattern = @"\b(january|february|march|april|may|june|july|august|september|october|november|december)\b";
+
+        // Use Regex to find the month in the sentence (case insensitive)
+        var match = Regex.Match(sentence, monthPattern, RegexOptions.IgnoreCase);
+
+        // If a match is found, get the month name
+        if (match.Success)
+        {
+            // Get the matched month name in lowercase
+            string monthName = match.Value.ToLower();
+
+            // Dictionary to map month names to their corresponding month numbers
+            var months = new System.Collections.Generic.Dictionary<string, int>()
+            {
+                { "january", 1 },
+                { "february", 2 },
+                { "march", 3 },
+                { "april", 4 },
+                { "may", 5 },
+                { "june", 6 },
+                { "july", 7 },
+                { "august", 8 },
+                { "september", 9 },
+                { "october", 10 },
+                { "november", 11 },
+                { "december", 12 }
+            };
+
+            // Return the corresponding month number from the dictionary
+            return months[monthName];
+        }
+        else
+        {
+            return 0;
+        }
+    }
     private int GetMonthIdByName(string monthName)
     {
         // Convert the month name to title case to handle case sensitivity
@@ -1288,7 +1391,7 @@ public class PhaseIIRepo : IPhaseIIRepo
             {
                 var user = new Models.AdminUser
                 {
-                    TaxOfficeId = apiRecords.Result.TaxOfficeID,
+                    TaxOfficeId = Convert.ToInt32(apiRecords.Result.TaxOfficeID),
                     TaxOfficeName = apiRecords.Result.TaxOfficeName,
                     Username = apiRecords.Result.UserName,
                     Email = apiRecords.Result.EmailAddress,
@@ -1299,7 +1402,7 @@ public class PhaseIIRepo : IPhaseIIRepo
             }
             else
             {
-                userExist.TaxOfficeId = apiRecords.Result.TaxOfficeID;
+                userExist.TaxOfficeId = Convert.ToInt32(apiRecords.Result.TaxOfficeID);
                 userExist.TaxOfficeName = apiRecords.Result.TaxOfficeName;
                 userExist.Username = apiRecords.Result.UserName;
                 userExist.Email = apiRecords.Result.EmailAddress;
@@ -1320,40 +1423,319 @@ public class PhaseIIRepo : IPhaseIIRepo
         return r;
     }
 
-    public async Task<Dictionary<IQueryable<Models.AssetTaxPayerDetailsApi>, int>> GetCompanyTiedToAdminUser(string tx_cm, bool det, int pgNo, int pgSize)
+
+    //public async Task<Dictionary<List<AssetTaxPayerDetailsApi>, int>> GetCompanyTiedToSuperAdminUser(Formh1SuperAdmin formh1, List<long> ids)
+    //{
+    //    var busDetails = new List<AssetTaxPayerDetailsApi>();
+    //    int totalCount = 0;
+    //    IQueryable<CompanyListApi> companiesQuery = null;
+    //    // Queryable objects for deferred execution
+    //    if (!ids.Any())
+    //        companiesQuery = _dbContext.CompanyListApis.AsQueryable();
+    //    else
+    //        companiesQuery = _dbContext.CompanyListApis.Where(o => ids.Contains(o.TaxPayerId)).AsQueryable();
+    //    var assetsQuery = _dbContext.AssetTaxPayerDetailsApis.AsQueryable();
+
+    //    if (string.IsNullOrEmpty(formh1.busRin) &&
+    //        string.IsNullOrEmpty(formh1.companyRin) &&
+    //        string.IsNullOrEmpty(formh1.companyName) &&
+    //        string.IsNullOrEmpty(formh1.businessName))
+    //    {
+    //        // Get the total count of companies
+    //        totalCount = await companiesQuery.CountAsync();
+
+    //        // Paginated list of company RINs
+    //        var rinList = await companiesQuery
+    //            .Skip((formh1.pageNumber - 1) * formh1.pageSize)
+    //            .Take(formh1.pageSize)
+    //            .Select(o => o.TaxPayerRin.ToLower())
+    //            .ToListAsync();
+
+    //        // Filter assets based on company RINs
+    //        busDetails = await assetsQuery
+    //            .Where(o => rinList.Contains(o.TaxPayerRinnumber.ToLower().Trim()))
+    //            .ToListAsync();
+    //    }
+    //    else
+    //    {
+    //        // Filter companies based on provided criteria
+    //        var companyRinsQuery = companiesQuery
+    //            .Where(o => o.TaxPayerName.Contains(formh1.companyName) ||
+    //                        o.TaxPayerRin.Contains(formh1.companyRin))
+    //            .Select(o => o.TaxPayerRin.ToLower());
+
+    //        // Get the total count of filtered companies
+    //        totalCount = await companyRinsQuery.CountAsync();
+
+    //        if (totalCount > 0)
+    //        {
+    //            // Get the filtered company RINs
+    //            var rinList = await companyRinsQuery.ToListAsync();
+
+    //            // Filter assets based on filtered company RINs
+    //            busDetails = await assetsQuery
+    //                .Where(o => rinList.Contains(o.TaxPayerRinnumber.ToLower().Trim()))
+    //                .ToListAsync();
+    //        }
+    //        else
+    //        {
+    //            // Fallback to filtering assets directly
+    //            busDetails = await assetsQuery
+    //                .Where(o => o.AssetName.Contains(formh1.businessName) ||
+    //                            o.AssetRin.Contains(formh1.busRin))
+    //                .ToListAsync();
+    //        }
+    //    }
+
+    //    return new Dictionary<List<Models.AssetTaxPayerDetailsApi>, int>
+    //    { { busDetails, totalCount } };
+    //}
+    public async Task<Dictionary<List<AssetTaxPayerDetailsApiResponse>, int>> GetCompanyTiedToSuperAdminUser(Formh1SuperAdmin formh1, List<long> ids)
     {
-        IQueryable<Models.AssetTaxPayerDetailsApi> busDetail;
+
+        var busDetails = new List<AssetTaxPayerDetailsApiResponse>();
+        int totalCount = 0;
+        IQueryable<CompanyListApi> companiesQuery = null;
+        string query = $@"
+    SELECT  [TPAID]
+          ,A.[TaxPayerTypeID]
+          ,A.[TaxPayerTypeName]
+          ,A.[TaxPayerID]
+          ,A.[TaxPayerName]
+          ,c.TaxOffice
+          ,[TaxPayerRINNumber]
+          ,[TaxPayerEmailAddress]
+          ,[TaxPayerMobileNumber]
+          ,[AssetTypeID]
+          ,[AssetTypeName]
+          ,[TaxPayerRoleID]
+          ,[TaxPayerRoleName]
+          ,[AssetID]
+          ,[AssetLGA]
+          ,[AssetRIN]
+          ,[AssetName]
+          ,[BuildingUnitID]
+          ,[UnitNumber]
+          ,[Active]
+          ,[ActiveText]
+          ,A.[DateCreated]
+          ,[Id]
+          ,A.[ApiId]
+          ,[AssetAddress]
+    FROM [SELFSERVICE].[dbo].[AssetTaxPayerDetails_API] A
+    LEFT JOIN CompanyList_API c ON A.TaxPayerID = c.TaxPayerID
+ @@@";
+        if (string.IsNullOrEmpty(formh1.busRin) &&
+            string.IsNullOrEmpty(formh1.companyRin) &&
+            string.IsNullOrEmpty(formh1.companyName) &&
+            string.IsNullOrEmpty(formh1.businessName))
+        {
+            if (ids.Any())
+            {
+                var idsStr = string.Join(",", ids);
+                query = query.Replace("@@@", $"WHERE c.TaxPayerID IN ({idsStr})");
+
+
+                // Execute the raw SQL query with the provided list of IDs
+                busDetails = await _repo.AssetTaxPayerDetailsApiResponse
+                    .FromSqlRaw(query)
+                    .ToListAsync();
+            }
+            else
+            {
+                query = query.Replace("@@@", "");
+                busDetails = await _repo.AssetTaxPayerDetailsApiResponse
+                    .FromSqlRaw(query)
+                    .ToListAsync();
+
+            }
+
+        }
+        else
+        {
+
+            query = query.Replace("@@@", $"WhERE c.TaxPayerName like '{formh1.companyName}' or a.AssetName like '{formh1.businessName}' or a.AssetRIN like '{formh1.busRin}' or a.TaxPayerRINNumber like '{formh1.companyRin}'");
+            busDetails = await _repo.AssetTaxPayerDetailsApiResponse
+                    .FromSqlRaw(query)
+                    .ToListAsync();
+        }
+        totalCount = busDetails.Count;
+        return new Dictionary<List<AssetTaxPayerDetailsApiResponse>, int>
+        { { busDetails, totalCount } };
+    }
+
+    public async Task<Dictionary<List<AssetTaxPayerDetailsApiResponse>, int>> GetCompanyTiedToAdminUser(string tx_cm, bool det, int pgNo, int pgSize)
+    {
+        string query = @"
+    SELECT  [TPAID]
+          ,A.[TaxPayerTypeID]
+          ,A.[TaxPayerTypeName]
+          ,A.[TaxPayerID]
+          ,A.[TaxPayerName]
+          ,c.TaxOffice
+          ,[TaxPayerRINNumber]
+          ,[TaxPayerEmailAddress]
+          ,[TaxPayerMobileNumber]
+          ,[AssetTypeID]
+          ,[AssetTypeName]
+          ,[TaxPayerRoleID]
+          ,[TaxPayerRoleName]
+          ,[AssetID]
+          ,[AssetLGA]
+          ,[AssetRIN]
+          ,[AssetName]
+          ,[BuildingUnitID]
+          ,[UnitNumber]
+          ,[Active]
+          ,[ActiveText]
+          ,A.[DateCreated]
+          ,[Id]
+          ,A.[ApiId]
+          ,[AssetAddress]
+    FROM [SELFSERVICE].[dbo].[AssetTaxPayerDetails_API] A
+    LEFT JOIN CompanyList_API c ON A.TaxPayerID = c.TaxPayerID
+ @@@";
+        List<AssetTaxPayerDetailsApiResponse> busDetail = new List<AssetTaxPayerDetailsApiResponse>();
         int totalCount = 0;
         if (det)
         {
-            var comap = _dbContext.CompanyListApis
-          .Where(o => o.TaxOffice.ToLower().Trim() == tx_cm.ToLower().Trim())
-          .Select(o => o.TaxPayerRin.ToLower());
-
-            // total count
-            totalCount = await comap.CountAsync();
-
-            //  comap = comap.Skip((pgNo - 1) * pgSize)
-            //.Take(pgSize);
-            busDetail = _dbContext.AssetTaxPayerDetailsApis
-                .Where(o => comap.Contains(o.TaxPayerRinnumber.ToLower().Trim()));
+            if (!string.IsNullOrEmpty(tx_cm) && tx_cm.ToLower() != "null")
+            {
+                query = query.Replace("@@@", $"WHERE c.Taxoffice = '{tx_cm.ToLower()}'");
+            }
+            else
+            {
+                query = query.Replace("@@@", "");
+            }
+            //var allQualified =await busDetail.ToListAsync();
         }
         else
         {
             if (tx_cm.StartsWith("CMP") || tx_cm.StartsWith("GOV"))
             {
-                busDetail = _dbContext.AssetTaxPayerDetailsApis
-                    .Where(o => o.TaxPayerRinnumber == tx_cm);
+                query = query.Replace("@@@", $"WHERE a.TaxPayerRINNumber = '{tx_cm.ToLower()}'");
             }
             else
             {
-                busDetail = _dbContext.AssetTaxPayerDetailsApis
-                    .Where(o => o.TaxPayerId.ToString() == tx_cm);
+                query = query.Replace("@@@", $"WHERE a.TaxPayerID = {tx_cm}");
             }
-            totalCount = await busDetail.CountAsync();
+            busDetail = await _repo.AssetTaxPayerDetailsApiResponse
+                 .FromSqlRaw(query)
+                 .ToListAsync();
+            totalCount = busDetail.Count();
         }
-        return new Dictionary<IQueryable<Models.AssetTaxPayerDetailsApi>, int>
+        return new Dictionary<List<AssetTaxPayerDetailsApiResponse>, int>
         { { busDetail, totalCount } };
     }
+    //public async Task<Dictionary<List<Models.AssetTaxPayerDetailsApi>, int>> GetCompanyTiedToAdminUser(string tx_cm, bool det, int pgNo, int pgSize)
+    //{
+    //    List<AssetTaxPayerDetailsApi> busDetail = new List<AssetTaxPayerDetailsApi>();
+    //    int totalCount = 0;
+    //    if (det)
+    //    {
+    //        if (!string.IsNullOrEmpty(tx_cm) && tx_cm.ToLower() != "null")
+    //        {
+    //            var comap = _dbContext.CompanyListApis
+    //          .Where(o => o.TaxOffice.ToLower().Trim() == tx_cm.ToLower().Trim())
+    //          .Select(o => o.TaxPayerRin.ToLower());
 
+    //            // total count
+    //            totalCount = await comap.CountAsync();
+
+    //            //all rin
+    //            var rin = await comap.ToListAsync();
+    //            //  comap = comap.Skip((pgNo - 1) * pgSize)
+    //            //.Take(pgSize);
+    //            busDetail = _dbContext.AssetTaxPayerDetailsApis
+    //                .Where(o => rin.Contains(o.TaxPayerRinnumber.ToLower().Trim())).ToList();
+    //        }
+    //        else
+    //        {
+    //            var comap = _dbContext.CompanyListApis
+    //          //.Where(o => o.TaxOffice.ToLower().Trim() == tx_cm.ToLower().Trim())
+    //          .Select(o => o.TaxPayerRin.ToLower());
+
+    //            // total count
+    //            totalCount = await comap.CountAsync();
+
+    //            //all rin
+    //            var rin = await comap.ToListAsync();
+    //            //  comap = comap.Skip((pgNo - 1) * pgSize)
+    //            //.Take(pgSize);
+    //            busDetail = _dbContext.AssetTaxPayerDetailsApis
+    //                .Where(o => rin.Contains(o.TaxPayerRinnumber.ToLower().Trim())).ToList();
+    //        }
+    //        //var allQualified =await busDetail.ToListAsync();
+    //    }
+    //    else
+    //    {
+    //        if (tx_cm.StartsWith("CMP") || tx_cm.StartsWith("GOV"))
+    //        {
+    //            busDetail = _dbContext.AssetTaxPayerDetailsApis
+    //                .Where(o => o.TaxPayerRinnumber == tx_cm).ToList();
+    //        }
+    //        else
+    //        {
+    //            busDetail = _dbContext.AssetTaxPayerDetailsApis
+    //                .Where(o => o.TaxPayerId.ToString() == tx_cm).ToList();
+    //        }
+    //        totalCount = busDetail.Count();
+    //    }
+    //    return new Dictionary<List<Models.AssetTaxPayerDetailsApi>, int>
+    //    { { busDetail, totalCount } };
+    //}
+
+    public async Task<ReturnObject> ReAssessFormH1(FormH1FormModelForReassess ass)
+    {  // Step 1: Check if records already exist in FormH1Assessment table
+        var existingRecords = await _repo.Formh1Assessments
+            .Where(f => f.BusinessId == ass.BusinessId && f.CompanyId == ass.CompanyId && f.TaxYear == ass.TaxYear)
+            .ToListAsync();
+
+        if (existingRecords.Any())
+        {
+            return new ReturnObject { message = "Records already exist for the provided BusinessId, CompanyId, and TaxYear.", status = false };
+        }
+
+        // Step 2: Fetch records from SSPFiledFormH1 table based on input parameters
+        var sspRecords = await _dbContext.SspfiledFormH1s
+            .Where(s => s.BusinessId == ass.BusinessId.ToString() && s.CompanyId == ass.CompanyId.ToString() && s.TaxYear == ass.TaxYear)
+            .ToListAsync();
+
+        if (!sspRecords.Any())
+        {
+            return new ReturnObject { message = "No records found in SSPFiledFormH1 table for the provided parameters.", status = false };
+        }
+
+        // Step 3: Process fetched records and compute values
+        // var assessments = new List<Formh1Assessment>();
+        foreach (var sspRecord in sspRecords)
+        {
+            //var computed = calculatetax(sspRecord);
+            //// Create a new FormH1Assessment entry
+            //var assessment = new Formh1Assessment
+            //{
+            //    BusinessId = ass.BusinessId,
+            //    CompanyId = ass.CompanyId,
+            //    EmployeeId =  Convert.ToInt32(sspRecord.IndividalId),
+            //    TaxYear = ass.TaxYear,
+            //    Basic = sspRecord.Basic,
+            //    Rent = sspRecord.Rent,
+            //    Transport = sspRecord.Transport,
+            //    ComputedCRA = computedCRA,
+            //    TaxFreePay = taxFreePay,
+            //    ComputedCI = computedCI,
+            //    DateCreated = DateTime.Now,
+            //    Status = "Reassess" // Default status
+            //};
+
+            //assessments.Add(assessment);
+        }
+
+        // Step 4: Insert all processed records into FormH1Assessment table
+        // await _dbContext.Formh1Assessments.AddRangeAsync(assessments);
+        await _dbContext.SaveChangesAsync();
+
+        return new ReturnObject { message = "Records processed and inserted successfully." }; //data = assessments };
+
+    }
 }
