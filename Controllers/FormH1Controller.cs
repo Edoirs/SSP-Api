@@ -89,8 +89,7 @@ public class FormH1Controller : ControllerBase
             var businessIds = res.Select(r => r.AssetId.ToString()).ToList();
             var empCounts = _con.SspformH1s
                 .Where(o => businessIds.Contains(o.BusinessId))
-                .GroupBy(o => o.BusinessId)
-                .ToDictionary(g => g.Key, g => g.Count());
+              .ToList();
 
             var empCountDets = _con.SspfiledFormH1s
                 .Where(o => businessIds.Contains(o.BusinessId))
@@ -101,7 +100,7 @@ public class FormH1Controller : ControllerBase
             foreach (var r in res)
             {
                 var businessId = r.AssetId.ToString();
-
+                int counter = empCounts.Where(o => o.BusinessId == r.AssetId.ToString() && o.CompanyId == r.TaxPayerId.ToString()).Count();
                 var m = new BusinessReturnModel
                 {
                     CompanyID = r.TaxPayerId.ToString(),
@@ -113,13 +112,23 @@ public class FormH1Controller : ControllerBase
                     BusinessName = r.AssetName,
                     BusinessID = businessId,
                     ProjectionYear = empCountDets.ContainsKey(businessId) ? empCountDets[businessId] : "0",
-                    NoOfEmployees = empCounts.ContainsKey(businessId) ? empCounts[businessId].ToString() : "0"
+                    NoOfEmployees = counter.ToString() ?? "0"
                 };
-
+                counter = 0;
                 finalBusinessReturnModel.Add(m);
                 eget = true;
             }
 
+            if (IsAdmin || IsAssessmentOfficer || IsSuperAdmin)
+            {
+
+                if (string.IsNullOrEmpty(formh1.companyName) && string.IsNullOrEmpty(formh1.busRin) && string.IsNullOrEmpty(formh1.businessName) && string.IsNullOrEmpty(formh1.companyRin))
+                {
+                    finalBusinessReturnModel.RemoveAll(m => m.NoOfEmployees == "0");
+                }
+            }
+
+            //finalBusinessReturnModel.RemoveAll(m => m.NoOfEmployees == "0");
             int totalCount = resData.Values.FirstOrDefault();
 
             finalBusinessReturnModel = finalBusinessReturnModel
@@ -200,16 +209,17 @@ public class FormH1Controller : ControllerBase
     [Route("newgetallformh1bycompanyId/{companyId}")]
     public async Task<IActionResult> newgetallformh1([FromRoute] string companyId, [FromQuery] Formh1SuperAdmin formh1)
     {
+        List<string> busiList = new();
         List<AssetTaxPayerDetailsApiResponse> res;
         var finalBusinessReturnModel = new List<NewBusinessReturnModel>();
         bool eget = false;
         try
         {
+            var empCountDetAll = _con.SspfiledFormH1s.ToList();
             IDictionary<List<AssetTaxPayerDetailsApiResponse>, int> resData;
             if (IsAssessmentOfficer || IsSuperAdmin)
             {
-                var empCountDetloaded = _con
-                   .SspfiledFormH1s
+                var empCountDetloaded = empCountDetAll
                    .Select(o => o.CompanyId)
                    .Distinct()
                    .ToList();
@@ -230,12 +240,10 @@ public class FormH1Controller : ControllerBase
 
             res = resData.Keys.FirstOrDefault();
 
-            int totalCount = resData.Values.FirstOrDefault();
             foreach (var r in res)
             {
-                var empCountDet = _con
-                    .SspfiledFormH1s.Where(o =>
-                        o.BusinessId == r.AssetId.ToString()
+                var empCountDet = empCountDetAll.Where(o =>
+                        o.BusinessId == r.AssetId.ToString() && o.CompanyId == r.TaxPayerId.ToString()
                     )
                     .GroupBy(o => o.TaxYear)
                     .ToList();
@@ -288,6 +296,14 @@ public class FormH1Controller : ControllerBase
                     finalBusinessReturnModel.Add(m);
                 }
             }
+
+            busiList = empCountDetAll.Select(e => e.BusinessId).ToList();
+            if (string.IsNullOrEmpty(formh1.companyName) && string.IsNullOrEmpty(formh1.busRin) && string.IsNullOrEmpty(formh1.businessName) && string.IsNullOrEmpty(formh1.companyRin))
+            {
+                finalBusinessReturnModel.RemoveAll(item => !busiList.Contains(item.BusinessID));
+            }
+
+            int totalCount = finalBusinessReturnModel.Count();
             rd.data = new { result = finalBusinessReturnModel, totalCount = totalCount };
             rd.message = "Record Found succesfully";
             rd.status = true;
@@ -303,6 +319,136 @@ public class FormH1Controller : ControllerBase
             );
         }
     }
+
+
+    [HttpGet]
+    [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+    [Route("newgetallformh1ExcelbycompanyId/{companyId}")]
+    public async Task<IActionResult> newgetallformh1Excel([FromRoute] string companyId)
+    {
+        var recDetail = _con.AssetTaxPayerDetailsApis.FirstOrDefault(o => o.TaxPayerId.ToString() == companyId);
+
+        Formh1SuperAdmin formh1 = new();
+        List<string> busiList = new();
+        List<AssetTaxPayerDetailsApiResponse> res;
+        var finalBusinessReturnModel = new List<NewBusinessReturnModel>();
+        bool eget = false;
+        try
+        {
+            formh1.pageSize = 1000;
+            formh1.pageNumber = 1;
+            var empCountDetAll = _con.SspfiledFormH1s.ToList();
+            IDictionary<List<AssetTaxPayerDetailsApiResponse>, int> resData;
+            if (IsAssessmentOfficer || IsSuperAdmin)
+            {
+                var empCountDetloaded = empCountDetAll
+                   .Select(o => o.CompanyId)
+                   .Distinct()
+                   .ToList();
+                List<long> longList = empCountDetloaded
+    .Where(id => long.TryParse(id, out _))
+    .Select(long.Parse)
+    .ToList();
+                resData = await _repo.GetCompanyTiedToSuperAdminUser(formh1, longList);
+            }
+            else
+            {
+                if (IsAdmin)
+                    resData = await _repo.GetCompanyTiedToAdminUser(TO_RIN, true, formh1.pageNumber, formh1.pageSize);
+                else
+                    resData = await _repo.GetCompanyTiedToAdminUser(companyId, false, formh1.pageNumber, formh1.pageSize);
+            }
+            ReturnObject rd = new();
+
+            res = resData.Keys.FirstOrDefault();
+
+            foreach (var r in res)
+            {
+                var empCountDet = empCountDetAll.Where(o =>
+                        o.BusinessId == r.AssetId.ToString() && o.CompanyId == r.TaxPayerId.ToString()
+                    )
+                    .GroupBy(o => o.TaxYear)
+                    .ToList();
+                if (empCountDet.Any())
+                {
+                    foreach (var r2 in empCountDet)
+                    {
+                        var jan31st = new DateTime(r2.Key.Value, 1, 31);
+                        var m = new NewBusinessReturnModel
+                        {
+
+                            TaxOffice = r.TaxOffice,
+                            BusinessRIN = r.AssetRin,
+                            CompanyRin = r.TaxPayerRinnumber,
+                            CompanyId = r.TaxPayerId.ToString(),
+                            CompanyName = r.TaxPayerName,
+                            BusinessName = r.AssetName,
+                            BusinessID = r.AssetId.ToString(),
+                            TaxYear = r2.Key.ToString(),
+                            DueDate = r2.FirstOrDefault().DueDate,
+                            NoOfEmployees = r2.Count().ToString(),
+                            DateForwarded = r2.FirstOrDefault().Datetcreated.ToString(),
+                            AnnualReturnStatus =
+                                r2.FirstOrDefault().Datetcreated > jan31st
+                                    ? "Defaulter"
+                                    : "Complied",
+                        };
+
+                        finalBusinessReturnModel.Add(m);
+                    }
+                }
+                else
+                {
+                    var m = new NewBusinessReturnModel
+                    {
+                        TaxOffice = r.TaxOffice,
+                        BusinessRIN = r.AssetRin,
+                        CompanyRin = r.TaxPayerRinnumber,
+                        CompanyId = r.TaxPayerId.ToString(),
+                        CompanyName = r.TaxPayerName,
+                        BusinessName = r.AssetName,
+                        BusinessID = r.AssetId.ToString(),
+                        TaxYear = "",
+                        DueDate = "",
+                        NoOfEmployees = "",
+                        DateForwarded = "",
+                        AnnualReturnStatus = "",
+                    };
+
+                    finalBusinessReturnModel.Add(m);
+                }
+            }
+
+            busiList = empCountDetAll.Select(e => e.BusinessId).ToList();
+            if (string.IsNullOrEmpty(formh1.companyName) && string.IsNullOrEmpty(formh1.busRin) && string.IsNullOrEmpty(formh1.businessName) && string.IsNullOrEmpty(formh1.companyRin))
+            {
+                finalBusinessReturnModel.RemoveAll(item => !busiList.Contains(item.BusinessID));
+            }
+
+            // Convert the list to an Excel file (byte array)
+            var excelFile = ConvertListToExcel(finalBusinessReturnModel);
+
+            if (recDetail != null)
+            {
+                return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{recDetail.TaxPayerName}_Annual_Report.xlsx");
+            }
+            // Return the Excel file to the client
+
+            return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{companyId}__Annual_Report.xlsx");
+
+        }
+        catch (System.Exception ex)
+        {
+            return (
+                StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new ReturnObject { status = false, message = ex.Message }
+                )
+            );
+        }
+    }
+
 
     [HttpGet]
     [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
@@ -513,6 +659,64 @@ public class FormH1Controller : ControllerBase
     [HttpGet]
     [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
     [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
+    [Route("getalluplaodedformh1ExcelbycompanyId/{companyId}/bybusinessId/{businessId}")]
+    public async Task<IActionResult> getalluplaodedformh1ExcelbybusinessId(
+     [FromRoute] string companyId,
+     [FromRoute] string businessId
+ )
+    {
+        try
+        {
+            var recDetail = _con.AssetTaxPayerDetailsApis.FirstOrDefault(o => o.TaxPayerId.ToString() == companyId && o.AssetId.ToString() == businessId);
+            string query =
+                @$"select  a.AssetName as businessname,a.TaxPayerRINNumber as companyrin,
+ a.AssetRIN as businessrin,  s.RIN individualrin, i.FIRSTNAME, i.SURNAME, i.OTHERNAME,
+  s.basic, s.Rent, s.Transport, s.OtherIncome, s.PENSION,s.nhf, s.nhis, s.LIFEASSURANCE
+,s.CONSOLIDATEDRELIEFALLOWANCECRA,s.TOTALMONTHSPAID,s.ANNUALTAXPAID
+  from SSPFormH1s s
+   left join Individual i on s.IndividalId = i.EmployeeId 
+   left join AssetTaxPayerDetails_API a  on s.BusinessId = a.AssetID 
+   and s.CompanyId = a.TaxPayerID 
+ where s.CompanyId = '{companyId}' and s.BusinessId = '{businessId}'";
+            //  $"SELECT s.[IndividalId], s.[BusinessId],I.FIRSTNAME, I.SURNAME,I.Designation,I.NATIONALITY,s.[CompanyId],(s.[Rent] + s.[Basic] +s.[OTHERINCOME]+s.[TRANSPORT]) as Total,\r\ns.[TaxPayerId],s.[Id],s.[RIN],s.[PENSION],s.[NHF],s.[NHIS],s.[LIFEASSURANCE],s.[CONSOLIDATEDRELIEFALLOWANCECRA],s.[ANNUALTAXPAID],s.[TOTALMONTHSPAID],s.[Rent],s.[Transport],s.[Basic],s.[OtherIncome],s.[datetcreated],s.[createdby],s.[datemodified],s.[modifiedby], A.AssetName as BusinessName ,A.TaxPayerName as CompanyName FROM [SSPFormH1s] s left join AssetTaxPayerDetails_API A on  s.BusinessId  =  A.AssetID and s.CompanyId = a.TaxPayerID left join Individual I on s.IndividalId = I.EmployeeId  where s.CompanyId = '{companyId}' and s.BusinessId = '{businessId}'";
+
+            var user = _con.ReturnSspformH1ForExcel.FromSqlRaw(query).ToList();
+            var uselessones = user.Where(p => string.IsNullOrEmpty(p.OtherName) || p.OtherName.ToUpper() == "NULL").ToList();
+
+
+            if (uselessones.Any())
+            {
+                foreach (var person in uselessones)
+                {
+                    person.OtherName = string.Empty;
+                }
+            }
+            // Convert the list to an Excel file (byte array)
+            var excelFile = ConvertListToExcel(user);
+            if (excelFile != null)
+            {
+                // Return the Excel file to the client
+                return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{recDetail.AssetName} {recDetail.AssetRin} FormH1_Report.xlsx");
+            }
+
+            return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{companyId} {businessId} FormH1_Report.xlsx");
+        }
+        catch (System.Exception ex)
+        {
+            return (
+                StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new ReturnObject { status = false, message = ex.Message }
+                )
+            );
+        }
+    }
+
+
+
+    [HttpGet]
+    [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(ReturnObject))]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ReturnObject))]
     [Route("getallfiledformh1bycompanyId/{companyId}")]
     public async Task<IActionResult> getallfiledformh1bycompanyId([FromRoute] string companyId)
     {
@@ -635,6 +839,8 @@ public class FormH1Controller : ControllerBase
     [Route("UploadFormH1")]
     public async Task<IActionResult> UploadFormH1([FromForm] AddFormH obj)
     {
+        var recDetail = _con.AssetTaxPayerDetailsApis.FirstOrDefault(o => o.TaxPayerId.ToString() == obj.CompanyId && o.AssetId.ToString() == obj.BusinessId);
+
         var lstErrorRes = new List<string>();
         string errorNote = "There Is An Error On Row";
         var r = new ReturnObject();
@@ -645,6 +851,12 @@ public class FormH1Controller : ControllerBase
         List<SspformH1> lstFormH1 = new();
         List<Individual> lstIndividual = new();
         Receiver rootobjectVm = new();
+        if (recDetail == null)
+        {
+            r.status = false;
+            r.message = "File Cant be Uploaded As Business Not Tied To Company";
+            return await Task.FromResult<IActionResult>(Ok(r));
+        }
         AllFunction af = new AllFunction();
         try
         {
@@ -673,6 +885,17 @@ public class FormH1Controller : ControllerBase
                             lstErrorRes.Add(
                                 $"{errorNote} in row {i + 1}. Please Provide PHONENUMBER or RIN or TIN."
                             );
+                        }
+                        if (
+                    (string.IsNullOrEmpty(la[i].Basic))
+                    && (string.IsNullOrEmpty(la[i].Rent))
+                    && (string.IsNullOrEmpty(la[i].OtherIncome))
+                    && (string.IsNullOrEmpty(la[i].Transport))
+                )
+                        {
+                            lstErrorRes.Add(
+                                   $"{errorNote} in row {i + 1} Provide Basic or Rent or Other income or Transport."
+                               );
                         }
                     }
                     if (lstErrorRes.Any())
@@ -782,101 +1005,358 @@ public class FormH1Controller : ControllerBase
                                         {
                                             if (rootobjectVm.Result.Count > 0)
                                             {
-                                                var sp = new Individual
+                                                //var sp = new Individual
+                                                //{
+                                                //    EmployeeId = rootobjectVm.Result.FirstOrDefault()
+                                                //        .TaxPayerID.ToString(),
+                                                //    Firstname = fm.FIRSTNAME,
+                                                //    Surname = fm.SURNAME,
+                                                //    Othername = fm.OTHERNAME,
+                                                //    Phonenumber = rootobjectVm
+                                                //        .Result.FirstOrDefault()
+                                                //        .TaxPayerMobileNumber.ToString(),
+                                                //    EmployeeRin = rootobjectVm
+                                                //        .Result.FirstOrDefault()
+                                                //        .TaxPayerRIN.ToString(),
+                                                //    Jtbtin = fm.JTBTIN,
+                                                //    Nin = fm.NIN,
+                                                //    Nationality = fm.NATIONALITY,
+                                                //    Homeaddress = fm.HOMEADDRESS,
+                                                //    Designation = fm.Designation,
+                                                //    Datetcreated = DateTime.UtcNow,
+                                                //    Datemodified = DateTime.UtcNow,
+                                                //};
+                                                //lstIndividual.Add(sp);
+                                                //lstFormH1.Add(
+                                                //    new SspformH1
+                                                //    {
+                                                //        BusinessId = obj.BusinessId,
+                                                //        CompanyId = obj.CompanyId,
+                                                //        TaxPayerId = rootobjectVm
+                                                //            .Result.FirstOrDefault()
+                                                //            .TaxPayerID.ToString(),
+                                                //        IndividalId = rootobjectVm
+                                                //            .Result.FirstOrDefault()
+                                                //            .TaxPayerID.ToString(),
+                                                //        Rin = rootobjectVm
+                                                //            .Result.FirstOrDefault()
+                                                //            .TaxPayerRIN.ToString(),
+                                                //        Pension =
+                                                //            fm.PENSION != "NULL"
+                                                //                ? Convert.ToDecimal(fm.PENSION)
+                                                //                : 0,
+                                                //        Nhf =
+                                                //            fm.NHF != "NULL"
+                                                //                ? Convert.ToDecimal(fm.NHF)
+                                                //                : 0,
+                                                //        Nhis =
+                                                //            fm.NHIS != "NULL"
+                                                //                ? Convert.ToDecimal(fm.NHIS)
+                                                //                : 0,
+                                                //        Lifeassurance =
+                                                //            fm.LIFEASSURANCE != "NULL"
+                                                //                ? Convert.ToDecimal(
+                                                //                    fm.LIFEASSURANCE
+                                                //                )
+                                                //                : 0,
+                                                //        Consolidatedreliefallowancecra =
+                                                //            fm.CONSOLIDATEDRELIEFALLOWANCECRA
+                                                //            != "NULL"
+                                                //                ? Convert.ToDecimal(
+                                                //                    fm.CONSOLIDATEDRELIEFALLOWANCECRA
+                                                //                )
+                                                //                : 0,
+                                                //        Annualtaxpaid =
+                                                //            fm.ANNUALTAXPAID != "NULL"
+                                                //                ? Convert.ToDecimal(
+                                                //                    fm.ANNUALTAXPAID
+                                                //                )
+                                                //                : 0,
+                                                //        Totalmonthspaid =
+                                                //            fm.TOTALMONTHSPAID != "NULL"
+                                                //                ? Convert.ToDecimal(
+                                                //                    fm.TOTALMONTHSPAID
+                                                //                )
+                                                //                : 0,
+                                                //        Rent =
+                                                //            fm.Rent != "NULL"
+                                                //                ? Convert.ToDecimal(fm.Rent)
+                                                //                : 0,
+                                                //        Transport =
+                                                //            fm.Transport != "NULL"
+                                                //                ? Convert.ToDecimal(
+                                                //                    fm.Transport
+                                                //                )
+                                                //                : 0,
+                                                //        Basic =
+                                                //            fm.Basic != "NULL"
+                                                //                ? Convert.ToDecimal(fm.Basic)
+                                                //                : 0,
+                                                //        OtherIncome =
+                                                //            fm.OtherIncome != "NULL"
+                                                //                ? Convert.ToDecimal(
+                                                //                    fm.OtherIncome
+                                                //                )
+                                                //                : 0
+                                                //    }
+                                                //);
+
+
+                                                var res = _con.Individuals.FirstOrDefault(o =>
+                                      o.EmployeeId
+                                          == rootobjectVm
+                                              .Result.FirstOrDefault()
+                                              .TaxPayerID.ToString()
+                                      && o.EmployeeRin
+                                          == rootobjectVm
+                                              .Result.FirstOrDefault()
+                                              .TaxPayerRIN.ToString()
+                                  );
+                                                if (res != null)
                                                 {
-                                                    EmployeeId = rootobjectVm.Result.FirstOrDefault()
-                                                        .TaxPayerID.ToString(),
-                                                    Firstname = fm.FIRSTNAME,
-                                                    Surname = fm.SURNAME,
-                                                    Othername = fm.OTHERNAME,
-                                                    Phonenumber = rootobjectVm
-                                                        .Result.FirstOrDefault()
-                                                        .TaxPayerMobileNumber.ToString(),
-                                                    EmployeeRin = rootobjectVm
-                                                        .Result.FirstOrDefault()
-                                                        .TaxPayerRIN.ToString(),
-                                                    Jtbtin = fm.JTBTIN,
-                                                    Nin = fm.NIN,
-                                                    Nationality = fm.NATIONALITY,
-                                                    Homeaddress = fm.HOMEADDRESS,
-                                                    Designation = fm.Designation,
-                                                    Datetcreated = DateTime.UtcNow,
-                                                    Datemodified = DateTime.UtcNow,
-                                                };
-                                                lstIndividual.Add(sp);
-                                                lstFormH1.Add(
-                                                    new SspformH1
+                                                    _con.Individuals.Where(o =>
+                                                        o.EmployeeId
+                                                        == rootobjectVm
+                                                            .Result.FirstOrDefault()
+                                                            .TaxPayerID.ToString()
+                                                    )
+                                                        .ExecuteUpdate(obj =>
+                                                            obj.SetProperty(b => b.Firstname, fm.FIRSTNAME)
+                                                                .SetProperty(b => b.Surname, fm.SURNAME)
+                                                                .SetProperty(b => b.Othername, fm.OTHERNAME)
+                                                                .SetProperty(
+                                                                    b => b.Phonenumber,
+                                                                    rootobjectVm
+                                                                        .Result.FirstOrDefault()
+                                                                        .TaxPayerMobileNumber.ToString()
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.EmployeeRin,
+                                                                    rootobjectVm
+                                                                        .Result.FirstOrDefault()
+                                                                        .TaxPayerRIN.ToString()
+                                                                )
+                                                                .SetProperty(b => b.Jtbtin, fm.JTBTIN)
+                                                                .SetProperty(b => b.Nin, fm.NIN)
+                                                                .SetProperty(
+                                                                    b => b.Nationality,
+                                                                    fm.NATIONALITY
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Homeaddress,
+                                                                    fm.HOMEADDRESS
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Designation,
+                                                                    fm.Designation
+                                                                )
+                                                        );
+                                                }
+                                                else
+                                                {
+                                                    var sp = new Individual
                                                     {
-                                                        BusinessId = obj.BusinessId,
-                                                        CompanyId = obj.CompanyId,
-                                                        TaxPayerId = rootobjectVm
+                                                        EmployeeId = rootobjectVm
                                                             .Result.FirstOrDefault()
                                                             .TaxPayerID.ToString(),
-                                                        IndividalId = rootobjectVm
+                                                        Firstname = fm.FIRSTNAME,
+                                                        Surname = fm.SURNAME,
+                                                        Othername = fm.OTHERNAME,
+                                                        Phonenumber = rootobjectVm
                                                             .Result.FirstOrDefault()
-                                                            .TaxPayerID.ToString(),
-                                                        Rin = rootobjectVm
+                                                            .TaxPayerMobileNumber.ToString(),
+                                                        EmployeeRin = rootobjectVm
                                                             .Result.FirstOrDefault()
                                                             .TaxPayerRIN.ToString(),
-                                                        Pension =
-                                                            fm.PENSION != "NULL"
-                                                                ? Convert.ToDecimal(fm.PENSION)
-                                                                : 0,
-                                                        Nhf =
-                                                            fm.NHF != "NULL"
-                                                                ? Convert.ToDecimal(fm.NHF)
-                                                                : 0,
-                                                        Nhis =
-                                                            fm.NHIS != "NULL"
-                                                                ? Convert.ToDecimal(fm.NHIS)
-                                                                : 0,
-                                                        Lifeassurance =
-                                                            fm.LIFEASSURANCE != "NULL"
-                                                                ? Convert.ToDecimal(
-                                                                    fm.LIFEASSURANCE
-                                                                )
-                                                                : 0,
-                                                        Consolidatedreliefallowancecra =
-                                                            fm.CONSOLIDATEDRELIEFALLOWANCECRA
-                                                            != "NULL"
-                                                                ? Convert.ToDecimal(
-                                                                    fm.CONSOLIDATEDRELIEFALLOWANCECRA
-                                                                )
-                                                                : 0,
-                                                        Annualtaxpaid =
-                                                            fm.ANNUALTAXPAID != "NULL"
-                                                                ? Convert.ToDecimal(
-                                                                    fm.ANNUALTAXPAID
-                                                                )
-                                                                : 0,
-                                                        Totalmonthspaid =
-                                                            fm.TOTALMONTHSPAID != "NULL"
-                                                                ? Convert.ToDecimal(
-                                                                    fm.TOTALMONTHSPAID
-                                                                )
-                                                                : 0,
-                                                        Rent =
-                                                            fm.Rent != "NULL"
-                                                                ? Convert.ToDecimal(fm.Rent)
-                                                                : 0,
-                                                        Transport =
-                                                            fm.Transport != "NULL"
-                                                                ? Convert.ToDecimal(
-                                                                    fm.Transport
-                                                                )
-                                                                : 0,
-                                                        Basic =
-                                                            fm.Basic != "NULL"
-                                                                ? Convert.ToDecimal(fm.Basic)
-                                                                : 0,
-                                                        OtherIncome =
-                                                            fm.OtherIncome != "NULL"
-                                                                ? Convert.ToDecimal(
-                                                                    fm.OtherIncome
-                                                                )
-                                                                : 0
-                                                    }
+                                                        Jtbtin = fm.JTBTIN,
+                                                        Nin = fm.NIN,
+                                                        Nationality = fm.NATIONALITY,
+                                                        Homeaddress = fm.HOMEADDRESS,
+                                                        Designation = fm.Designation,
+                                                        Datetcreated = DateTime.UtcNow,
+                                                        Datemodified = DateTime.UtcNow,
+                                                    };
+                                                    lstIndividual.Add(sp);
+                                                }
+                                                var resForm = _con.SspformH1s.FirstOrDefault(o =>
+                                                    o.IndividalId
+                                                        == rootobjectVm
+                                                            .Result.FirstOrDefault()
+                                                            .TaxPayerID.ToString()
+                                                    && o.Rin
+                                                        == rootobjectVm
+                                                            .Result.FirstOrDefault()
+                                                            .TaxPayerRIN.ToString()
+                                                    && o.BusinessId == obj.BusinessId
+                                                    && o.CompanyId == obj.CompanyId
                                                 );
+                                                if (resForm != null)
+                                                {
+                                                    _con.SspformH1s.Where(o =>
+                                                        o.IndividalId
+                                                            == rootobjectVm
+                                                                .Result.FirstOrDefault()
+                                                                .TaxPayerID.ToString()
+                                                        && o.Rin
+                                                            == rootobjectVm
+                                                                .Result.FirstOrDefault()
+                                                                .TaxPayerRIN.ToString()
+                                                    )
+                                                        .ExecuteUpdate(obj =>
+                                                            obj.SetProperty(
+                                                                    b => b.TaxPayerId,
+                                                                    rootobjectVm
+                                                                        .Result.FirstOrDefault()
+                                                                        .TaxPayerID.ToString()
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Rin,
+                                                                    rootobjectVm
+                                                                        .Result.FirstOrDefault()
+                                                                        .TaxPayerRIN.ToString()
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Pension,
+                                                                    fm.PENSION != "NULL"
+                                                                        ? Convert.ToDecimal(fm.PENSION)
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Nhf,
+                                                                    fm.NHF != "NULL"
+                                                                        ? Convert.ToDecimal(fm.NHF)
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Nhis,
+                                                                    fm.NHIS != "NULL"
+                                                                        ? Convert.ToDecimal(fm.NHIS)
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Lifeassurance,
+                                                                    fm.LIFEASSURANCE != "NULL"
+                                                                        ? Convert.ToDecimal(
+                                                                            fm.LIFEASSURANCE
+                                                                        )
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Consolidatedreliefallowancecra,
+                                                                    fm.CONSOLIDATEDRELIEFALLOWANCECRA
+                                                                    != "NULL"
+                                                                        ? Convert.ToDecimal(
+                                                                            fm.CONSOLIDATEDRELIEFALLOWANCECRA
+                                                                        )
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Annualtaxpaid,
+                                                                    fm.ANNUALTAXPAID != "NULL"
+                                                                        ? Convert.ToDecimal(
+                                                                            fm.ANNUALTAXPAID
+                                                                        )
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Totalmonthspaid,
+                                                                    fm.TOTALMONTHSPAID != "NULL"
+                                                                        ? Convert.ToDecimal(
+                                                                            fm.TOTALMONTHSPAID
+                                                                        )
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Rent,
+                                                                    fm.Rent != "NULL"
+                                                                        ? Convert.ToDecimal(fm.Rent)
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Transport,
+                                                                    fm.Transport != "NULL"
+                                                                        ? Convert.ToDecimal(fm.Transport)
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.Basic,
+                                                                    fm.Basic != "NULL"
+                                                                        ? Convert.ToDecimal(fm.Basic)
+                                                                        : 0
+                                                                )
+                                                                .SetProperty(
+                                                                    b => b.OtherIncome,
+                                                                    fm.OtherIncome != "NULL"
+                                                                        ? Convert.ToDecimal(fm.OtherIncome)
+                                                                        : 0
+                                                                )
+                                                        );
+                                                }
+                                                else
+                                                {
+                                                    lstFormH1.Add(
+                                                        new SspformH1
+                                                        {
+                                                            BusinessId = obj.BusinessId,
+                                                            CompanyId = obj.CompanyId,
+                                                            TaxPayerId = rootobjectVm
+                                                                .Result.FirstOrDefault()
+                                                                .TaxPayerID.ToString(),
+                                                            IndividalId = rootobjectVm
+                                                                .Result.FirstOrDefault()
+                                                                .TaxPayerID.ToString(),
+                                                            Rin = rootobjectVm
+                                                                .Result.FirstOrDefault()
+                                                                .TaxPayerRIN.ToString(),
+                                                            Pension =
+                                                                fm.PENSION != "NULL"
+                                                                    ? Convert.ToDecimal(fm.PENSION)
+                                                                    : 0,
+                                                            Nhf =
+                                                                fm.NHF != "NULL"
+                                                                    ? Convert.ToDecimal(fm.NHF)
+                                                                    : 0,
+                                                            Nhis =
+                                                                fm.NHIS != "NULL"
+                                                                    ? Convert.ToDecimal(fm.NHIS)
+                                                                    : 0,
+                                                            Lifeassurance =
+                                                                fm.LIFEASSURANCE != "NULL"
+                                                                    ? Convert.ToDecimal(fm.LIFEASSURANCE)
+                                                                    : 0,
+                                                            Consolidatedreliefallowancecra =
+                                                                fm.CONSOLIDATEDRELIEFALLOWANCECRA != "NULL"
+                                                                    ? Convert.ToDecimal(
+                                                                        fm.CONSOLIDATEDRELIEFALLOWANCECRA
+                                                                    )
+                                                                    : 0,
+                                                            Annualtaxpaid =
+                                                                fm.ANNUALTAXPAID != "NULL"
+                                                                    ? Convert.ToDecimal(fm.ANNUALTAXPAID)
+                                                                    : 0,
+                                                            Totalmonthspaid =
+                                                                fm.TOTALMONTHSPAID != "NULL"
+                                                                    ? Convert.ToDecimal(fm.TOTALMONTHSPAID)
+                                                                    : 0,
+                                                            Rent =
+                                                                fm.Rent != "NULL"
+                                                                    ? Convert.ToDecimal(fm.Rent)
+                                                                    : 0,
+                                                            Transport =
+                                                                fm.Transport != "NULL"
+                                                                    ? Convert.ToDecimal(fm.Transport)
+                                                                    : 0,
+                                                            Basic =
+                                                                fm.Basic != "NULL"
+                                                                    ? Convert.ToDecimal(fm.Basic)
+                                                                    : 0,
+                                                            OtherIncome =
+                                                                fm.OtherIncome != "NULL"
+                                                                    ? Convert.ToDecimal(fm.OtherIncome)
+                                                                    : 0
+                                                        }
+                                                    );
+                                                }
                                             }
                                         }
                                     }

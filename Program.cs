@@ -22,7 +22,11 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors(options =>
-options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().SetIsOriginAllowedToAllowWildcardSubdomains());
+options.AllowAnyOrigin()
+.AllowAnyMethod()
+.AllowAnyHeader()
+.WithExposedHeaders("Content-Disposition")
+.SetIsOriginAllowedToAllowWildcardSubdomains());
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

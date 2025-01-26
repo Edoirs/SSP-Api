@@ -2,6 +2,7 @@
 namespace SelfPortalAPi.UnitOfWork;
 public interface IPhaseIIRepo
 {
+    Task<List<SspfiledFormH3ForSP>>getallfiledformh3bybusinessIdbyyear(string companyId, string businessId,string year);
     Task<Dictionary<List<AssetTaxPayerDetailsApiResponse>, int>> GetCompanyTiedToSuperAdminUser(Formh1SuperAdmin formh1, List<long>? ids);
     Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize, string busName, string tx_cm, bool IsAdmin);
     Task<Dictionary<string, object>> GetAllBusinessesAsync(int pageNumber, int pageSize, string busName, Formh1SuperAdmin formh1);
@@ -362,28 +363,57 @@ group by a.taxpayerid, a.TaxPayerName, a.assetid, a.TaxPayerRINNumber, a.AssetNa
     }
     public int CalculateMonthsLeft(string monthName)
     {
-        if (string.IsNullOrEmpty(monthName))
+
+        
+
+        if (string.IsNullOrEmpty(monthName) || monthName.Length < 3)
         {
-            return 0;
+            return 0; // Return 0 if the input is invalid
         }
+
+        // Take the first three letters of the month name
+        string monthAbbreviation = monthName.Substring(0, 3);
+
         string[] allMonths = new string[]
         {
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
         };
 
-        // Convert the month name to title case for case-insensitive comparison
-        string inputMonth = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(monthName.ToLower());
+        // Convert the month abbreviation to title case for case-insensitive comparison
+        string inputMonth = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(monthAbbreviation.ToLower());
 
         int currentMonthIndex = Array.IndexOf(allMonths, inputMonth);
 
         if (currentMonthIndex == -1)
         {
-            return -1;
+            return 12; // Return -1 if the input month is not valid
         }
 
-        int monthsLeft = 12 - currentMonthIndex - 1; // Subtract 1 to exclude the current month
+        int monthsLeft = 12 - currentMonthIndex; // Calculate months left including the current month
         return monthsLeft;
+        // if (string.IsNullOrEmpty(monthName))
+        // {
+        //     return 0;
+        // }
+        // string[] allMonths = new string[]
+        // {
+        // "January", "February", "March", "April", "May", "June",
+        // "July", "August", "September", "October", "November", "December"
+        // };
+
+        // // Convert the month name to title case for case-insensitive comparison
+        // string inputMonth = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(monthName.ToLower());
+
+        // int currentMonthIndex = Array.IndexOf(allMonths, inputMonth);
+
+        // if (currentMonthIndex == -1)
+        // {
+        //     return -1;
+        // }
+
+        // int monthsLeft = 12 - currentMonthIndex - 1; // Subtract 1 to exclude the current month
+        // return monthsLeft;
     }
     public async Task<List<EmpScheduleDetails>> CalculateMonthScheduleAsync(EmpSchedule empSch)
     {
@@ -1737,5 +1767,31 @@ group by a.taxpayerid, a.TaxPayerName, a.assetid, a.TaxPayerRINNumber, a.AssetNa
 
         return new ReturnObject { message = "Records processed and inserted successfully." }; //data = assessments };
 
+    }
+
+    public async Task<List<SspfiledFormH3ForSP>> getallfiledformh3bybusinessIdbyyear(string companyId, string businessId, string year)
+    {
+        List<SspfiledFormH3ForSP>? user = new();
+        try
+        {
+            // var query = $"[CompanyId],S.[TaxPayerId],A.AssetName,s.[IndividalId],s.[RIN],[PENSION],  B.FirstName + ' ' + B.OTHERNAME + ' ' + B.SURNAME AS FullName,[NHF],[NHIS],[LIFEASSURANCE],[Rent],[Transport],[Basic],[OtherIncome],[FiledStatus],[TaxYear],[DueDate],[ComplianceStatus],s.createdby   ,s.datemodified,s.datetcreated,s.modifiedby  FROM [SSPFiledFormH3] s  left join AssetTaxPayerDetails_API A on s.BusinessId = A.AssetID left join Individual B on s.IndividalId = B.Id  where s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
+            var query = $@"SELECT S.[Id], S.[BusinessId], S.[CompanyId], S.[TaxPayerId],S.[IndividalId], S.[RIN], S.[PENSION], B.FirstName,B.SURNAME, B.OTHERNAME,S.[NHF], S.[NHIS], S.[LIFEASSURANCE], S.[Rent], S.[Transport], S.[Basic], S.[OtherIncome], (S.[Rent] + S.[Basic] + S.[OtherIncome] + S.[Transport]) AS Total,[ComplianceStatus], [TaxYear], [DueDate], CASE WHEN S.[FiledStatus] = 1 THEN 'Inactive' ELSE 'Active' END AS StatusName,  S.[createdby], S.[datemodified], S.[datetcreated], S.[modifiedby]
+ ,(SELECT TOP 1 e.StartMonth 
+     FROM SSPFormH3s e 
+     WHERE e.IndividualId = S.IndividalId 
+     ORDER BY e.DateModified DESC) AS StartMonth
+FROM [SSPFiledFormH3] S LEFT JOIN Individual B on s.RIN = B.EmployeeRin WHERE s.BusinessId = '{businessId}' and s.CompanyId='{companyId}' and TaxYear = '{year}'";
+         user = await _repo.SspfiledFormH3ForSPs.FromSqlRaw(query).ToListAsync();
+
+            foreach (var u in user)
+                u.NumberOfMonths = CalculateMonthsLeft(u.Startmonth);
+            return user;
+            
+        }
+        catch (System.Exception ex)
+        {
+            return user;
+        }
+   
     }
 }
